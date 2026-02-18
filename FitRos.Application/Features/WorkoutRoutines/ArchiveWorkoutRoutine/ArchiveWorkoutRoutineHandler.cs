@@ -1,5 +1,7 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using Microsoft.EntityFrameworkCore;
+using FitRos.Domain.Common;
+
 
 namespace FitRos.Application.Features.WorkoutRoutines.ArchiveWorkoutRoutine;
 
@@ -18,9 +20,8 @@ public class ArchiveWorkoutRoutineHandler
     {
         var routine = await _context.WorkoutRoutines
             .FirstOrDefaultAsync(r => r.Id == command.Id, cancellationToken);
-
         if (routine is null)
-            return false;
+            throw new DomainException("Workout routine not found.");
 
         routine.Archive();
 

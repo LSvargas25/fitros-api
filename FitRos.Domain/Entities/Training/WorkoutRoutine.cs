@@ -1,4 +1,5 @@
-﻿using FitRos.Domain.Enums;
+﻿using FitRos.Domain.Common;
+using FitRos.Domain.Enums;
 
 namespace FitRos.Domain.Entities.Training;
 
@@ -7,6 +8,9 @@ public class WorkoutRoutine
     public Guid Id { get; private set; }
 
     public string Name { get; private set; } = null!;
+
+    public string NormalizedName { get; private set; } = null!;
+
 
     public string Description { get; private set; } = null!;
 
@@ -31,6 +35,7 @@ public class WorkoutRoutine
     {
         Id = id;
         Name = name;
+        NormalizedName = name.ToLowerInvariant();
         Description = description;
         Version = version;
         Status = RoutineStatus.Draft;
@@ -43,12 +48,15 @@ public class WorkoutRoutine
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Routine name cannot be empty.");
 
+        name = name.Trim();
+
         return new WorkoutRoutine(
             Guid.NewGuid(),
-            name.Trim(),
+            name,
             description.Trim(),
             version: 1);
     }
+
     //Add Exercise
     public void AddExercise(
         Guid exerciseId,
@@ -65,21 +73,31 @@ public class WorkoutRoutine
             suggestedSets,
             suggestedReps,
             suggestedRestSeconds));
+        Version++;
     }
 
     //State of Routine publish
     public void Publish()
     {
+        if (Status != RoutineStatus.Draft)
+            throw new InvalidOperationException("Only draft routines can be published.");
+
         if (!_exercises.Any())
             throw new InvalidOperationException("Cannot publish a routine without exercises.");
 
         Status = RoutineStatus.Published;
+        Version++;
     }
+
 
     public void Archive()
     {
+        if (Status != RoutineStatus.Published)
+            throw new DomainException("Only published routines can be archived.");
         Status = RoutineStatus.Archived;
+        Version++;
     }
+
 
     //Metod create a new Version
     public WorkoutRoutine CreateNewVersion()
@@ -122,9 +140,14 @@ public class WorkoutRoutine
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Routine name cannot be empty.");
 
-        Name = name.Trim();
+        name = name.Trim();
+
+        Name = name;
+        NormalizedName = name.ToLowerInvariant(); 
         Description = description.Trim();
+        Version++;
     }
+
 
 
 

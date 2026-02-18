@@ -17,7 +17,7 @@ namespace FitRos.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.5")
+                .HasAnnotation("ProductVersion", "8.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -38,9 +38,10 @@ namespace FitRos.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<decimal>("WeightUsed")
-                        .HasColumnType("numeric");
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
 
-                    b.Property<Guid?>("WorkoutSessionId")
+                    b.Property<Guid>("WorkoutSessionId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -65,7 +66,13 @@ namespace FitRos.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -74,6 +81,9 @@ namespace FitRos.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique();
 
                     b.ToTable("WorkoutRoutines");
                 });
@@ -99,7 +109,7 @@ namespace FitRos.Infrastructure.Migrations
                     b.Property<int>("SuggestedSets")
                         .HasColumnType("integer");
 
-                    b.Property<Guid?>("WorkoutRoutineId")
+                    b.Property<Guid>("WorkoutRoutineId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -123,7 +133,8 @@ namespace FitRos.Infrastructure.Migrations
 
                     b.Property<string>("RoutineNameSnapshot")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
 
                     b.Property<int>("RoutineVersion")
                         .HasColumnType("integer");
@@ -177,25 +188,29 @@ namespace FitRos.Infrastructure.Migrations
             modelBuilder.Entity("FitRos.Domain.Entities.Training.ExerciseSet", b =>
                 {
                     b.HasOne("FitRos.Domain.Entities.Training.WorkoutSession", null)
-                        .WithMany("Sets")
-                        .HasForeignKey("WorkoutSessionId");
+                        .WithMany("_sets")
+                        .HasForeignKey("WorkoutSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutRoutineExercise", b =>
                 {
                     b.HasOne("FitRos.Domain.Entities.Training.WorkoutRoutine", null)
-                        .WithMany("Exercises")
-                        .HasForeignKey("WorkoutRoutineId");
+                        .WithMany("_exercises")
+                        .HasForeignKey("WorkoutRoutineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutRoutine", b =>
                 {
-                    b.Navigation("Exercises");
+                    b.Navigation("_exercises");
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutSession", b =>
                 {
-                    b.Navigation("Sets");
+                    b.Navigation("_sets");
                 });
 #pragma warning restore 612, 618
         }

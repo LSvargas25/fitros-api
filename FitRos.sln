@@ -18,6 +18,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FitRos.API", "FitRos.API\Fi
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FitRos.Tests", "FitRos.Tests\FitRos.Tests.csproj", "{C86F7E76-B05B-442D-A86F-96F5FDA2CAFE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9E1F6CC2-5950-465F-AFD9-BBAC60745DF8} = {9E1F6CC2-5950-465F-AFD9-BBAC60745DF8}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

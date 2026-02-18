@@ -14,6 +14,13 @@ public class WorkoutRoutineConfiguration
         builder.Property(x => x.Name)
             .IsRequired()
             .HasMaxLength(200);
+         
+        builder.Property(x => x.NormalizedName)
+            .IsRequired()
+            .HasMaxLength(200);
+         
+        builder.HasIndex(x => x.NormalizedName)
+            .IsUnique();
 
         builder.Property(x => x.Description)
             .IsRequired();
@@ -26,9 +33,9 @@ public class WorkoutRoutineConfiguration
 
         builder.Property(x => x.CreatedAt)
             .IsRequired();
-         
+
         builder.Ignore(x => x.Exercises);
-         
+
         builder
             .HasMany<WorkoutRoutineExercise>("_exercises")
             .WithOne()

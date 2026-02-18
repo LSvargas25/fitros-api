@@ -1,8 +1,8 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
+using FitRos.Domain.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutineById;
-
 public class GetWorkoutRoutineByIdHandler
 {
     private readonly IFitRosDbContext _context;
@@ -13,21 +13,21 @@ public class GetWorkoutRoutineByIdHandler
     }
 
     public async Task<WorkoutRoutineDetailsDto?> Handle(
-        Guid id,
+        GetWorkoutRoutineByIdQuery query,
         CancellationToken cancellationToken)
     {
         var routine = await _context.WorkoutRoutines
-            .Where(r => r.Id == id)
-            .Select(r => new WorkoutRoutineDetailsDto
+            .Where(x => x.Id == query.Id)
+            .Select(x => new WorkoutRoutineDetailsDto
             {
-                Id = r.Id,
-                Name = r.Name,
-                Description = r.Description,
-                Version = r.Version,
-                Status = (int)r.Status
+                Id = x.Id,
+                Name = x.Name,
+                Description = x.Description,
+                Status = (int)x.Status,
+                Version = x.Version
             })
             .FirstOrDefaultAsync(cancellationToken);
-
+         
         return routine;
     }
 }

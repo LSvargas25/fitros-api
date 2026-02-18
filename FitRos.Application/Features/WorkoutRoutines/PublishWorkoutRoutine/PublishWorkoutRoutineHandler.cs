@@ -13,8 +13,8 @@ public class PublishWorkoutRoutineHandler
     }
 
     public async Task<bool> Handle(
-        PublishWorkoutRoutineCommand command,
-        CancellationToken cancellationToken)
+       PublishWorkoutRoutineCommand command,
+       CancellationToken cancellationToken)
     {
         var routine = await _context.WorkoutRoutines
             .FirstOrDefaultAsync(r => r.Id == command.Id, cancellationToken);
@@ -22,10 +22,11 @@ public class PublishWorkoutRoutineHandler
         if (routine is null)
             return false;
 
-        routine.Publish();
+        routine.Publish();  
 
         await _context.SaveChangesAsync(cancellationToken);
 
         return true;
     }
+
 }

@@ -33,7 +33,8 @@ namespace FitRos.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    NormalizedName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
                     Version = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
@@ -51,7 +52,7 @@ namespace FitRos.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     RoutineId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RoutineNameSnapshot = table.Column<string>(type: "text", nullable: false),
+                    RoutineNameSnapshot = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     RoutineVersion = table.Column<int>(type: "integer", nullable: false),
                     ScheduledDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
@@ -72,7 +73,7 @@ namespace FitRos.Infrastructure.Migrations
                     SuggestedSets = table.Column<int>(type: "integer", nullable: false),
                     SuggestedReps = table.Column<int>(type: "integer", nullable: false),
                     SuggestedRestSeconds = table.Column<int>(type: "integer", nullable: false),
-                    WorkoutRoutineId = table.Column<Guid>(type: "uuid", nullable: true)
+                    WorkoutRoutineId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -81,7 +82,8 @@ namespace FitRos.Infrastructure.Migrations
                         name: "FK_WorkoutRoutineExercise_WorkoutRoutines_WorkoutRoutineId",
                         column: x => x.WorkoutRoutineId,
                         principalTable: "WorkoutRoutines",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -92,8 +94,8 @@ namespace FitRos.Infrastructure.Migrations
                     ExerciseId = table.Column<Guid>(type: "uuid", nullable: false),
                     SetNumber = table.Column<int>(type: "integer", nullable: false),
                     RepsAchieved = table.Column<int>(type: "integer", nullable: false),
-                    WeightUsed = table.Column<decimal>(type: "numeric", nullable: false),
-                    WorkoutSessionId = table.Column<Guid>(type: "uuid", nullable: true)
+                    WeightUsed = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false),
+                    WorkoutSessionId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -102,7 +104,8 @@ namespace FitRos.Infrastructure.Migrations
                         name: "FK_ExerciseSet_WorkoutSessions_WorkoutSessionId",
                         column: x => x.WorkoutSessionId,
                         principalTable: "WorkoutSessions",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
@@ -114,6 +117,12 @@ namespace FitRos.Infrastructure.Migrations
                 name: "IX_WorkoutRoutineExercise_WorkoutRoutineId",
                 table: "WorkoutRoutineExercise",
                 column: "WorkoutRoutineId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkoutRoutines_NormalizedName",
+                table: "WorkoutRoutines",
+                column: "NormalizedName",
+                unique: true);
         }
 
         /// <inheritdoc />

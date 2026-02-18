@@ -14,8 +14,9 @@ public interface IFitRosDbContext
 
     IQueryable<Exercise> Exercises { get; }
 
-
     void AddWorkoutRoutine(WorkoutRoutine routine);
+    void AddExercise(Exercise exercise);
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+
 }

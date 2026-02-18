@@ -1,47 +1,63 @@
 ﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-                using FitRos.Application.Abstractions.Persistence;
-                using FitRos.Domain.Entities.Training;
-                using FitRos.Domain.Entities.Users;
-                using Microsoft.EntityFrameworkCore;
 
-                namespace FitRos.Infrastructure.Persistence;
+using FitRos.Application.Abstractions.Persistence;
+using FitRos.Domain.Entities.Training;
+using FitRos.Domain.Entities.Users;
+using Microsoft.EntityFrameworkCore;
 
-                public class FitRosDbContext : DbContext, IFitRosDbContext
-                {
-                    public FitRosDbContext(DbContextOptions<FitRosDbContext> options)
-                        : base(options)
-                    {
-                    }
+namespace FitRos.Infrastructure.Persistence;
 
-                    // EF Core DbSet properties (kept for EF)
-                    public DbSet<User> Users { get; set; } = null!;
-                    public DbSet<WorkoutRoutine> WorkoutRoutines { get; set; } = null!;
-                    public DbSet<WorkoutSession> WorkoutSessions { get; set; } = null!;
+public class FitRosDbContext : DbContext, IFitRosDbContext
+{
+    public FitRosDbContext(DbContextOptions<FitRosDbContext> options)
+        : base(options)
+    {
+    }
 
-    public IQueryable<Exercise> Exercises => throw new NotImplementedException();
+    // =========================
+    // EF DbSets (REAL TABLES)
+    // =========================
 
-    // Explicit interface implementations to match IFitRosDbContext (IQueryable<T>)
+    public DbSet<User> Users { get; set; } = null!;
+    public DbSet<WorkoutRoutine> WorkoutRoutines { get; set; } = null!;
+    public DbSet<WorkoutSession> WorkoutSessions { get; set; } = null!;
+    public DbSet<Exercise> Exercises { get; set; } = null!; 
+
+    // =========================
+    // Interface IQueryable
+    // =========================
+
     IQueryable<User> IFitRosDbContext.Users => Users;
-                    IQueryable<WorkoutRoutine> IFitRosDbContext.WorkoutRoutines => WorkoutRoutines;
-                    IQueryable<WorkoutSession> IFitRosDbContext.WorkoutSessions => WorkoutSessions;
+    IQueryable<WorkoutRoutine> IFitRosDbContext.WorkoutRoutines => WorkoutRoutines;
+    IQueryable<WorkoutSession> IFitRosDbContext.WorkoutSessions => WorkoutSessions;
+    IQueryable<Exercise> IFitRosDbContext.Exercises => Exercises;
 
-                    public void AddWorkoutRoutine(WorkoutRoutine routine)
-                    {
-                        WorkoutRoutines.Add(routine);
-                    }
+    // =========================
+    // Commands
+    // =========================
 
-                    public Task<int> SaveChangesAsync(CancellationToken cancellationToken)
-                    {
-                        return base.SaveChangesAsync(cancellationToken);
-                    }
+    public void AddExercise(Exercise exercise)
+    {
+        Exercises.Add(exercise); 
+    }
 
-                    protected override void OnModelCreating(ModelBuilder modelBuilder)
-                    {
-                        modelBuilder.ApplyConfigurationsFromAssembly(
-                            typeof(FitRosDbContext).Assembly);
+    public void AddWorkoutRoutine(WorkoutRoutine routine)
+    {
+        WorkoutRoutines.Add(routine);
+    }
 
-                        base.OnModelCreating(modelBuilder);
-                    }
-                }
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(FitRosDbContext).Assembly);
+
+        base.OnModelCreating(modelBuilder);
+    }
+}

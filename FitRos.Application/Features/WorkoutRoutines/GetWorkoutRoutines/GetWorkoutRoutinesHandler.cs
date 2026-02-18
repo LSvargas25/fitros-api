@@ -1,5 +1,5 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
-using FitRos.Domain.Enums;
+using FitRos.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutines;
@@ -13,7 +13,7 @@ public class GetWorkoutRoutinesHandler
         _context = context;
     }
 
-    public async Task<List<WorkoutRoutineListItem>> Handle(
+    public async Task<PagedResult<WorkoutRoutineListItem>> Handle(
         GetWorkoutRoutinesQuery query,
         CancellationToken cancellationToken)
     {
@@ -21,14 +21,18 @@ public class GetWorkoutRoutinesHandler
             .AsNoTracking()
             .AsQueryable();
 
-        // 🔹 Filtro opcional por estado
         if (query.Status.HasValue)
         {
             routinesQuery = routinesQuery
                 .Where(r => r.Status == query.Status.Value);
         }
 
-        return await routinesQuery
+        var totalCount = await routinesQuery.CountAsync(cancellationToken);
+
+        var items = await routinesQuery
+            .OrderBy(r => r.Name)
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
             .Select(r => new WorkoutRoutineListItem
             {
                 Id = r.Id,
@@ -37,5 +41,13 @@ public class GetWorkoutRoutinesHandler
                 Status = r.Status.ToString()
             })
             .ToListAsync(cancellationToken);
+
+        return new PagedResult<WorkoutRoutineListItem>
+        {
+            Page = query.Page,
+            PageSize = query.PageSize,
+            TotalCount = totalCount,
+            Items = items
+        };
     }
 }

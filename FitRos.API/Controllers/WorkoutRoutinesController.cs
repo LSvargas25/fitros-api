@@ -15,43 +15,65 @@ namespace FitRos.API.Controllers;
 [Route("api/[controller]")]
 public class WorkoutRoutinesController : ControllerBase
 {
-    // CREATE
+    /// Creates a new workout routine.
     [HttpPost]
+    [ProducesResponseType(typeof(CreateWorkoutRoutineResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [SwaggerOperation(
+        Summary = "Create workout routine",
+        Description = "Creates a new workout routine in Draft status."
+    )]
     public async Task<ActionResult<CreateWorkoutRoutineResponse>> Create(
         [FromBody] CreateWorkoutRoutineCommand command,
         [FromServices] CreateWorkoutRoutineHandler handler,
         CancellationToken cancellationToken)
     {
         var result = await handler.Handle(command, cancellationToken);
-        return Ok(result);
+
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
-    // GET ALL active or inactive
+    /// Retrieves all workout routines filtered by status.
     [HttpGet]
+    [ProducesResponseType(typeof(List<WorkoutRoutineListItem>), StatusCodes.Status200OK)]
+    [SwaggerOperation(
+        Summary = "Get workout routines",
+        Description = "Retrieves all workout routines optionally filtered by status (Draft, Published, Archived)."
+    )]
     public async Task<ActionResult<List<WorkoutRoutineListItem>>> Get(
-     [FromQuery] RoutineStatus? status,
-     [FromServices] GetWorkoutRoutinesHandler handler,
-     CancellationToken cancellationToken)
+        [FromQuery] RoutineStatus? status,
+        [FromQuery] int page,
+        [FromQuery] int pageSize,
+        [FromServices] GetWorkoutRoutinesHandler handler,
+        CancellationToken cancellationToken)
     {
-        var query = new GetWorkoutRoutinesQuery
-        {
-            Status = status
-        };
+        var query = new GetWorkoutRoutinesQuery(
+            status,
+            page == 0 ? 1 : page,
+            pageSize == 0 ? 10 : pageSize
+        );
 
         var result = await handler.Handle(query, cancellationToken);
 
         return Ok(result);
     }
 
-
-    // GET BY ID
+    /// Retrieves a workout routine by its identifier.
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<WorkoutRoutineDetailsDto>> GetById(
+    [ProducesResponseType(typeof(WorkoutRoutineDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Get workout routine by id",
+        Description = "Retrieves detailed information about a specific workout routine."
+    )]
+    public async Task<IActionResult> GetById(
         Guid id,
         [FromServices] GetWorkoutRoutineByIdHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(id, cancellationToken);
+        var query = new GetWorkoutRoutineByIdQuery(id);
+
+        var result = await handler.Handle(query, cancellationToken);
 
         if (result is null)
             return NotFound();
@@ -59,12 +81,18 @@ public class WorkoutRoutinesController : ControllerBase
         return Ok(result);
     }
 
-    //Archive
+    /// Archives (soft deletes) a workout routine.
     [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Archive workout routine",
+        Description = "Archives a workout routine, changing its status to Archived."
+    )]
     public async Task<IActionResult> Delete(
-    Guid id,
-    [FromServices] ArchiveWorkoutRoutineHandler handler,
-    CancellationToken cancellationToken)
+        Guid id,
+        [FromServices] ArchiveWorkoutRoutineHandler handler,
+        CancellationToken cancellationToken)
     {
         var result = await handler.Handle(
             new ArchiveWorkoutRoutineCommand(id),
@@ -76,13 +104,19 @@ public class WorkoutRoutinesController : ControllerBase
         return NoContent();
     }
 
-    //Update
+    /// Updates the basic information of a workout routine.
     [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Update workout routine",
+        Description = "Updates the name and description of an existing workout routine."
+    )]
     public async Task<IActionResult> Update(
-       Guid id,
-       [FromBody] UpdateWorkoutRoutineCommand command,
-       [FromServices] UpdateWorkoutRoutineHandler handler,
-       CancellationToken cancellationToken)
+        Guid id,
+        [FromBody] UpdateWorkoutRoutineCommand command,
+        [FromServices] UpdateWorkoutRoutineHandler handler,
+        CancellationToken cancellationToken)
     {
         var updated = await handler.Handle(id, command, cancellationToken);
 
@@ -91,14 +125,21 @@ public class WorkoutRoutinesController : ControllerBase
 
         return NoContent();
     }
-    //Add exercises in a rutine
 
+    /// Adds an exercise to a specific workout routine.
     [HttpPost("{id:guid}/exercises")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Add exercise to workout routine",
+        Description = "Adds a new exercise to the specified workout routine."
+    )]
     public async Task<IActionResult> AddExercise(
-    Guid id,
-    [FromBody] AddExerciseToWorkoutRoutineCommand command,
-    [FromServices] AddExerciseToWorkoutRoutineHandler handler,
-    CancellationToken cancellationToken)
+        Guid id,
+        [FromBody] AddExerciseToWorkoutRoutineCommand command,
+        [FromServices] AddExerciseToWorkoutRoutineHandler handler,
+        CancellationToken cancellationToken)
     {
         if (id != command.WorkoutRoutineId)
             return BadRequest();
@@ -111,14 +152,18 @@ public class WorkoutRoutinesController : ControllerBase
         return NoContent();
     }
 
-
-    //Public Rutine
-    [SwaggerOperation(Summary = "Public a rutine.")]
+    /// Publishes a workout routine.
     [HttpPut("{id:guid}/publish")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Publish workout routine",
+        Description = "Changes the workout routine status from Draft to Published."
+    )]
     public async Task<IActionResult> Publish(
-   Guid id,
-   [FromServices] PublishWorkoutRoutineHandler handler,
-   CancellationToken cancellationToken)
+        Guid id,
+        [FromServices] PublishWorkoutRoutineHandler handler,
+        CancellationToken cancellationToken)
     {
         var result = await handler.Handle(
             new PublishWorkoutRoutineCommand(id),
@@ -129,8 +174,4 @@ public class WorkoutRoutinesController : ControllerBase
 
         return NoContent();
     }
-
-    
-
-
 }

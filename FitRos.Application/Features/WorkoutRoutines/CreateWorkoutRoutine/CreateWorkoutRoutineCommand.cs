@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 using FitRos.Domain.Enums;
 namespace FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutine;
 
-public record CreateWorkoutRoutineCommand(
-    string Name,
-    string Description
-);
+public record CreateWorkoutRoutineCommand
+{
+    public string Name { get; init; } = null!;
+
+    public string Description { get; init; } = null!;
+}

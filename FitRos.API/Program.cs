@@ -8,6 +8,14 @@ using FitRos.Application.Features.WorkoutRoutines.PublishWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.UpdateWorkoutRoutine;
 using FitRos.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
+using FitRos.Domain.Common;
+using FitRos.API.Middleware;
+
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,9 +26,27 @@ var builder = WebApplication.CreateBuilder(args);
 // Controllers
 builder.Services.AddControllers();
 
+//Validators 
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateWorkoutRoutineValidator>();
+
+builder.Services.AddFluentValidationRulesToSwagger();
+
+
+
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "FitRos.API",
+        Version = "v1",
+        Description = "API for FitRos Gym Management Platform"
+    });
+
+    options.EnableAnnotations(); 
+});
 
 // DbContext (PostgreSQL)
 builder.Services.AddDbContext<FitRosDbContext>(options =>
@@ -28,6 +54,8 @@ builder.Services.AddDbContext<FitRosDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")
     )
 );
+
+
 
 // Register abstraction → implementation
 builder.Services.AddScoped<IFitRosDbContext, FitRosDbContext>();
@@ -50,6 +78,12 @@ builder.Services.AddScoped<AddExerciseToWorkoutRoutineHandler>();
 
 var app = builder.Build();
 
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
+
+
+
+
 // =============================
 // Middleware pipeline
 // =============================
@@ -57,7 +91,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "FitRos.API v1");
+    });
+
 }
 
 app.UseHttpsRedirection();

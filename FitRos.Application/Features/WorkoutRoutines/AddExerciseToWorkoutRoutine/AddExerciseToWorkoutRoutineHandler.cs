@@ -1,4 +1,5 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
+using FitRos.Domain.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.AddExerciseToWorkoutRoutine;
@@ -16,19 +17,18 @@ public class AddExerciseToWorkoutRoutineHandler
         AddExerciseToWorkoutRoutineCommand command,
         CancellationToken cancellationToken)
     {
-        // 1️⃣ Verificar que la rutina exista
         var routine = await _context.WorkoutRoutines
             .Include(r => r.Exercises)
             .FirstOrDefaultAsync(r => r.Id == command.WorkoutRoutineId, cancellationToken);
 
         if (routine is null)
-            return false;
+            throw new DomainException("Workout routine not found.");
 
         var exerciseExists = await _context.Exercises
             .AnyAsync(e => e.Id == command.ExerciseId, cancellationToken);
 
         if (!exerciseExists)
-            throw new InvalidOperationException("The specified exercise does not exist.");
+            throw new DomainException("The specified exercise does not exist.");
 
         routine.AddExercise(
             command.ExerciseId,

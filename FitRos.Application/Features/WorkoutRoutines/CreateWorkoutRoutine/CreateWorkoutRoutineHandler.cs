@@ -1,6 +1,7 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Domain.Entities.Training;
-using FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutine;
+using FitRos.Domain.Common;
+using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutine;
 
@@ -17,8 +18,17 @@ public class CreateWorkoutRoutineHandler
         CreateWorkoutRoutineCommand command,
         CancellationToken cancellationToken)
     {
+        var normalizedName = command.Name.Trim().ToLowerInvariant();
+
+        var exists = await _context.WorkoutRoutines
+            .AnyAsync(r => r.NormalizedName == normalizedName, cancellationToken);
+
+        if (exists)
+            throw new DomainException("A routine with this name already exists.");
+
+
         var routine = WorkoutRoutine.Create(
-            command.Name,
+            command.Name.Trim(),
             command.Description
         );
 
