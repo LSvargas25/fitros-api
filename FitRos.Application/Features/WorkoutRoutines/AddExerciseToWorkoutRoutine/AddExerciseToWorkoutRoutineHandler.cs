@@ -24,14 +24,12 @@ public class AddExerciseToWorkoutRoutineHandler
         if (routine is null)
             return false;
 
-        // 2️⃣ Verificar que el ejercicio exista
         var exerciseExists = await _context.Exercises
             .AnyAsync(e => e.Id == command.ExerciseId, cancellationToken);
 
         if (!exerciseExists)
             throw new InvalidOperationException("The specified exercise does not exist.");
 
-        // 3️⃣ Agregar ejercicio a la rutina
         routine.AddExercise(
             command.ExerciseId,
             command.Order,
