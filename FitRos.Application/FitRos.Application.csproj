@@ -19,11 +19,4 @@
     <ProjectReference Include="..\FitRos.Domain\FitRos.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Features\Exercises\ArchiveExercise\" />
-    <Folder Include="Features\Exercises\GetExerciseById\" />
-    <Folder Include="Features\Exercises\GetExercises\" />
-    <Folder Include="Features\Exercises\UpdateExercise\" />
-  </ItemGroup>
-
 </Project>

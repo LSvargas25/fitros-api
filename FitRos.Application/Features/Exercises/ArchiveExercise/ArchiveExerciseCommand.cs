@@ -4,9 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FitRos.Tests.Aplication
-{
-    internal class Training
-    {
-    }
-}
+namespace FitRos.Application.Features.Exercises.ArchiveExercise;
+
+public record ArchiveExerciseCommand(Guid Id);

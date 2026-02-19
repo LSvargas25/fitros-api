@@ -1,12 +1,10 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Domain.Entities.Training;
 using Microsoft.EntityFrameworkCore;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace FitRos.Application.Features.Exercises.CreateExercise;
 
-internal class CreateExerciseHandler
+public class CreateExerciseHandler
 {
     private readonly IFitRosDbContext _context;
 
@@ -15,31 +13,30 @@ internal class CreateExerciseHandler
         _context = context;
     }
 
-    public async Task Handle(
-        CreateExerciseCommand command,
-        CancellationToken cancellationToken)
+    public async Task<CreateExerciseResponse> Handle(
+     CreateExerciseCommand command,
+     CancellationToken cancellationToken)
     {
-        // 1️⃣ Validar que no exista un ejercicio con el mismo nombre
+        var normalized = command.Name.ToLower();
+
         var exists = await _context.Exercises
-            .AnyAsync(x => x.Name == command.Name, cancellationToken);
+            .AnyAsync(x => x.NormalizedName == normalized, cancellationToken);
 
         if (exists)
-        {
             throw new InvalidOperationException(
-                $"An exercise with the name '{command.Name}' already exists.");
-        }
+                $"Exercise '{command.Name}' already exists.");
 
-        //  create entity exercise
         var exercise = Exercise.Create(
             command.Name,
             command.Description,
             command.Category
         );
 
-        //Add exercise to database
         _context.AddExercise(exercise);
 
-        // save changes to database
         await _context.SaveChangesAsync(cancellationToken);
+
+        return new CreateExerciseResponse(exercise.Id);
     }
+
 }

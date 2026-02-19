@@ -18,8 +18,9 @@ public class AddExerciseToWorkoutRoutineHandler
         CancellationToken cancellationToken)
     {
         var routine = await _context.WorkoutRoutines
-            .Include(r => r.Exercises)
-            .FirstOrDefaultAsync(r => r.Id == command.WorkoutRoutineId, cancellationToken);
+        .Include("_exercises")
+        .FirstOrDefaultAsync(r => r.Id == command.WorkoutRoutineId, cancellationToken);
+
 
         if (routine is null)
             throw new DomainException("Workout routine not found.");

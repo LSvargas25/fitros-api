@@ -1,4 +1,10 @@
-﻿using FitRos.Application.Abstractions.Persistence;
+﻿using FitRos.API.Middleware;
+using FitRos.Application.Abstractions.Persistence;
+using FitRos.Application.Features.Exercises.ArchiveExercise;
+using FitRos.Application.Features.Exercises.CreateExercise;
+using FitRos.Application.Features.Exercises.GetExerciseById;
+using FitRos.Application.Features.Exercises.GetExercises;
+using FitRos.Application.Features.Exercises.UpdateExercise;
 using FitRos.Application.Features.WorkoutRoutines.AddExerciseToWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.ArchiveWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutine;
@@ -6,13 +12,12 @@ using FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutineById;
 using FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutines;
 using FitRos.Application.Features.WorkoutRoutines.PublishWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.UpdateWorkoutRoutine;
+using FitRos.Domain.Common;
 using FitRos.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
-using FitRos.Domain.Common;
-using FitRos.API.Middleware;
+using Microsoft.EntityFrameworkCore;
 
 
 
@@ -72,6 +77,13 @@ builder.Services.AddScoped<ArchiveWorkoutRoutineHandler>();
 builder.Services.AddScoped<UpdateWorkoutRoutineHandler>();
 builder.Services.AddScoped<PublishWorkoutRoutineHandler>();
 builder.Services.AddScoped<AddExerciseToWorkoutRoutineHandler>();
+
+//Exercises
+builder.Services.AddScoped<CreateExerciseHandler>();
+builder.Services.AddScoped<GetExerciseByIdHandler>();
+builder.Services.AddScoped<GetExercisesHandler>();
+builder.Services.AddScoped<UpdateExerciseHandler>();
+builder.Services.AddScoped<ArchiveExerciseHandler>();
 
 
 

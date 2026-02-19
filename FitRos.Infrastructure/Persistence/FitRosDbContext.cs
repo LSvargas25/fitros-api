@@ -58,6 +58,22 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(FitRosDbContext).Assembly);
 
+        // =========================================
+        // WorkoutRoutine → Backing Field Mapping
+        // =========================================
+        modelBuilder.Entity<WorkoutRoutine>(builder =>
+        {
+            builder.HasKey(r => r.Id);
+
+            builder.HasMany(typeof(WorkoutRoutineExercise), "_exercises")
+                   .WithOne()
+                   .HasForeignKey("WorkoutRoutineId");
+
+            builder.Navigation("_exercises")
+                   .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
         base.OnModelCreating(modelBuilder);
     }
+
 }
