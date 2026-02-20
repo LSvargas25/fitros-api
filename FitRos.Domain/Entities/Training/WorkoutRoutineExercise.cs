@@ -56,7 +56,7 @@ public class WorkoutRoutineExercise
     }
 
     // Internal because only the Aggregate Root should reorder
-    internal void SetOrder(int newOrder)
+    public void SetOrder(int newOrder)
     {
         Order = newOrder;
     }

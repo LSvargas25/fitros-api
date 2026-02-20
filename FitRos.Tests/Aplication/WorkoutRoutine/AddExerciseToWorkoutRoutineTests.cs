@@ -109,17 +109,15 @@ namespace FitRos.Tests.Application.WorkoutRoutines
                 .WithMessage("This exercise is already part of the routine.");
         }
 
-         
 
-    [Fact]
+
+        [Fact]
         public async Task Handle_Should_Throw_When_Routine_Is_Published()
         {
             // Arrange
             var context = CreateDbContext();
 
-            var routine = WorkoutRoutine.Create(
-                "Test Routine",
-                "Description");
+            var routine = WorkoutRoutine.Create("Test Routine", "Description");
 
             var firstExercise = Exercise.Create(
                 "Bench Press",
@@ -137,14 +135,8 @@ namespace FitRos.Tests.Application.WorkoutRoutines
 
             await context.SaveChangesAsync(CancellationToken.None);
 
-            // Agregamos primer ejercicio y publicamos
-            routine.AddExercise(
-                firstExercise.Id,
-                1,
-                4,
-                10,
-                90);
-
+            // Add first exercise and publish routine
+            routine.AddExercise(firstExercise.Id, 1, 4, 10, 90);
             routine.Publish();
 
             await context.SaveChangesAsync(CancellationToken.None);
@@ -152,22 +144,21 @@ namespace FitRos.Tests.Application.WorkoutRoutines
             var handler = new AddExerciseToWorkoutRoutineHandler(context);
 
             var command = new AddExerciseToWorkoutRoutineCommand(
-                routine.Id,
-                secondExercise.Id, // Intentamos agregar uno nuevo
-                2,
-                3,
-                12,
-                60);
+                WorkoutRoutineId: routine.Id,
+                ExerciseId: secondExercise.Id,
+                Order: 2,
+                SuggestedSets: 3,
+                SuggestedReps: 12,
+                SuggestedRestSeconds: 60
+            );
 
             // Act
-            Func<Task> act = async () =>
-                await handler.Handle(command, CancellationToken.None);
+            Func<Task> act = async () => await handler.Handle(command, CancellationToken.None);
 
             // Assert
             await act.Should()
-                .ThrowAsync<InvalidOperationException>()
+                .ThrowAsync<DomainException>()
                 .WithMessage("Routine can only be modified in Draft state.");
         }
-
     }
 }

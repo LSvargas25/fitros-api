@@ -13,7 +13,6 @@ public class WorkoutRoutineConfiguration
 
         builder.HasKey(x => x.Id);
 
-        // 🔥 IMPORTANTE: Id lo genera el dominio, no la base
         builder.Property(x => x.Id)
             .ValueGeneratedNever();
 
@@ -25,8 +24,11 @@ public class WorkoutRoutineConfiguration
             .IsRequired()
             .HasMaxLength(200);
 
+        // Unique only for the base routine (Version = 1).
+        // This allows multiple versions to share the same NormalizedName.
         builder.HasIndex(x => x.NormalizedName)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"Version\" = 1");
 
         builder.Property(x => x.Description)
             .IsRequired();
@@ -34,6 +36,14 @@ public class WorkoutRoutineConfiguration
         builder.Property(x => x.Version)
             .IsRequired()
             .ValueGeneratedNever();
+
+        // Version group identifier (ties multiple versions together)
+        builder.Property(x => x.RoutineGroupId)
+            .IsRequired()
+            .ValueGeneratedNever();
+
+        // Index for fast version queries (latest, list versions)
+        builder.HasIndex(x => new { x.RoutineGroupId, x.Version });
 
         builder.Property(x => x.Status)
             .IsRequired();

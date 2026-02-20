@@ -3,6 +3,7 @@ using System;
 using FitRos.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FitRos.Infrastructure.Migrations
 {
     [DbContext(typeof(FitRosDbContext))]
-    partial class FitRosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260220171711_MakeNormalizedNameUniqueOnlyForBaseVersion")]
+    partial class MakeNormalizedNameUniqueOnlyForBaseVersion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

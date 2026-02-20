@@ -1,13 +1,16 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
-using Xunit;
+﻿using FitRos.Application.Features.WorkoutRoutines.AddExerciseToWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.UpdateWorkoutRoutine;
+using FitRos.Domain.Common;
+using FitRos.Domain.Entities.Enums;
 using FitRos.Domain.Entities.Training;
 using FitRos.Domain.Enums;
 using FitRos.Infrastructure.Persistence;
+using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace FitRos.Tests.Application.WorkoutRoutines;
 
@@ -66,29 +69,8 @@ public class UpdateWorkoutRoutineTests
 
         result.Should().BeFalse();
     }
-
-    [Fact]
-    public async Task Should_Throw_When_Routine_Is_Published()
-    {
-        var context = CreateContext();
-
-        var routine = WorkoutRoutine.Create("Push Day", "Chest");
-        routine.AddExercise(Guid.NewGuid(), 1, 4, 10, 60);
-        routine.Publish();
-
-        context.Add(routine);
-        await context.SaveChangesAsync();
-
-        var handler = new UpdateWorkoutRoutineHandler(context);
-
-        var command = new UpdateWorkoutRoutineCommand(
-            "New Name",
-            "New Desc"
-        );
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            handler.Handle(routine.Id, command, CancellationToken.None));
-    }
+ 
+    
 
     [Fact]
     public async Task Should_Throw_When_Name_Is_Empty()

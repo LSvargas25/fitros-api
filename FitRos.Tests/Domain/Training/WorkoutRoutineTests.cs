@@ -42,24 +42,11 @@ public class WorkoutRoutineTests
 
         var act = () => routine.AddExercise(Guid.NewGuid(), 2, 3, 12, 60);
 
-        act.Should().Throw<InvalidOperationException>()
+        act.Should()
+            .Throw<DomainException>()
            .WithMessage("Routine can only be modified in Draft state.");
     }
-    //test to ensure that updating details of a routine in draft state updates the name, description, increments the version, and normalizes the name
-    //by trimming whitespace and converting to lowercase
-    [Fact]
-    public void Should_Update_Details_In_Draft_And_Increment_Version_And_Normalize_Name()
-    {
-        var routine = WorkoutRoutine.Create("Push Day", "Chest");
-        var v0 = routine.Version;
-
-        routine.UpdateDetails("  Upper Push  ", "  Chest and shoulders  ");
-
-        routine.Name.Should().Be("Upper Push");
-        routine.NormalizedName.Should().Be("upper push");
-        routine.Description.Should().Be("Chest and shoulders");
-        routine.Version.Should().Be(v0 + 1);
-    }
+  
     //test to ensure that trying to update details of a published routine
     //throws an exception with the correct message
 
@@ -72,7 +59,7 @@ public class WorkoutRoutineTests
 
         var act = () => routine.UpdateDetails("New", "Desc");
 
-        act.Should().Throw<InvalidOperationException>()
+        act.Should().Throw<DomainException>()
            .WithMessage("Routine can only be modified in Draft state.");
     }
     //test to ensure that trying to publish a routine without exercises throws
@@ -84,24 +71,10 @@ public class WorkoutRoutineTests
 
         var act = () => routine.Publish();
 
-        act.Should().Throw<InvalidOperationException>()
+        act.Should().Throw<DomainException>()
            .WithMessage("Cannot publish a routine without exercises.");
     }
-    // Test to ensure that publishing a routine with exercises changes
-    // its status to Published and increments the version
-    [Fact]
-    public void Should_Publish_From_Draft_With_Exercises_And_Increment_Version()
-    {
-        var routine = WorkoutRoutine.Create("Push Day", "Chest");
-        routine.AddExercise(Guid.NewGuid(), 1, 4, 10, 90);
-
-        var v0 = routine.Version;
-
-        routine.Publish();
-
-        routine.Status.Should().Be(RoutineStatus.Published);
-        routine.Version.Should().Be(v0 + 1);
-    }
+  
     // Test to ensure that trying to publish a routine that is not in draft state throws an
     // exception with the correct message
     [Fact]
@@ -113,25 +86,10 @@ public class WorkoutRoutineTests
 
         var act = () => routine.Publish();
 
-        act.Should().Throw<InvalidOperationException>()
+        act.Should().Throw<DomainException>()
            .WithMessage("Only draft routines can be published.");
     }
-    // Test to ensure that archiving a published routine changes its status to Archived and increments
-    // the version
-    [Fact]
-    public void Should_Archive_Only_When_Published_And_Increment_Version()
-    {
-        var routine = WorkoutRoutine.Create("Push Day", "Chest");
-        routine.AddExercise(Guid.NewGuid(), 1, 4, 10, 90);
-        routine.Publish();
-
-        var v0 = routine.Version;
-
-        routine.Archive();
-
-        routine.Status.Should().Be(RoutineStatus.Archived);
-        routine.Version.Should().Be(v0 + 1);
-    }
+   
     // Test to ensure that trying to archive a routine that is not published throws a
     // DomainException with the correct message
     [Fact]
@@ -173,7 +131,7 @@ public class WorkoutRoutineTests
 
         var act = () => routine.CreateNewVersion();
 
-        act.Should().Throw<InvalidOperationException>()
+        act.Should().Throw<DomainException>()
            .WithMessage("Only published routines can be versioned.");
     }
     // Test to ensure that exercises cannot be removed from a published routine
@@ -192,7 +150,8 @@ public class WorkoutRoutineTests
         var act = () => routine.RemoveExercise(exerciseId);
 
         // Assert
-        act.Should().Throw<InvalidOperationException>()
+        act.Should()
+            .Throw<DomainException>()
             .WithMessage("Routine can only be modified in Draft state.");
     }
     // Test to ensure that trying to remove an exercise that doesn't exist throws an exception
@@ -239,6 +198,161 @@ public class WorkoutRoutineTests
         routine.Exercises.Should()
             .ContainSingle(e => e.ExerciseId == exercise3 && e.Order == 2);
     }
+
+    [Fact]
+    public void Should_Set_RoutineGroupId_To_Id_When_Creating_Routine()
+    {
+        // Arrange & Act
+        var routine = WorkoutRoutine.Create("Push Day", "Chest");
+
+        // Assert
+        routine.RoutineGroupId.Should().Be(routine.Id);
+    }
+
+    [Fact]
+    public void Should_Create_New_Version_Keeping_RoutineGroupId_And_Incrementing_Version()
+    {
+        // Arrange
+        var routine = WorkoutRoutine.Create("Push Day", "Chest");
+        routine.AddExercise(Guid.NewGuid(), 1, 4, 10, 90);
+        routine.Publish();
+
+        var originalId = routine.Id;
+        var originalGroupId = routine.RoutineGroupId;
+        var originalVersion = routine.Version;
+
+        // Act
+        var newRoutine = routine.CreateNewVersion();
+
+        // Assert
+        newRoutine.Id.Should().NotBe(originalId);
+        newRoutine.RoutineGroupId.Should().Be(originalGroupId);
+
+        newRoutine.Status.Should().Be(RoutineStatus.Draft);
+        newRoutine.Version.Should().Be(originalVersion + 1);
+
+        newRoutine.Name.Should().Be(routine.Name);
+        newRoutine.NormalizedName.Should().Be(routine.NormalizedName);
+        newRoutine.Description.Should().Be(routine.Description);
+    }
+
+    [Fact]
+    public void Should_Copy_All_Exercises_With_Same_Order_And_Suggested_Values_When_Creating_New_Version()
+    {
+        // Arrange
+        var routine = WorkoutRoutine.Create("Leg Day", "Quads");
+        var ex1 = Guid.NewGuid();
+        var ex2 = Guid.NewGuid();
+        var ex3 = Guid.NewGuid();
+
+        routine.AddExercise(ex1, 1, 4, 8, 120);
+        routine.AddExercise(ex2, 2, 3, 12, 90);
+        routine.AddExercise(ex3, 3, 5, 6, 150);
+
+        routine.Publish();
+
+        // Act
+        var newRoutine = routine.CreateNewVersion();
+
+        // Assert
+        newRoutine.Exercises.Should().HaveCount(3);
+
+        newRoutine.Exercises.Should().ContainSingle(e =>
+            e.ExerciseId == ex1 &&
+            e.Order == 1 &&
+            e.SuggestedSets == 4 &&
+            e.SuggestedReps == 8 &&
+            e.SuggestedRestSeconds == 120);
+
+        newRoutine.Exercises.Should().ContainSingle(e =>
+            e.ExerciseId == ex2 &&
+            e.Order == 2 &&
+            e.SuggestedSets == 3 &&
+            e.SuggestedReps == 12 &&
+            e.SuggestedRestSeconds == 90);
+
+        newRoutine.Exercises.Should().ContainSingle(e =>
+            e.ExerciseId == ex3 &&
+            e.Order == 3 &&
+            e.SuggestedSets == 5 &&
+            e.SuggestedReps == 6 &&
+            e.SuggestedRestSeconds == 150);
+    }
+
+    [Fact]
+    public void Should_Not_Create_New_Version_If_Routine_Is_Draft()
+    {
+        // Arrange
+        var routine = WorkoutRoutine.Create("Push Day", "Chest");
+
+        // Act
+        var act = () => routine.CreateNewVersion();
+
+        // Assert
+        act.Should()
+            .Throw<DomainException>()
+            .WithMessage("Only published routines can be versioned.");
+    }
+
+    [Fact]
+    public void Should_Not_Create_New_Version_If_Routine_Is_Archived()
+    {
+        // Arrange
+        var routine = WorkoutRoutine.Create("Push Day", "Chest");
+        routine.AddExercise(Guid.NewGuid(), 1, 4, 10, 90);
+        routine.Publish();
+        routine.Archive();
+
+        // Act
+        var act = () => routine.CreateNewVersion();
+
+        // Assert
+        act.Should()
+            .Throw<DomainException>()
+            .WithMessage("Only published routines can be versioned.");
+    }
+    [Fact]
+    public void Should_Update_Details_In_Draft_And_Normalize_Name_And_Keep_Version()
+    {
+        var routine = WorkoutRoutine.Create("Push Day", "Chest");
+        var v0 = routine.Version;
+
+        routine.UpdateDetails("  Upper Push  ", "  Chest and shoulders  ");
+
+        routine.Name.Should().Be("Upper Push");
+        routine.NormalizedName.Should().Be("upper push");
+        routine.Description.Should().Be("Chest and shoulders");
+        routine.Version.Should().Be(v0);
+    }
+
+    [Fact]
+    public void Should_Archive_Only_When_Published_And_Keep_Version()
+    {
+        var routine = WorkoutRoutine.Create("Push Day", "Chest");
+        routine.AddExercise(Guid.NewGuid(), 1, 4, 10, 90);
+        routine.Publish();
+
+        var v0 = routine.Version;
+
+        routine.Archive();
+
+        routine.Status.Should().Be(RoutineStatus.Archived);
+        routine.Version.Should().Be(v0);
+    }
+    [Fact]
+    public void Should_Publish_From_Draft_With_Exercises_And_Keep_Version()
+    {
+        var routine = WorkoutRoutine.Create("Push Day", "Chest");
+        routine.AddExercise(Guid.NewGuid(), 1, 4, 10, 90);
+
+        var v0 = routine.Version;
+
+        routine.Publish();
+
+        routine.Status.Should().Be(RoutineStatus.Published);
+        routine.Version.Should().Be(v0);
+    }
+
 
 
 

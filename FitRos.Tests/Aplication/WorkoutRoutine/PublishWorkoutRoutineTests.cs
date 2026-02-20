@@ -1,19 +1,16 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using FitRos.Application.Features.WorkoutRoutines.PublishWorkoutRoutine;
+using FitRos.Domain.Common;
+using FitRos.Domain.Entities.Training;
+using FitRos.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
-using FitRos.Application.Features.WorkoutRoutines.PublishWorkoutRoutine;
-using FitRos.Domain.Entities.Training;
-using FitRos.Domain.Enums;
-using FitRos.Infrastructure.Persistence;
 
-namespace FitRos.Tests.Application.WorkoutRoutines;
+namespace FitRos.Tests.Application.WorkoutRoutines.PublishWorkoutRoutine;
 
-public class PublishWorkoutRoutineTests
+public class PublishWorkoutRoutineHandlerTests
 {
-    private FitRosDbContext CreateContext()
+    private static FitRosDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<FitRosDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -23,72 +20,62 @@ public class PublishWorkoutRoutineTests
     }
 
     [Fact]
-    public async Task Should_Publish_Routine_When_Status_Is_Draft()
+    public async Task Handle_Should_Throw_When_Routine_Is_Not_Latest_Version()
     {
-        var context = CreateContext();
+        // Arrange
+        var context = CreateDbContext();
 
-        var routine = WorkoutRoutine.Create("Push Day", "Chest workout");
+        // v1 published
+        var v1 = WorkoutRoutine.Create("Push Day", "Chest");
+        v1.AddExercise(Guid.NewGuid(), 1, 3, 10, 60);
+        v1.Publish();
 
-        routine.AddExercise(
-            Guid.NewGuid(),
-            4,
-            10,
-            1,
-            60
-        );
+        // v2 draft (latest)
+        var v2 = v1.CreateNewVersion();
+        v2.AddExercise(Guid.NewGuid(), 2, 3, 10, 60); // keep it publishable if needed later
 
-        var versionBeforePublish = routine.Version;
-
-        context.Add(routine);
-        await context.SaveChangesAsync();
+        context.WorkoutRoutines.Add(v1);
+        context.WorkoutRoutines.Add(v2);
+        await context.SaveChangesAsync(CancellationToken.None);
 
         var handler = new PublishWorkoutRoutineHandler(context);
-        var command = new PublishWorkoutRoutineCommand(routine.Id);
 
-        await handler.Handle(command, CancellationToken.None);
+        // Try to publish v1 again (not latest)
+        var command = new PublishWorkoutRoutineCommand(v1.Id);
 
-        routine.Status.Should().Be(RoutineStatus.Published);
-        routine.Version.Should().Be(versionBeforePublish + 1);
-         
-    }
+        // Act
+        var act = async () => await handler.Handle(command, CancellationToken.None);
 
-
-    [Fact]
-    public async Task Should_Return_False_When_Routine_Does_Not_Exist()
-    {
-        var context = CreateContext();
-        var handler = new PublishWorkoutRoutineHandler(context);
-
-        var command = new PublishWorkoutRoutineCommand(Guid.NewGuid());
-
-        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-    handler.Handle(command, CancellationToken.None));
+        // Assert
+        await act.Should()
+            .ThrowAsync<DomainException>()
+            .WithMessage("Only the latest version can be published.");
     }
 
     [Fact]
-    public async Task Should_Throw_InvalidOperationException_When_Routine_Is_Already_Published()
+    public async Task Handle_Should_Publish_When_Routine_Is_Latest_Version()
     {
-        var context = CreateContext();
+        // Arrange
+        var context = CreateDbContext();
 
-        var routine = WorkoutRoutine.Create("Push Day", "Chest workout");
+        var v1 = WorkoutRoutine.Create("Push Day", "Chest");
+        v1.AddExercise(Guid.NewGuid(), 1, 3, 10, 60);
+        v1.Publish();
 
-        routine.AddExercise(
-            Guid.NewGuid(),
-            4,
-            10,
-            1,
-            60
-        );
+        var v2 = v1.CreateNewVersion();
+        v2.AddExercise(Guid.NewGuid(), 2, 3, 10, 60);
 
-        routine.Publish(); 
-
-        context.Add(routine);
-        await context.SaveChangesAsync();
+        context.WorkoutRoutines.Add(v1);
+        context.WorkoutRoutines.Add(v2);
+        await context.SaveChangesAsync(CancellationToken.None);
 
         var handler = new PublishWorkoutRoutineHandler(context);
-        var command = new PublishWorkoutRoutineCommand(routine.Id);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            handler.Handle(command, CancellationToken.None));
+        // Act
+        await handler.Handle(new PublishWorkoutRoutineCommand(v2.Id), CancellationToken.None);
+
+        // Assert
+        var reloaded = await context.WorkoutRoutines.FirstAsync(r => r.Id == v2.Id);
+        reloaded.Status.Should().Be(FitRos.Domain.Enums.RoutineStatus.Published);
     }
 }

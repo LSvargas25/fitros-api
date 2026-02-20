@@ -1,4 +1,5 @@
 ﻿using FitRos.API.Middleware;
+using FitRos.API.Swagger;
 using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Features.Exercises.ArchiveExercise;
 using FitRos.Application.Features.Exercises.CreateExercise;
@@ -8,21 +9,20 @@ using FitRos.Application.Features.Exercises.UpdateExercise;
 using FitRos.Application.Features.WorkoutRoutines.AddExerciseToWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.ArchiveWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutine;
+using FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutineVersion;
+using FitRos.Application.Features.WorkoutRoutines.GetLatestWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutineById;
 using FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutines;
+using FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutineVersions;
 using FitRos.Application.Features.WorkoutRoutines.MoveExerciseInWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.PublishWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.RemoveExerciseFromWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.UpdateWorkoutRoutine;
-using FitRos.Domain.Common;
 using FitRos.Infrastructure.Persistence;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
-
-
-
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,15 +33,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Controllers
 builder.Services.AddControllers();
 
-//Validators 
+// FluentValidation (auto-validation for [ApiController] model binding)
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateWorkoutRoutineValidator>();
 
-builder.Services.AddFluentValidationRulesToSwagger();
-
-
-
-// Swagger
+// Swagger + FluentValidation rules
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -52,65 +48,69 @@ builder.Services.AddSwaggerGen(options =>
         Description = "API for FitRos Gym Management Platform"
     });
 
-    options.EnableAnnotations(); 
+    options.EnableAnnotations();
+
+    options.DocumentFilter<WorkoutRoutinesTagOrderDocumentFilter>();
+
+    options.OrderActionsBy(api =>
+    {
+        var httpOrder = api.HttpMethod switch
+        {
+            "GET" => "1",
+            "POST" => "2",
+            "PUT" => "3",
+            "DELETE" => "4",
+            _ => "9"
+        };
+
+        var relativePath = api.RelativePath ?? string.Empty;
+        var httpMethod = api.HttpMethod ?? string.Empty;
+
+        return $"{httpOrder}_{httpMethod}_{relativePath}";
+    });
 });
+builder.Services.AddFluentValidationRulesToSwagger();
 
 // DbContext (PostgreSQL)
 builder.Services.AddDbContext<FitRosDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    )
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
-
-
 
 // Register abstraction → implementation
 builder.Services.AddScoped<IFitRosDbContext, FitRosDbContext>();
 
-//  Register Handlers
+// =============================
+// Handlers
+// =============================
 
-
-
-//WorkoutRoutines 
-builder.Services.AddScoped<CreateWorkoutRoutineValidator>();
+// WorkoutRoutines
 builder.Services.AddScoped<CreateWorkoutRoutineHandler>();
 builder.Services.AddScoped<GetWorkoutRoutinesHandler>();
-builder.Services.AddScoped<GetWorkoutRoutinesValidator>();
 builder.Services.AddScoped<GetWorkoutRoutineByIdHandler>();
-builder.Services.AddScoped<GetWorkoutRoutineByIdValidator>();
-builder.Services.AddScoped<ArchiveWorkoutRoutineValidator>();
 builder.Services.AddScoped<ArchiveWorkoutRoutineHandler>();
 builder.Services.AddScoped<UpdateWorkoutRoutineHandler>();
 builder.Services.AddScoped<PublishWorkoutRoutineHandler>();
-builder.Services.AddScoped<AddExerciseToWorkoutRoutineValidator>();
 builder.Services.AddScoped<AddExerciseToWorkoutRoutineHandler>();
-builder.Services.AddScoped<RemoveExerciseFromWorkoutRoutineValidator>();
 builder.Services.AddScoped<RemoveExerciseFromWorkoutRoutineHandler>();
 builder.Services.AddScoped<MoveExerciseInWorkoutRoutineHandler>();
-builder.Services.AddValidatorsFromAssemblyContaining<MoveExerciseInWorkoutRoutineValidator>();
- 
+builder.Services.AddScoped<CreateWorkoutRoutineVersionHandler>();
+builder.Services.AddScoped<GetWorkoutRoutineVersionsHandler>();
+builder.Services.AddScoped<GetLatestWorkoutRoutineHandler>();
 
-//Exercises
+// Exercises
 builder.Services.AddScoped<CreateExerciseHandler>();
 builder.Services.AddScoped<GetExerciseByIdHandler>();
 builder.Services.AddScoped<GetExercisesHandler>();
 builder.Services.AddScoped<UpdateExerciseHandler>();
 builder.Services.AddScoped<ArchiveExerciseHandler>();
 
-
-
-
 var app = builder.Build();
-
-app.UseMiddleware<GlobalExceptionMiddleware>();
-
-
-
-
 
 // =============================
 // Middleware pipeline
 // =============================
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -119,7 +119,6 @@ if (app.Environment.IsDevelopment())
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "FitRos.API v1");
     });
-
 }
 
 app.UseHttpsRedirection();

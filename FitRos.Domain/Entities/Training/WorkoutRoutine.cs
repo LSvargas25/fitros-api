@@ -11,30 +11,41 @@ public class WorkoutRoutine
     public string NormalizedName { get; private set; } = null!;
     public string Description { get; private set; } = null!;
 
+    // Logical version within the routine group (v1, v2, v3...)
     public int Version { get; private set; }
+
+    // Identifier that ties all versions together
+    public Guid RoutineGroupId { get; private set; }
 
     public RoutineStatus Status { get; private set; }
 
     public DateTime CreatedAt { get; private set; }
 
     private readonly List<WorkoutRoutineExercise> _exercises = new();
-
     public IReadOnlyCollection<WorkoutRoutineExercise> Exercises => _exercises;
 
-    private WorkoutRoutine() { } // EF
+    private WorkoutRoutine() { } // EF Core
 
     private WorkoutRoutine(Guid id, string name, string description)
     {
         Id = id;
+
+        // First version uses its own Id as the group identifier
+        RoutineGroupId = id;
+
         Name = name;
         NormalizedName = name.ToLowerInvariant();
         Description = description;
+
         Version = 1;
         Status = RoutineStatus.Draft;
         CreatedAt = DateTime.UtcNow;
     }
 
-    // Create routine
+    // ============================
+    // Factory
+    // ============================
+
     public static WorkoutRoutine Create(string name, string description)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -46,7 +57,10 @@ public class WorkoutRoutine
             description.Trim());
     }
 
-    // Add exercise
+    // ============================
+    // Exercises
+    // ============================
+
     public void AddExercise(
         Guid exerciseId,
         int order,
@@ -86,7 +100,6 @@ public class WorkoutRoutine
             suggestedRestSeconds));
     }
 
-    // Remove exercise
     public void RemoveExercise(Guid exerciseId)
     {
         EnsureDraftState();
@@ -102,7 +115,45 @@ public class WorkoutRoutine
         ReorderExercises();
     }
 
-    // Reorder exercises after removal
+    public void MoveExercise(Guid exerciseId, int newOrder, int originalOrder)
+    {
+        EnsureDraftState();
+
+        var exercise = _exercises
+            .FirstOrDefault(e => e.ExerciseId == exerciseId);
+
+        if (exercise is null)
+            throw new DomainException("Exercise not found in routine.");
+
+        if (newOrder <= 0)
+            throw new DomainException("New order must be greater than zero.");
+
+        if (newOrder > _exercises.Count)
+            throw new DomainException("New order exceeds the number of exercises.");
+
+        if (originalOrder == newOrder)
+            return;
+
+        if (originalOrder < newOrder)
+        {
+            foreach (var e in _exercises)
+            {
+                if (e.Order > originalOrder && e.Order <= newOrder)
+                    e.SetOrder(e.Order - 1);
+            }
+        }
+        else
+        {
+            foreach (var e in _exercises)
+            {
+                if (e.Order >= newOrder && e.Order < originalOrder)
+                    e.SetOrder(e.Order + 1);
+            }
+        }
+
+        exercise.SetOrder(newOrder);
+    }
+
     private void ReorderExercises()
     {
         var ordered = _exercises
@@ -114,88 +165,60 @@ public class WorkoutRoutine
             ordered[i].SetOrder(i + 1);
         }
     }
-    // Move exercise to new order
-    public void MoveExercise(Guid exerciseId, int newOrder)
-    {
-        EnsureDraftState();
 
-        var exercise = _exercises
-            .FirstOrDefault(e => e.ExerciseId == exerciseId);
+    // ============================
+    // State Transitions
+    // ============================
 
-        if (exercise is null)
-            throw new DomainException("Exercise not found in routine.");
-
-        if (newOrder <= 0 || newOrder > _exercises.Count)
-            throw new DomainException("Invalid new order.");
-
-        var currentOrder = exercise.Order;
-
-        if (currentOrder == newOrder)
-            return;
-
-        if (currentOrder < newOrder)
-        {
-            foreach (var e in _exercises)
-            {
-                if (e.Order > currentOrder && e.Order <= newOrder)
-                    e.SetOrder(e.Order - 1);
-            }
-        }
-        else
-        {
-            foreach (var e in _exercises)
-            {
-                if (e.Order >= newOrder && e.Order < currentOrder)
-                    e.SetOrder(e.Order + 1);
-            }
-        }
-
-        exercise.SetOrder(newOrder);
-    }
-
-
-
-    // Ensure routine is editable
     private void EnsureDraftState()
     {
         if (Status != RoutineStatus.Draft)
-            throw new InvalidOperationException("Routine can only be modified in Draft state.");
+            throw new DomainException("Routine can only be modified in Draft state.");
     }
 
-    // Publish routine
     public void Publish()
     {
         if (Status != RoutineStatus.Draft)
-            throw new InvalidOperationException("Only draft routines can be published.");
+            throw new DomainException("Only draft routines can be published.");
 
         if (!_exercises.Any())
-            throw new InvalidOperationException("Cannot publish a routine without exercises.");
+            throw new DomainException("Cannot publish a routine without exercises.");
 
         Status = RoutineStatus.Published;
-        Version++;
+
+        // IMPORTANT:
+        // Publishing does NOT change logical version.
     }
 
-    // Archive routine
     public void Archive()
     {
         if (Status != RoutineStatus.Published)
             throw new DomainException("Only published routines can be archived.");
 
         Status = RoutineStatus.Archived;
-        Version++;
+
+        // IMPORTANT:
+        // Archiving does NOT change logical version.
     }
 
-    // Create new version
+    // ============================
+    // Versioning
+    // ============================
+
     public WorkoutRoutine CreateNewVersion()
     {
         if (Status != RoutineStatus.Published)
-            throw new InvalidOperationException("Only published routines can be versioned.");
+            throw new DomainException("Only published routines can be versioned.");
 
         var newRoutine = new WorkoutRoutine(
             Guid.NewGuid(),
             Name,
             Description);
 
+        // Keep same group identifier
+        newRoutine.RoutineGroupId = this.RoutineGroupId;
+
+        // Logical version increment
         newRoutine.Version = this.Version + 1;
 
         foreach (var exercise in _exercises)
@@ -213,7 +236,10 @@ public class WorkoutRoutine
         return newRoutine;
     }
 
-    // Update details
+    // ============================
+    // Updates
+    // ============================
+
     public void UpdateDetails(string name, string description)
     {
         EnsureDraftState();
@@ -225,18 +251,7 @@ public class WorkoutRoutine
         NormalizedName = Name.ToLowerInvariant();
         Description = description.Trim();
 
-        Version++;
+        // IMPORTANT:
+        // Updating details does NOT change logical version.
     }
-
-    internal void BreakOrderForMove(Guid exerciseId)
-    {
-        var exercise = _exercises
-            .FirstOrDefault(e => e.ExerciseId == exerciseId);
-
-        if (exercise is null)
-            throw new DomainException("Exercise not found in routine.");
-
-        exercise.SetOrder(-1000);
-    }
-
 }

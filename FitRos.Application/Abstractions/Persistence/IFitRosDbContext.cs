@@ -11,6 +11,7 @@ public interface IFitRosDbContext
     DbSet<User> Users { get; }
     DbSet<WorkoutRoutine> WorkoutRoutines { get; }
     DbSet<WorkoutSession> WorkoutSessions { get; }
+     
     DbSet<Exercise> Exercises { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);

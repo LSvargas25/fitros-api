@@ -8,7 +8,7 @@ using Xunit;
 
 namespace FitRos.Tests.Application.WorkoutRoutines;
 
-public class RemoveExerciseFromWorkoutRoutineHandlerTests
+public class RemoveExerciseFromWorkoutRoutineTests
 {
     private FitRosDbContext CreateDbContext()
     {

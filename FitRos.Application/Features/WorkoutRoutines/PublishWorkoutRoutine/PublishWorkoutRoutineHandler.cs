@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.PublishWorkoutRoutine;
 
-public class PublishWorkoutRoutineHandler
+public sealed class PublishWorkoutRoutineHandler
 {
     private readonly IFitRosDbContext _context;
 
@@ -18,11 +18,20 @@ public class PublishWorkoutRoutineHandler
         CancellationToken cancellationToken)
     {
         var routine = await _context.WorkoutRoutines
-            .Include(r => r.Exercises) 
+            .Include(r => r.Exercises)
             .FirstOrDefaultAsync(r => r.Id == command.Id, cancellationToken);
 
         if (routine is null)
             throw new KeyNotFoundException("Workout routine not found.");
+
+        //   Only the latest version in the group can be published.
+        var maxVersionInGroup = await _context.WorkoutRoutines
+            .AsNoTracking()
+            .Where(r => r.RoutineGroupId == routine.RoutineGroupId)
+            .MaxAsync(r => r.Version, cancellationToken);
+
+        if (routine.Version != maxVersionInGroup)
+            throw new DomainException("Only the latest version can be published.");
 
         routine.Publish();
 
