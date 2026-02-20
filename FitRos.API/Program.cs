@@ -10,7 +10,9 @@ using FitRos.Application.Features.WorkoutRoutines.ArchiveWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutineById;
 using FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutines;
+using FitRos.Application.Features.WorkoutRoutines.MoveExerciseInWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.PublishWorkoutRoutine;
+using FitRos.Application.Features.WorkoutRoutines.RemoveExerciseFromWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.UpdateWorkoutRoutine;
 using FitRos.Domain.Common;
 using FitRos.Infrastructure.Persistence;
@@ -70,13 +72,23 @@ builder.Services.AddScoped<IFitRosDbContext, FitRosDbContext>();
 
 
 //WorkoutRoutines 
+builder.Services.AddScoped<CreateWorkoutRoutineValidator>();
 builder.Services.AddScoped<CreateWorkoutRoutineHandler>();
 builder.Services.AddScoped<GetWorkoutRoutinesHandler>();
+builder.Services.AddScoped<GetWorkoutRoutinesValidator>();
 builder.Services.AddScoped<GetWorkoutRoutineByIdHandler>();
+builder.Services.AddScoped<GetWorkoutRoutineByIdValidator>();
+builder.Services.AddScoped<ArchiveWorkoutRoutineValidator>();
 builder.Services.AddScoped<ArchiveWorkoutRoutineHandler>();
 builder.Services.AddScoped<UpdateWorkoutRoutineHandler>();
 builder.Services.AddScoped<PublishWorkoutRoutineHandler>();
+builder.Services.AddScoped<AddExerciseToWorkoutRoutineValidator>();
 builder.Services.AddScoped<AddExerciseToWorkoutRoutineHandler>();
+builder.Services.AddScoped<RemoveExerciseFromWorkoutRoutineValidator>();
+builder.Services.AddScoped<RemoveExerciseFromWorkoutRoutineHandler>();
+builder.Services.AddScoped<MoveExerciseInWorkoutRoutineHandler>();
+builder.Services.AddValidatorsFromAssemblyContaining<MoveExerciseInWorkoutRoutineValidator>();
+ 
 
 //Exercises
 builder.Services.AddScoped<CreateExerciseHandler>();

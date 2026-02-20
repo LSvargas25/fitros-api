@@ -32,7 +32,7 @@ public class CreateExerciseHandler
             command.Category
         );
 
-        _context.AddExercise(exercise);
+        _context.Exercises.Add(exercise);
 
         await _context.SaveChangesAsync(cancellationToken);
 

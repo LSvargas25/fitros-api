@@ -1,14 +1,16 @@
-﻿using FitRos.Application.Features.WorkoutRoutines.AddExerciseToWorkoutRoutine;
+﻿using FitRos.API.Contracts.WorkoutRoutines;
+using FitRos.Application.Features.WorkoutRoutines.AddExerciseToWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.ArchiveWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutineById;
 using FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutines;
+using FitRos.Application.Features.WorkoutRoutines.MoveExerciseInWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.PublishWorkoutRoutine;
+using FitRos.Application.Features.WorkoutRoutines.RemoveExerciseFromWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.UpdateWorkoutRoutine;
 using FitRos.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
-
 namespace FitRos.API.Controllers;
 
 [ApiController]
@@ -151,27 +153,70 @@ public class WorkoutRoutinesController : ControllerBase
 
         return NoContent();
     }
+    /// Moves an exercise to a new position within a workout routine.
+    [HttpPut("{routineId:guid}/exercises/{exerciseId:guid}/move")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+    Summary = "Move exercise in workout routine",
+    Description = "Moves an exercise to a new position within a draft workout routine."
+)]
+    public async Task<IActionResult> MoveExercise(
+    Guid routineId,
+    Guid exerciseId,
+    MoveExerciseRequest request,
+    [FromServices] MoveExerciseInWorkoutRoutineHandler handler,
+    CancellationToken cancellationToken)
+    {
+        var command = new MoveExerciseInWorkoutRoutineCommand(
+            routineId,
+            exerciseId,
+            request.NewOrder);
+
+        await handler.Handle(command, cancellationToken);
+
+        return NoContent();
+    }
+
+    //Delete an exercise from a specific workout routine.
+    [HttpDelete("{routineId:guid}/exercises/{exerciseId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+    Summary = "Remove exercise from workout routine",
+    Description = "Removes an exercise from a draft workout routine."
+)]
+    public async Task<IActionResult> RemoveExercise(
+    Guid routineId,
+    Guid exerciseId,
+    [FromServices] RemoveExerciseFromWorkoutRoutineHandler handler,
+    CancellationToken cancellationToken)
+    {
+        var command = new RemoveExerciseFromWorkoutRoutineCommand(
+            routineId,
+            exerciseId);
+
+        await handler.Handle(command, cancellationToken);
+
+        return NoContent();
+    }
 
     /// Publishes a workout routine.
     [HttpPut("{id:guid}/publish")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [SwaggerOperation(
-        Summary = "Publish workout routine",
-        Description = "Changes the workout routine status from Draft to Published."
-    )]
     public async Task<IActionResult> Publish(
-        Guid id,
-        [FromServices] PublishWorkoutRoutineHandler handler,
-        CancellationToken cancellationToken)
+    Guid id,
+    [FromServices] PublishWorkoutRoutineHandler handler,
+    CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(
+        await handler.Handle(
             new PublishWorkoutRoutineCommand(id),
             cancellationToken);
 
-        if (!result)
-            return NotFound();
-
         return NoContent();
     }
+
 }

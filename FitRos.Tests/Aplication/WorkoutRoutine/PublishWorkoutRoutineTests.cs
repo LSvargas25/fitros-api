@@ -45,12 +45,11 @@ public class PublishWorkoutRoutineTests
         var handler = new PublishWorkoutRoutineHandler(context);
         var command = new PublishWorkoutRoutineCommand(routine.Id);
 
-        var result = await handler.Handle(command, CancellationToken.None);
+        await handler.Handle(command, CancellationToken.None);
 
-        result.Should().BeTrue();
         routine.Status.Should().Be(RoutineStatus.Published);
-
         routine.Version.Should().Be(versionBeforePublish + 1);
+         
     }
 
 
@@ -62,9 +61,8 @@ public class PublishWorkoutRoutineTests
 
         var command = new PublishWorkoutRoutineCommand(Guid.NewGuid());
 
-        var result = await handler.Handle(command, CancellationToken.None);
-
-        result.Should().BeFalse();
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+    handler.Handle(command, CancellationToken.None));
     }
 
     [Fact]

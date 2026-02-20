@@ -34,14 +34,16 @@ public class GlobalExceptionMiddleware
         {
             DomainException => HttpStatusCode.BadRequest,
             ValidationException => HttpStatusCode.BadRequest,
+            InvalidOperationException => HttpStatusCode.BadRequest,
             KeyNotFoundException => HttpStatusCode.NotFound,
             _ => HttpStatusCode.InternalServerError
         };
 
+
         var problemDetails = new ProblemDetails
         {
             Title = ex.GetType().Name,
-            Detail = ex.Message,
+            Detail = ex.InnerException?.Message ?? ex.Message,
             Status = (int)statusCode,
             Instance = context.Request.Path
         };
@@ -65,4 +67,5 @@ public class GlobalExceptionMiddleware
         await context.Response.WriteAsync(
             JsonSerializer.Serialize(problemDetails));
     }
+
 }

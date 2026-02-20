@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FitRos.Infrastructure.Migrations
 {
     [DbContext(typeof(FitRosDbContext))]
-    [Migration("20260218222754_AddExerciseEntity")]
-    partial class AddExerciseEntity
+    [Migration("20260219210006_AddUniqueConstraintsToWorkoutRoutineExercise")]
+    partial class AddUniqueConstraintsToWorkoutRoutineExercise
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -89,7 +89,6 @@ namespace FitRos.Infrastructure.Migrations
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutRoutine", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -120,13 +119,12 @@ namespace FitRos.Infrastructure.Migrations
                     b.HasIndex("NormalizedName")
                         .IsUnique();
 
-                    b.ToTable("WorkoutRoutines");
+                    b.ToTable("WorkoutRoutines", (string)null);
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutRoutineExercise", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("ExerciseId")
@@ -149,9 +147,13 @@ namespace FitRos.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WorkoutRoutineId");
+                    b.HasIndex("WorkoutRoutineId", "ExerciseId")
+                        .IsUnique();
 
-                    b.ToTable("WorkoutRoutineExercise");
+                    b.HasIndex("WorkoutRoutineId", "Order")
+                        .IsUnique();
+
+                    b.ToTable("WorkoutRoutineExercises", (string)null);
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutSession", b =>
@@ -231,16 +233,18 @@ namespace FitRos.Infrastructure.Migrations
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutRoutineExercise", b =>
                 {
-                    b.HasOne("FitRos.Domain.Entities.Training.WorkoutRoutine", null)
-                        .WithMany("_exercises")
+                    b.HasOne("FitRos.Domain.Entities.Training.WorkoutRoutine", "WorkoutRoutine")
+                        .WithMany("Exercises")
                         .HasForeignKey("WorkoutRoutineId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("WorkoutRoutine");
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutRoutine", b =>
                 {
-                    b.Navigation("_exercises");
+                    b.Navigation("Exercises");
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutSession", b =>

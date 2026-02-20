@@ -1,4 +1,5 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
+using FitRos.Domain.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.PublishWorkoutRoutine;
@@ -12,21 +13,19 @@ public class PublishWorkoutRoutineHandler
         _context = context;
     }
 
-    public async Task<bool> Handle(
-       PublishWorkoutRoutineCommand command,
-       CancellationToken cancellationToken)
+    public async Task Handle(
+        PublishWorkoutRoutineCommand command,
+        CancellationToken cancellationToken)
     {
         var routine = await _context.WorkoutRoutines
+            .Include(r => r.Exercises) 
             .FirstOrDefaultAsync(r => r.Id == command.Id, cancellationToken);
 
         if (routine is null)
-            return false;
+            throw new KeyNotFoundException("Workout routine not found.");
 
-        routine.Publish();  
+        routine.Publish();
 
         await _context.SaveChangesAsync(cancellationToken);
-
-        return true;
     }
-
 }

@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FitRos.Infrastructure.Migrations
 {
     [DbContext(typeof(FitRosDbContext))]
-    [Migration("20260217170345_InitialCreate")]
+    [Migration("20260219185315_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -24,6 +24,38 @@ namespace FitRos.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("FitRos.Domain.Entities.Training.Exercise", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Exercises");
+                });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.ExerciseSet", b =>
                 {
@@ -88,7 +120,7 @@ namespace FitRos.Infrastructure.Migrations
                     b.HasIndex("NormalizedName")
                         .IsUnique();
 
-                    b.ToTable("WorkoutRoutines");
+                    b.ToTable("WorkoutRoutines", (string)null);
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutRoutineExercise", b =>
@@ -119,7 +151,7 @@ namespace FitRos.Infrastructure.Migrations
 
                     b.HasIndex("WorkoutRoutineId");
 
-                    b.ToTable("WorkoutRoutineExercise");
+                    b.ToTable("WorkoutRoutineExercises");
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutSession", b =>
@@ -199,16 +231,18 @@ namespace FitRos.Infrastructure.Migrations
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutRoutineExercise", b =>
                 {
-                    b.HasOne("FitRos.Domain.Entities.Training.WorkoutRoutine", null)
-                        .WithMany("_exercises")
+                    b.HasOne("FitRos.Domain.Entities.Training.WorkoutRoutine", "WorkoutRoutine")
+                        .WithMany("Exercises")
                         .HasForeignKey("WorkoutRoutineId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("WorkoutRoutine");
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutRoutine", b =>
                 {
-                    b.Navigation("_exercises");
+                    b.Navigation("Exercises");
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutSession", b =>

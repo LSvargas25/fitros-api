@@ -12,6 +12,23 @@ namespace FitRos.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "Exercises",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    NormalizedName = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    Category = table.Column<int>(type: "integer", nullable: false),
+                    IsArchived = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Exercises", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -64,22 +81,22 @@ namespace FitRos.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "WorkoutRoutineExercise",
+                name: "WorkoutRoutineExercises",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WorkoutRoutineId = table.Column<Guid>(type: "uuid", nullable: false),
                     ExerciseId = table.Column<Guid>(type: "uuid", nullable: false),
                     Order = table.Column<int>(type: "integer", nullable: false),
                     SuggestedSets = table.Column<int>(type: "integer", nullable: false),
                     SuggestedReps = table.Column<int>(type: "integer", nullable: false),
-                    SuggestedRestSeconds = table.Column<int>(type: "integer", nullable: false),
-                    WorkoutRoutineId = table.Column<Guid>(type: "uuid", nullable: false)
+                    SuggestedRestSeconds = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_WorkoutRoutineExercise", x => x.Id);
+                    table.PrimaryKey("PK_WorkoutRoutineExercises", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_WorkoutRoutineExercise_WorkoutRoutines_WorkoutRoutineId",
+                        name: "FK_WorkoutRoutineExercises_WorkoutRoutines_WorkoutRoutineId",
                         column: x => x.WorkoutRoutineId,
                         principalTable: "WorkoutRoutines",
                         principalColumn: "Id",
@@ -114,8 +131,8 @@ namespace FitRos.Infrastructure.Migrations
                 column: "WorkoutSessionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_WorkoutRoutineExercise_WorkoutRoutineId",
-                table: "WorkoutRoutineExercise",
+                name: "IX_WorkoutRoutineExercises_WorkoutRoutineId",
+                table: "WorkoutRoutineExercises",
                 column: "WorkoutRoutineId");
 
             migrationBuilder.CreateIndex(
@@ -129,13 +146,16 @@ namespace FitRos.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "Exercises");
+
+            migrationBuilder.DropTable(
                 name: "ExerciseSet");
 
             migrationBuilder.DropTable(
                 name: "Users");
 
             migrationBuilder.DropTable(
-                name: "WorkoutRoutineExercise");
+                name: "WorkoutRoutineExercises");
 
             migrationBuilder.DropTable(
                 name: "WorkoutSessions");

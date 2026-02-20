@@ -9,16 +9,22 @@ public class WorkoutRoutineConfiguration
 {
     public void Configure(EntityTypeBuilder<WorkoutRoutine> builder)
     {
+        builder.ToTable("WorkoutRoutines");
+
         builder.HasKey(x => x.Id);
+
+        // 🔥 IMPORTANTE: Id lo genera el dominio, no la base
+        builder.Property(x => x.Id)
+            .ValueGeneratedNever();
 
         builder.Property(x => x.Name)
             .IsRequired()
             .HasMaxLength(200);
-         
+
         builder.Property(x => x.NormalizedName)
             .IsRequired()
             .HasMaxLength(200);
-         
+
         builder.HasIndex(x => x.NormalizedName)
             .IsUnique();
 
@@ -26,7 +32,8 @@ public class WorkoutRoutineConfiguration
             .IsRequired();
 
         builder.Property(x => x.Version)
-            .IsRequired();
+            .IsRequired()
+            .ValueGeneratedNever();
 
         builder.Property(x => x.Status)
             .IsRequired();
@@ -34,11 +41,14 @@ public class WorkoutRoutineConfiguration
         builder.Property(x => x.CreatedAt)
             .IsRequired();
 
-        builder.Ignore(x => x.Exercises);
+        builder
+            .HasMany(r => r.Exercises)
+            .WithOne(e => e.WorkoutRoutine)
+            .HasForeignKey(e => e.WorkoutRoutineId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder
-            .HasMany<WorkoutRoutineExercise>("_exercises")
-            .WithOne()
-            .HasForeignKey("WorkoutRoutineId");
+            .Navigation(r => r.Exercises)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

@@ -32,7 +32,7 @@ public class CreateWorkoutRoutineHandler
             command.Description
         );
 
-        _context.AddWorkoutRoutine(routine);
+        _context.WorkoutRoutines.Add(routine);
 
         await _context.SaveChangesAsync(cancellationToken);
 

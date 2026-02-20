@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FitRos.Application.Features.WorkoutRoutines.GetWorkoutToutineById;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,13 +9,11 @@ namespace FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutineById;
 
 public class WorkoutRoutineDetailsDto
 {
-    public Guid Id { get; init; }
+    public Guid Id { get; set; }
+    public string Name { get; set; } = null!;
+    public string Description { get; set; } = null!;
+    public int Status { get; set; }
+    public int Version { get; set; }
 
-    public string Name { get; init; } = null!;
-
-    public string Description { get; init; } = null!;
-
-    public int Version { get; init; }
-
-    public int Status { get; init; }
+    public List<WorkoutRoutineExerciseDetailsDto> Exercises { get; set; } = new();
 }
