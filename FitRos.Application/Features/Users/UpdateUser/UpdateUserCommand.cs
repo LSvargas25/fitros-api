@@ -1,4 +1,5 @@
 ﻿using FitRos.Application.Features.Users.GetUsersAdvanced;
+using FitRos.Domain.Enums;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -9,9 +10,10 @@ using System.Threading.Tasks;
 namespace FitRos.Application.Features.Users.UpdateUser
 {
     public sealed record UpdateUserCommand(
-     Guid Id,
-     string FirstName,
-     string LastName,
-     string? Email
- ) : IRequest<UserListItemResponse>;
+      Guid Id,
+      string FirstName,
+      string LastName,
+      string? Email,
+      UserRole? Role
+  ) : IRequest<UserListItemResponse>;
 }

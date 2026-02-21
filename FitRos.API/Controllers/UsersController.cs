@@ -1,5 +1,7 @@
-﻿using FitRos.Application.Features.Users.CreateUser;
+﻿using FitRos.Application.Features.Users.ActivateUser;
+using FitRos.Application.Features.Users.CreateUser;
 using FitRos.Application.Features.Users.DeactivateUser;
+using FitRos.Application.Features.Users.DeleteUser;
 using FitRos.Application.Features.Users.GetUserById;
 using FitRos.Application.Features.Users.GetUsersAdvanced;
 using FitRos.Application.Features.Users.UpdateUser;
@@ -41,20 +43,22 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [SwaggerOperation(
         Summary = "Update user",
-        Description = "Updates first name, last name and optionally email (Admin only).",
+        Description = "Updates first name, last name, optionally email (Admin only) and role (Admin only).",
         Tags = new[] { TagCore }
     )]
     public async Task<IActionResult> Update(
-    Guid id,
-    [FromBody] UpdateUserRequest body,
-    [FromServices] UpdateUserHandler handler,
-    CancellationToken cancellationToken)
+        Guid id,
+        [FromBody] UpdateUserRequest body,
+        [FromServices] UpdateUserHandler handler,
+        CancellationToken cancellationToken)
     {
         var command = new UpdateUserCommand(
             Id: id,
             FirstName: body.FirstName,
             LastName: body.LastName,
-            Email: body.Email);
+            Email: body.Email,
+            Role: body.Role.HasValue ? (UserRole)body.Role.Value : null
+        );
 
         var result = await handler.Handle(command, cancellationToken);
 
@@ -145,6 +149,50 @@ public class UsersController : ControllerBase
         Response.Headers.Add("X-Next-Cursor", result.NextCursor ?? string.Empty);
 
         return Ok(result);
+    }
+    //activate a user by setting Status = Active
+
+    /// Reactivates a previously deactivated user.
+    [HttpPatch("{id:guid}/activate")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Activate user",
+        Description = "Reactivates a previously deactivated user by setting Status = Active.",
+        Tags = new[] { TagCore }
+    )]
+    public async Task<IActionResult> Activate(
+        Guid id,
+        [FromServices] ActivateUserHandler handler,
+        CancellationToken cancellationToken)
+    {
+        await handler.Handle(
+            new ActivateUserCommand(id),
+            cancellationToken);
+
+        return NoContent();
+    }
+    // Permanently deletes a user from the database. Only Admin can perform this action and only on Inactive users.
+    /// Permanently deletes a user (Hard Delete).
+    [HttpDelete("{id:guid}/permanent")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Hard delete user",
+        Description = "Permanently deletes a user. Admin can delete Coach and Client. Coach can delete Client only.",
+        Tags = new[] { TagCore }
+    )]
+    public async Task<IActionResult> HardDelete(
+        Guid id,
+        [FromServices] DeleteUserHandler handler,
+        CancellationToken cancellationToken)
+    {
+        await handler.Handle(
+            new DeleteUserCommand(id),
+            cancellationToken);
+
+        return NoContent();
     }
 
 }

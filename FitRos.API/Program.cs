@@ -7,6 +7,7 @@ using FitRos.Application.Features.Exercises.CreateExercise;
 using FitRos.Application.Features.Exercises.GetExerciseById;
 using FitRos.Application.Features.Exercises.GetExercises;
 using FitRos.Application.Features.Exercises.UpdateExercise;
+using FitRos.Application.Features.Users.ActivateUser;
 using FitRos.Application.Features.Users.CreateUser;
 using FitRos.Application.Features.Users.DeactivateUser;
 using FitRos.Application.Features.Users.GetUserById;
@@ -29,26 +30,35 @@ using FitRos.Infrastructure.Security;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // =============================
-// Services
+// Controllers
 // =============================
 
-// Controllers
 builder.Services.AddControllers();
 
-// FluentValidation (auto-validation for [ApiController] model binding)
+// =============================
+// FluentValidation
+// =============================
+
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateWorkoutRoutineValidator>();
 
-// Swagger + FluentValidation rules
+// =============================
+// Swagger
+// =============================
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "FitRos.API",
         Version = "v1",
@@ -56,7 +66,6 @@ builder.Services.AddSwaggerGen(options =>
     });
 
     options.EnableAnnotations();
-
     options.DocumentFilter<WorkoutRoutinesTagOrderDocumentFilter>();
 
     options.OrderActionsBy(api =>
@@ -70,24 +79,94 @@ builder.Services.AddSwaggerGen(options =>
             _ => "9"
         };
 
-        var relativePath = api.RelativePath ?? string.Empty;
-        var httpMethod = api.HttpMethod ?? string.Empty;
+        return $"{httpOrder}_{api.RelativePath}";
+    });
 
-        return $"{httpOrder}_{httpMethod}_{relativePath}";
+    // 🔐 JWT Bearer configuration for Swagger
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter JWT Bearer token"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
     });
 });
+
 builder.Services.AddFluentValidationRulesToSwagger();
 
-// DbContext (PostgreSQL)
+// =============================
+// Database (PostgreSQL)
+// =============================
+
 builder.Services.AddDbContext<FitRosDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
-// Register abstraction → implementation
 builder.Services.AddScoped<IFitRosDbContext, FitRosDbContext>();
 
 // =============================
-// Handlers
+// JWT Configuration
+// =============================
+
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("Jwt"));
+
+var jwtSettings = builder.Configuration
+    .GetSection("Jwt")
+    .Get<JwtSettings>()!;
+
+builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings.Issuer,
+
+            ValidateAudience = true,
+            ValidAudience = jwtSettings.Audience,
+
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSettings.SigningKey)
+            ),
+
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30)
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// =============================
+// Current User (JWT-based)
+// =============================
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+
+// =============================
+// Handlers Registration
 // =============================
 
 // WorkoutRoutines
@@ -103,7 +182,6 @@ builder.Services.AddScoped<MoveExerciseInWorkoutRoutineHandler>();
 builder.Services.AddScoped<CreateWorkoutRoutineVersionHandler>();
 builder.Services.AddScoped<GetWorkoutRoutineVersionsHandler>();
 builder.Services.AddScoped<GetLatestWorkoutRoutineHandler>();
-builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
 
 // Exercises
 builder.Services.AddScoped<CreateExerciseHandler>();
@@ -112,21 +190,23 @@ builder.Services.AddScoped<GetExercisesHandler>();
 builder.Services.AddScoped<UpdateExerciseHandler>();
 builder.Services.AddScoped<ArchiveExerciseHandler>();
 
-//Users
+// Users
 builder.Services.AddScoped<CreateUserHandler>();
-builder.Services.AddScoped<ICurrentUser, DevelopmentCurrentUser>();
-builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
 builder.Services.AddScoped<GetUserByIdHandler>();
 builder.Services.AddScoped<GetUsersAdvancedHandler>();
 builder.Services.AddScoped<DeactivateUserHandler>();
+builder.Services.AddScoped<ActivateUserHandler>();
 builder.Services.AddScoped<UpdateUserHandler>();
+builder.Services.AddScoped<DeleteUserHandler>();
 
-
+// =============================
+// Build App
+// =============================
 
 var app = builder.Build();
 
 // =============================
-// Middleware pipeline
+// Middleware Pipeline
 // =============================
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
@@ -134,14 +214,12 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "FitRos.API v1");
-    });
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();  
 app.UseAuthorization();
 
 app.MapControllers();

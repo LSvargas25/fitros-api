@@ -4,16 +4,11 @@ using FitRos.Application.Features.Users.GetUsersAdvanced;
 using FitRos.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FitRos.Application.Features.Users.UpdateUser
 {
     public sealed class UpdateUserHandler
-       : IRequestHandler<UpdateUserCommand, UserListItemResponse>
+        : IRequestHandler<UpdateUserCommand, UserListItemResponse>
     {
         private readonly IFitRosDbContext _context;
         private readonly ICurrentUser _currentUser;
@@ -36,7 +31,7 @@ namespace FitRos.Application.Features.Users.UpdateUser
             if (user is null)
                 throw new InvalidOperationException("User not found.");
 
-            // 🔐 Solo Admin puede cambiar email
+   
             if (!string.IsNullOrWhiteSpace(request.Email))
             {
                 if (_currentUser.Role != UserRole.Admin)
@@ -54,7 +49,35 @@ namespace FitRos.Application.Features.Users.UpdateUser
                 user.ChangeEmail(request.Email);
             }
 
-            // Coach puede cambiar nombre/apellido
+           
+            if (request.Role.HasValue && request.Role.Value != user.Role)
+            {
+                if (_currentUser.Role != UserRole.Admin)
+                    throw new UnauthorizedAccessException("Only Admin can change roles.");
+
+ 
+                if (user.Role == UserRole.Admin &&
+                    request.Role.Value != UserRole.Admin)
+                {
+                    var adminCount = await _context.Users
+                        .IgnoreQueryFilters()
+                        .CountAsync(u => u.Role == UserRole.Admin, cancellationToken);
+
+                    if (adminCount == 1)
+                        throw new InvalidOperationException("Cannot downgrade the last Admin.");
+                }
+
+ 
+                var hasSessions = await _context.WorkoutSessions
+                    .AnyAsync(s => s.UserId == user.Id, cancellationToken);
+
+                if (hasSessions)
+                    throw new InvalidOperationException("User with sessions cannot change role.");
+
+                user.ChangeRole(request.Role.Value);
+            }
+
+            
             user.UpdateBasicInfo(request.FirstName, request.LastName);
 
             await _context.SaveChangesAsync(cancellationToken);

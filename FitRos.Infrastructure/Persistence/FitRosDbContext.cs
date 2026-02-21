@@ -23,6 +23,7 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
     public DbSet<WorkoutSession> WorkoutSessions { get; set; } = null!;
     public DbSet<Exercise> Exercises { get; set; } = null!;
     public DbSet<WorkoutRoutineExercise> WorkoutRoutineExercises { get; set; } = null!;
+    public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;  
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken)
         => base.SaveChangesAsync(cancellationToken);
@@ -31,5 +32,10 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(FitRosDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
+    }
+
+    public void Remove<TEntity>(TEntity entity) where TEntity : class
+    {
+        Set<TEntity>().Remove(entity);
     }
 }

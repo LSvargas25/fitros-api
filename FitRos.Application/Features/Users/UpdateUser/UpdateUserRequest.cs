@@ -9,6 +9,7 @@ namespace FitRos.Application.Features.Users.UpdateUser
     public sealed record UpdateUserRequest(
       string FirstName,
       string LastName,
-      string? Email
+      string? Email,
+      int? Role
   );
 }

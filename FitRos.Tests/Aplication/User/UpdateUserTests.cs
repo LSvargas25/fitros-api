@@ -1,4 +1,5 @@
 ﻿using FitRos.Application.Features.Users.UpdateUser;
+using FitRos.Domain.Entities.Training;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
 using FitRos.Infrastructure.Persistence;
@@ -13,158 +14,170 @@ public class UpdateUserTests
 {
     private static FitRosDbContext CreateDbContext()
     {
-        var connection = new SqliteConnection("Filename=:memory:");
-        connection.Open();
-
         var options = new DbContextOptionsBuilder<FitRosDbContext>()
-            .UseSqlite(connection)
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        var context = new FitRosDbContext(options);
-        context.Database.EnsureCreated();
-
-        return context;
+        return new FitRosDbContext(options);
     }
-
     [Fact]
-    public async Task Admin_Should_Update_Email_Successfully()
+    public async Task Admin_Should_Change_User_Role()
     {
         var context = CreateDbContext();
 
         var user = User.Create(
-            "old@test.com",
-            "Ana",
-            "Test",
-            "hash",
+            "client@test.com",
+            "Client",
+            "User",
+            "hashed",
             UserRole.Client);
 
         context.Add(user);
         await context.SaveChangesAsync();
 
-        var fakeUser = new FakeCurrentUser
+        var fakeCurrentUser = new FakeCurrentUser
         {
+            UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
             IsAuthenticated = true
         };
 
-        var handler = new UpdateUserHandler(context, fakeUser);
+        var handler = new UpdateUserHandler(context, fakeCurrentUser);
 
         var command = new UpdateUserCommand(
             user.Id,
-            "Ana",
-            "Test",
-            "new@test.com");
+            user.FirstName,
+            user.LastName,
+            null,
+            UserRole.Coach);
 
-        var result = await handler.Handle(command, CancellationToken.None);
+        await handler.Handle(command, CancellationToken.None);
 
-        result.Email.Should().Be("new@test.com");
+        var updated = await context.Users
+            .IgnoreQueryFilters()
+            .FirstAsync(x => x.Id == user.Id);
+
+        updated.Role.Should().Be(UserRole.Coach);
     }
 
     [Fact]
-    public async Task Coach_Should_Not_Be_Able_To_Update_Email()
+    public async Task Coach_Should_Not_Change_User_Role()
     {
         var context = CreateDbContext();
 
         var user = User.Create(
-            "old@test.com",
-            "Ana",
-            "Test",
-            "hash",
+            "client@test.com",
+            "Client",
+            "User",
+            "hashed",
             UserRole.Client);
 
         context.Add(user);
         await context.SaveChangesAsync();
 
-        var fakeUser = new FakeCurrentUser
+        var fakeCurrentUser = new FakeCurrentUser
         {
+            UserId = Guid.NewGuid(),
             Role = UserRole.Coach,
             IsAuthenticated = true
         };
 
-        var handler = new UpdateUserHandler(context, fakeUser);
+        var handler = new UpdateUserHandler(context, fakeCurrentUser);
 
         var command = new UpdateUserCommand(
             user.Id,
-            "Ana",
-            "Test",
-            "new@test.com");
+            user.FirstName,
+            user.LastName,
+            null,
+            UserRole.Coach);
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            handler.Handle(command, CancellationToken.None));
+        var act = async () =>
+            await handler.Handle(command, CancellationToken.None);
+
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
-
     [Fact]
-    public async Task Should_Not_Allow_Duplicate_Email()
+    public async Task Should_Not_Downgrade_Last_Admin()
     {
         var context = CreateDbContext();
 
-        var user1 = User.Create(
-            "one@test.com",
-            "Ana",
-            "One",
-            "hash",
-            UserRole.Client);
+        var admin = User.Create(
+            "admin@test.com",
+            "Admin",
+            "User",
+            "hashed",
+            UserRole.Admin);
 
-        var user2 = User.Create(
-            "two@test.com",
-            "Ana",
-            "Two",
-            "hash",
-            UserRole.Client);
-
-        context.AddRange(user1, user2);
+        context.Add(admin);
         await context.SaveChangesAsync();
 
-        var fakeUser = new FakeCurrentUser
+        var fakeCurrentUser = new FakeCurrentUser
         {
+            UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
             IsAuthenticated = true
         };
 
-        var handler = new UpdateUserHandler(context, fakeUser);
+        var handler = new UpdateUserHandler(context, fakeCurrentUser);
 
         var command = new UpdateUserCommand(
-            user2.Id,
-            "Ana",
-            "Two",
-            "one@test.com");
+            admin.Id,
+            admin.FirstName,
+            admin.LastName,
+            null,
+            UserRole.Coach);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            handler.Handle(command, CancellationToken.None));
+        var act = async () =>
+            await handler.Handle(command, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Cannot downgrade the last Admin.");
     }
-
     [Fact]
-    public async Task Coach_Should_Update_First_And_Last_Name()
+public async Task Should_Not_Change_Role_If_User_Has_Sessions()
+{
+    var context = CreateDbContext();
+
+    var client = User.Create(
+        "client@test.com",
+        "Client",
+        "User",
+        "hashed",
+        UserRole.Client);
+
+    context.Add(client);
+    await context.SaveChangesAsync();
+
+    var session = WorkoutSession.Create(
+        client.Id,
+        Guid.NewGuid(),
+        "Routine",
+        1,
+        DateTime.UtcNow);
+
+    context.WorkoutSessions.Add(session);
+    await context.SaveChangesAsync();
+
+    var fakeCurrentUser = new FakeCurrentUser
     {
-        var context = CreateDbContext();
+        UserId = Guid.NewGuid(),
+        Role = UserRole.Admin,
+        IsAuthenticated = true
+    };
 
-        var user = User.Create(
-            "test@test.com",
-            "Old",
-            "Name",
-            "hash",
-            UserRole.Client);
+    var handler = new UpdateUserHandler(context, fakeCurrentUser);
 
-        context.Add(user);
-        await context.SaveChangesAsync();
+    var command = new UpdateUserCommand(
+        client.Id,
+        client.FirstName,
+        client.LastName,
+        null,
+        UserRole.Coach);
 
-        var fakeUser = new FakeCurrentUser
-        {
-            Role = UserRole.Coach,
-            IsAuthenticated = true
-        };
+    var act = async () =>
+        await handler.Handle(command, CancellationToken.None);
 
-        var handler = new UpdateUserHandler(context, fakeUser);
-
-        var command = new UpdateUserCommand(
-            user.Id,
-            "New",
-            "Name",
-            null);
-
-        var result = await handler.Handle(command, CancellationToken.None);
-
-        result.FirstName.Should().Be("New");
-        result.LastName.Should().Be("Name");
-    }
+    await act.Should().ThrowAsync<InvalidOperationException>()
+        .WithMessage("User with sessions cannot change role.");
+}
 }
