@@ -1,11 +1,17 @@
 ﻿using FitRos.API.Middleware;
 using FitRos.API.Swagger;
 using FitRos.Application.Abstractions.Persistence;
+using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Features.Exercises.ArchiveExercise;
 using FitRos.Application.Features.Exercises.CreateExercise;
 using FitRos.Application.Features.Exercises.GetExerciseById;
 using FitRos.Application.Features.Exercises.GetExercises;
 using FitRos.Application.Features.Exercises.UpdateExercise;
+using FitRos.Application.Features.Users.CreateUser;
+using FitRos.Application.Features.Users.DeactivateUser;
+using FitRos.Application.Features.Users.GetUserById;
+using FitRos.Application.Features.Users.GetUsersAdvanced;
+using FitRos.Application.Features.Users.UpdateUser;
 using FitRos.Application.Features.WorkoutRoutines.AddExerciseToWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.ArchiveWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutine;
@@ -19,6 +25,7 @@ using FitRos.Application.Features.WorkoutRoutines.PublishWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.RemoveExerciseFromWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.UpdateWorkoutRoutine;
 using FitRos.Infrastructure.Persistence;
+using FitRos.Infrastructure.Security;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
@@ -96,6 +103,7 @@ builder.Services.AddScoped<MoveExerciseInWorkoutRoutineHandler>();
 builder.Services.AddScoped<CreateWorkoutRoutineVersionHandler>();
 builder.Services.AddScoped<GetWorkoutRoutineVersionsHandler>();
 builder.Services.AddScoped<GetLatestWorkoutRoutineHandler>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
 
 // Exercises
 builder.Services.AddScoped<CreateExerciseHandler>();
@@ -103,6 +111,17 @@ builder.Services.AddScoped<GetExerciseByIdHandler>();
 builder.Services.AddScoped<GetExercisesHandler>();
 builder.Services.AddScoped<UpdateExerciseHandler>();
 builder.Services.AddScoped<ArchiveExerciseHandler>();
+
+//Users
+builder.Services.AddScoped<CreateUserHandler>();
+builder.Services.AddScoped<ICurrentUser, DevelopmentCurrentUser>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
+builder.Services.AddScoped<GetUserByIdHandler>();
+builder.Services.AddScoped<GetUsersAdvancedHandler>();
+builder.Services.AddScoped<DeactivateUserHandler>();
+builder.Services.AddScoped<UpdateUserHandler>();
+
+
 
 var app = builder.Build();
 
