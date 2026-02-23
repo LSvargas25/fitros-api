@@ -38,7 +38,7 @@ public sealed class LoginHandler : MediatR.IRequestHandler<LoginCommand, LoginRe
         if (user.Status != Domain.Enums.UserStatus.Active)
             throw new DomainException("User is inactive.");
 
-        if (!_hasher.Verify(request.Password, user.PasswordHash))
+        if (!_hasher.Verify(user.PasswordHash, request.Password))
             throw new DomainException("Invalid credentials.");
 
         var access = _tokens.CreateAccessToken(user);

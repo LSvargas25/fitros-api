@@ -5,16 +5,13 @@ namespace FitRos.Infrastructure.Security;
 
 public class PasswordHasherAdapter : IPasswordHasher
 {
-    private readonly PasswordHasher<object> _hasher = new();
+    private static readonly PasswordHasher<object> Hasher = new();
+    private static readonly object Dummy = new();
 
-    public string Hash(string password)
-    {
-        return _hasher.HashPassword(new object(), password);
-    }
+    public string Hash(string password) =>
+        Hasher.HashPassword(Dummy, password);
 
-    public bool Verify(string hash, string password)
-    {
-        var result = _hasher.VerifyHashedPassword(new object(), hash, password);
-        return result == PasswordVerificationResult.Success;
-    }
+    public bool Verify(string hash, string password) =>
+        Hasher.VerifyHashedPassword(Dummy, hash, password)
+            == PasswordVerificationResult.Success;
 }

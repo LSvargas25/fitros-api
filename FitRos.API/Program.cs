@@ -2,6 +2,9 @@
 using FitRos.API.Swagger;
 using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
+using FitRos.Application.Features.Auth.Login;
+using FitRos.Application.Features.Auth.Logout;
+using FitRos.Application.Features.Auth.Refresh;
 using FitRos.Application.Features.Exercises.ArchiveExercise;
 using FitRos.Application.Features.Exercises.CreateExercise;
 using FitRos.Application.Features.Exercises.GetExerciseById;
@@ -34,6 +37,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -128,9 +133,15 @@ builder.Services.AddScoped<IFitRosDbContext, FitRosDbContext>();
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("Jwt"));
 
-var jwtSettings = builder.Configuration
-    .GetSection("Jwt")
-    .Get<JwtSettings>()!;
+var jwtSection = builder.Configuration.GetSection("Jwt");
+
+if (!jwtSection.Exists())
+{
+    throw new InvalidOperationException("Jwt configuration section is missing.");
+}
+
+var jwtSettings = jwtSection.Get<JwtSettings>()
+    ?? throw new InvalidOperationException("Jwt configuration is invalid."); ;
 
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -148,11 +159,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSettings.SigningKey)
-            ),
+         Encoding.UTF8.GetBytes(jwtSettings.SigningKey)
+     ),
 
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromSeconds(30)
+            RequireExpirationTime = true,
+            ClockSkew = TimeSpan.FromSeconds(30),
+
+            NameClaimType = JwtRegisteredClaimNames.Sub,
+            RoleClaimType = ClaimTypes.Role,
+
+            ValidTypes = new[] { JwtConstants.TokenType }
         };
     });
 
@@ -198,6 +215,13 @@ builder.Services.AddScoped<DeactivateUserHandler>();
 builder.Services.AddScoped<ActivateUserHandler>();
 builder.Services.AddScoped<UpdateUserHandler>();
 builder.Services.AddScoped<DeleteUserHandler>();
+
+//Authentication
+builder.Services.AddScoped<LoginHandler>();
+builder.Services.AddScoped<RefreshHandler>();
+builder.Services.AddScoped<LogoutHandler>();
+ 
+
 
 // =============================
 // Build App
