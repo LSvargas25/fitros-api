@@ -1,38 +1,15 @@
 ﻿using FitRos.API.Middleware;
 using FitRos.API.Swagger;
+using FitRos.Application;
 using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
-using FitRos.Application.Features.Auth.Login;
-using FitRos.Application.Features.Auth.Logout;
-using FitRos.Application.Features.Auth.Refresh;
-using FitRos.Application.Features.Exercises.ArchiveExercise;
-using FitRos.Application.Features.Exercises.CreateExercise;
-using FitRos.Application.Features.Exercises.GetExerciseById;
-using FitRos.Application.Features.Exercises.GetExercises;
-using FitRos.Application.Features.Exercises.UpdateExercise;
-using FitRos.Application.Features.Users.ActivateUser;
-using FitRos.Application.Features.Users.CreateUser;
-using FitRos.Application.Features.Users.DeactivateUser;
-using FitRos.Application.Features.Users.GetUserById;
-using FitRos.Application.Features.Users.GetUsersAdvanced;
-using FitRos.Application.Features.Users.UpdateUser;
-using FitRos.Application.Features.WorkoutRoutines.AddExerciseToWorkoutRoutine;
-using FitRos.Application.Features.WorkoutRoutines.ArchiveWorkoutRoutine;
-using FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutine;
-using FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutineVersion;
-using FitRos.Application.Features.WorkoutRoutines.GetLatestWorkoutRoutine;
-using FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutineById;
-using FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutines;
-using FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutineVersions;
-using FitRos.Application.Features.WorkoutRoutines.MoveExerciseInWorkoutRoutine;
-using FitRos.Application.Features.WorkoutRoutines.PublishWorkoutRoutine;
-using FitRos.Application.Features.WorkoutRoutines.RemoveExerciseFromWorkoutRoutine;
-using FitRos.Application.Features.WorkoutRoutines.UpdateWorkoutRoutine;
+using FitRos.Application.Common.Behaviors;
 using FitRos.Infrastructure.Persistence;
 using FitRos.Infrastructure.Security;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -50,17 +27,44 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // =============================
+// CORS (Angular Dev)
+// =============================
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularDev", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+// =============================
 // FluentValidation
 // =============================
 
 builder.Services.AddFluentValidationAutoValidation();
-builder.Services.AddValidatorsFromAssemblyContaining<CreateWorkoutRoutineValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<AssemblyReference>();
+
+// =============================
+// MediatR + Validation Pipeline
+// =============================
+
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly));
+
+builder.Services.AddTransient(
+    typeof(IPipelineBehavior<,>),
+    typeof(ValidationBehavior<,>));
 
 // =============================
 // Swagger
 // =============================
 
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -87,7 +91,6 @@ builder.Services.AddSwaggerGen(options =>
         return $"{httpOrder}_{api.RelativePath}";
     });
 
-    // 🔐 JWT Bearer configuration for Swagger
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -121,8 +124,7 @@ builder.Services.AddFluentValidationRulesToSwagger();
 // =============================
 
 builder.Services.AddDbContext<FitRosDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
-);
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IFitRosDbContext, FitRosDbContext>();
 
@@ -136,15 +138,14 @@ builder.Services.Configure<JwtSettings>(
 var jwtSection = builder.Configuration.GetSection("Jwt");
 
 if (!jwtSection.Exists())
-{
     throw new InvalidOperationException("Jwt configuration section is missing.");
-}
 
 var jwtSettings = jwtSection.Get<JwtSettings>()
-    ?? throw new InvalidOperationException("Jwt configuration is invalid."); ;
+    ?? throw new InvalidOperationException("Jwt configuration is invalid.");
 
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IPasswordResetTokenGenerator, PasswordResetTokenGenerator>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -159,8 +160,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-         Encoding.UTF8.GetBytes(jwtSettings.SigningKey)
-     ),
+                Encoding.UTF8.GetBytes(jwtSettings.SigningKey)
+            ),
 
             ValidateLifetime = true,
             RequireExpirationTime = true,
@@ -183,47 +184,6 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
 
 // =============================
-// Handlers Registration
-// =============================
-
-// WorkoutRoutines
-builder.Services.AddScoped<CreateWorkoutRoutineHandler>();
-builder.Services.AddScoped<GetWorkoutRoutinesHandler>();
-builder.Services.AddScoped<GetWorkoutRoutineByIdHandler>();
-builder.Services.AddScoped<ArchiveWorkoutRoutineHandler>();
-builder.Services.AddScoped<UpdateWorkoutRoutineHandler>();
-builder.Services.AddScoped<PublishWorkoutRoutineHandler>();
-builder.Services.AddScoped<AddExerciseToWorkoutRoutineHandler>();
-builder.Services.AddScoped<RemoveExerciseFromWorkoutRoutineHandler>();
-builder.Services.AddScoped<MoveExerciseInWorkoutRoutineHandler>();
-builder.Services.AddScoped<CreateWorkoutRoutineVersionHandler>();
-builder.Services.AddScoped<GetWorkoutRoutineVersionsHandler>();
-builder.Services.AddScoped<GetLatestWorkoutRoutineHandler>();
-
-// Exercises
-builder.Services.AddScoped<CreateExerciseHandler>();
-builder.Services.AddScoped<GetExerciseByIdHandler>();
-builder.Services.AddScoped<GetExercisesHandler>();
-builder.Services.AddScoped<UpdateExerciseHandler>();
-builder.Services.AddScoped<ArchiveExerciseHandler>();
-
-// Users
-builder.Services.AddScoped<CreateUserHandler>();
-builder.Services.AddScoped<GetUserByIdHandler>();
-builder.Services.AddScoped<GetUsersAdvancedHandler>();
-builder.Services.AddScoped<DeactivateUserHandler>();
-builder.Services.AddScoped<ActivateUserHandler>();
-builder.Services.AddScoped<UpdateUserHandler>();
-builder.Services.AddScoped<DeleteUserHandler>();
-
-//Authentication
-builder.Services.AddScoped<LoginHandler>();
-builder.Services.AddScoped<RefreshHandler>();
-builder.Services.AddScoped<LogoutHandler>();
- 
-
-
-// =============================
 // Build App
 // =============================
 
@@ -243,7 +203,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication();  
+app.UseCors("AllowAngularDev");
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

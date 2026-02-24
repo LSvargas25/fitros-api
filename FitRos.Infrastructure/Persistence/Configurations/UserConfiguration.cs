@@ -52,6 +52,13 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(x => x.UpdatedAt);
 
-         builder.HasQueryFilter(u => u.Status == UserStatus.Active);
+        builder.Property(x => x.PasswordResetTokenHash)
+       .HasMaxLength(500)
+       .IsRequired(false);
+
+        builder.Property(x => x.PasswordResetTokenExpiresAtUtc)
+            .IsRequired(false);
+
+        builder.HasQueryFilter(u => u.Status == UserStatus.Active);
     }
 }

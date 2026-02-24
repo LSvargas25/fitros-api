@@ -2,11 +2,13 @@
 using FitRos.Application.Abstractions.Security;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Users;
+using FitRos.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.Auth.Login;
 
-public sealed class LoginHandler : MediatR.IRequestHandler<LoginCommand, LoginResponse>
+public sealed class LoginHandler
+    : MediatR.IRequestHandler<LoginCommand, LoginResponse>
 {
     private readonly IFitRosDbContext _context;
     private readonly IPasswordHasher _hasher;
@@ -35,10 +37,10 @@ public sealed class LoginHandler : MediatR.IRequestHandler<LoginCommand, LoginRe
         if (user is null)
             throw new DomainException("Invalid credentials.");
 
-        if (user.Status != Domain.Enums.UserStatus.Active)
+        if (user.Status != UserStatus.Active)
             throw new DomainException("User is inactive.");
-
-        if (!_hasher.Verify(user.PasswordHash, request.Password))
+ 
+        if (!_hasher.Verify(request.Password, user.PasswordHash))
             throw new DomainException("Invalid credentials.");
 
         var access = _tokens.CreateAccessToken(user);
@@ -46,7 +48,6 @@ public sealed class LoginHandler : MediatR.IRequestHandler<LoginCommand, LoginRe
         var refreshPlain = _tokens.CreateRefreshTokenPlain();
         var refreshHash = _tokens.HashToken(refreshPlain);
 
-        // 30 días (lo puedes mover a settings)
         var refresh = RefreshToken.Create(
             userId: user.Id,
             tokenHash: refreshHash,

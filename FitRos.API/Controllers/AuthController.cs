@@ -1,6 +1,10 @@
-﻿using FitRos.Application.Features.Auth.Login;
-using FitRos.Application.Features.Auth.Refresh;
+﻿using FitRos.API.Contracts.Auth;
+using FitRos.Application.Features.Auth.ForgotPassword;
+using FitRos.Application.Features.Auth.Login;
 using FitRos.Application.Features.Auth.Logout;
+using FitRos.Application.Features.Auth.Refresh;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -22,6 +26,27 @@ public sealed class AuthController : ControllerBase
     {
         var result = await handler.Handle(command, ct);
         return Ok(result);
+    }
+
+    private readonly ISender _sender;
+
+    public AuthController(ISender sender) => _sender = sender;
+
+
+    [SwaggerOperation(
+    Summary = "Forgot password",
+    Description = "Initiates password reset process. Always returns 200 OK to prevent email enumeration.",
+    Tags = new[] { TagAuth }
+)]
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordRequest request,
+        CancellationToken ct)
+    {
+        await _sender.Send(new ForgotPasswordCommand(request.Email), ct);
+        return Ok();
     }
 
     [HttpPost("refresh")]
