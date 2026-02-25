@@ -2,10 +2,11 @@
 
 namespace FitRos.Tests.TestDoubles;
 
-public sealed class FakeResetTokenGenerator
-    : IPasswordResetTokenGenerator
+public sealed class FakeResetTokenGenerator : IPasswordResetTokenGenerator
 {
-    public string Generate() => "fake-token";
+    public string Generate()
+        => Guid.NewGuid().ToString();
 
-    public string Hash(string token) => "hashed-fake-token";
+    public string Hash(string token)
+        => $"hash:{token}";
 }

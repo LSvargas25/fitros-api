@@ -215,4 +215,5 @@ public sealed class User
 
         return PasswordResetTokenHash == tokenHash;
     }
+
 }

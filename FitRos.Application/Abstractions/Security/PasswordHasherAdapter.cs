@@ -11,7 +11,7 @@ public class PasswordHasherAdapter : IPasswordHasher
     public string Hash(string password) =>
         Hasher.HashPassword(Dummy, password);
 
-    public bool Verify(string hash, string password) =>
+    public bool Verify(string password, string hash) =>
         Hasher.VerifyHashedPassword(Dummy, hash, password)
             == PasswordVerificationResult.Success;
 }

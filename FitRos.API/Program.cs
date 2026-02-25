@@ -1,15 +1,17 @@
 ﻿using FitRos.API.Middleware;
 using FitRos.API.Swagger;
 using FitRos.Application;
+using FitRos.Application.Abstractions.Messaging;
 using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Common.Behaviors;
+using FitRos.Infrastructure.Messaging;
 using FitRos.Infrastructure.Persistence;
 using FitRos.Infrastructure.Security;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
 using MediatR;
+using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -146,6 +148,18 @@ var jwtSettings = jwtSection.Get<JwtSettings>()
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordResetTokenGenerator, PasswordResetTokenGenerator>();
+
+builder.Services.Configure<FrontendSettings>(
+    builder.Configuration.GetSection("Frontend"));
+
+
+//Email reset token generator could be added here as well if needed in the future
+builder.Services.Configure<SmtpSettings>(
+    builder.Configuration.GetSection("Smtp"));
+
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+
+
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
