@@ -1,13 +1,11 @@
 ﻿using System.Net;
-using System.Text.Json;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using FitRos.Domain.Common;
 using FluentValidation;
+using FitRos.Domain.Common;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FitRos.API.Middleware;
 
-public class GlobalExceptionMiddleware
+public sealed class GlobalExceptionMiddleware
 {
     private readonly RequestDelegate _next;
 
@@ -32,18 +30,21 @@ public class GlobalExceptionMiddleware
     {
         var statusCode = ex switch
         {
-            DomainException => HttpStatusCode.BadRequest,
-            ValidationException => HttpStatusCode.BadRequest,
-            InvalidOperationException => HttpStatusCode.BadRequest,
-            KeyNotFoundException => HttpStatusCode.NotFound,
-            _ => HttpStatusCode.InternalServerError
-        };
+            UnauthorizedException => HttpStatusCode.Unauthorized, //  401
+            ForbiddenException => HttpStatusCode.Forbidden,       //  403
 
+            DomainException => HttpStatusCode.BadRequest,         //  400
+            ValidationException => HttpStatusCode.BadRequest,     //  400
+            InvalidOperationException => HttpStatusCode.BadRequest,
+            KeyNotFoundException => HttpStatusCode.NotFound,      //  404
+
+            _ => HttpStatusCode.InternalServerError               //  500
+        };
 
         var problemDetails = new ProblemDetails
         {
             Title = ex.GetType().Name,
-            Detail = ex.InnerException?.Message ?? ex.Message,
+            Detail = ex.Message, 
             Status = (int)statusCode,
             Instance = context.Request.Path
         };
@@ -52,8 +53,7 @@ public class GlobalExceptionMiddleware
 
         if (ex is ValidationException validationException)
         {
-            problemDetails.Extensions["errors"] =
-                validationException.Errors
+            problemDetails.Extensions["errors"] = validationException.Errors
                 .GroupBy(e => e.PropertyName)
                 .ToDictionary(
                     g => g.Key,
@@ -61,11 +61,10 @@ public class GlobalExceptionMiddleware
                 );
         }
 
-        context.Response.ContentType = "application/problem+json";
         context.Response.StatusCode = (int)statusCode;
+        context.Response.ContentType = "application/problem+json";
 
-        await context.Response.WriteAsync(
-            JsonSerializer.Serialize(problemDetails));
+     
+        await context.Response.WriteAsJsonAsync(problemDetails);
     }
-
 }
