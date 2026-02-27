@@ -1,9 +1,11 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using FitRos.Application.Abstractions.Persistence;
+﻿using FitRos.Application.Abstractions.Persistence;
+using FitRos.Domain.Entities.Client;
+using FitRos.Domain.Entities.Enums;
 using FitRos.Domain.Entities.Training;
 using FitRos.Domain.Entities.Users;
 using Microsoft.EntityFrameworkCore;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace FitRos.Infrastructure.Persistence;
 
@@ -23,7 +25,10 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
     public DbSet<WorkoutSession> WorkoutSessions { get; set; } = null!;
     public DbSet<Exercise> Exercises { get; set; } = null!;
     public DbSet<WorkoutRoutineExercise> WorkoutRoutineExercises { get; set; } = null!;
-    public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;  
+    public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+
+    public DbSet<ClientProfile> ClientProfiles { get; set; } = null!;
+    public DbSet<PhysicalMeasure> PhysicalMeasures { get; set; } = null!;
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken)
         => base.SaveChangesAsync(cancellationToken);

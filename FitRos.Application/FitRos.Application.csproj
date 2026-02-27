@@ -22,8 +22,4 @@
     <ProjectReference Include="..\FitRos.Domain\FitRos.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Features\NewFolder\" />
-  </ItemGroup>
-
 </Project>
