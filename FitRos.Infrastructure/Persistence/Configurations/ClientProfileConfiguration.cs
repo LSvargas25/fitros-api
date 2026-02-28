@@ -35,5 +35,10 @@ public class ClientProfileConfiguration : IEntityTypeConfiguration<ClientProfile
         builder.Metadata
             .FindNavigation(nameof(ClientProfile.Measures))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Property(x => x.RowVersion)
+     .IsRequired()
+     .IsConcurrencyToken()
+     .ValueGeneratedOnAddOrUpdate();
     }
 }

@@ -1,7 +1,9 @@
-﻿using System.Net;
+﻿using FitRos.Domain.Common;
 using FluentValidation;
-using FitRos.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Net;
+using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.API.Middleware;
 
@@ -36,6 +38,7 @@ public sealed class GlobalExceptionMiddleware
             DomainException => HttpStatusCode.BadRequest,         //  400
             ValidationException => HttpStatusCode.BadRequest,     //  400
             InvalidOperationException => HttpStatusCode.BadRequest,
+            DbUpdateConcurrencyException => HttpStatusCode.Conflict, // 409
             KeyNotFoundException => HttpStatusCode.NotFound,      //  404
 
             _ => HttpStatusCode.InternalServerError               //  500

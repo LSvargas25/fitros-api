@@ -43,9 +43,8 @@ public sealed class ResetPasswordHandler
 
         var cleanToken = request.Token.Trim();
         var providedHash = _tokenGenerator.Hash(cleanToken);
- 
 
-        if (!user.HasValidPasswordResetToken(providedHash, DateTime.UtcNow))
+        if (!user.HasValidPasswordResetToken(providedHash, _utcNow()))
             throw new DomainException("Invalid reset token.");
 
         var newHash = _hasher.Hash(request.NewPassword);
@@ -53,7 +52,12 @@ public sealed class ResetPasswordHandler
         user.ChangePasswordHash(newHash);
         user.ClearPasswordResetToken();
 
+          var tokens = await _context.RefreshTokens
+            .Where(x => x.UserId == user.Id)
+            .ToListAsync(ct);
+
+        _context.RefreshTokens.RemoveRange(tokens);
+
         await _context.SaveChangesAsync(ct);
     }
-
 }

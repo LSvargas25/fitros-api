@@ -1,9 +1,10 @@
 ﻿using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Enums;
+using FitRos.Domain.Events;
 
 namespace FitRos.Domain.Entities.Client
 {
-    public sealed class ClientProfile
+    public sealed class ClientProfile : AggregateRoot
     {
         private readonly List<PhysicalMeasure> _measures = new();
 
@@ -14,6 +15,8 @@ namespace FitRos.Domain.Entities.Client
         public IReadOnlyCollection<PhysicalMeasure> Measures => _measures.AsReadOnly();
 
         public DateTime CreatedAt { get; private set; }
+
+        public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
         private ClientProfile() { }
 
@@ -37,12 +40,12 @@ namespace FitRos.Domain.Entities.Client
         }
 
         public void AddMeasure(
-            decimal weight,
-            decimal bodyFatPercentage,
-            decimal muscleMass,
-            decimal waist,
-            decimal chest,
-            decimal arms)
+    decimal weight,
+    decimal bodyFatPercentage,
+    decimal muscleMass,
+    decimal waist,
+    decimal chest,
+    decimal arms)
         {
             var measure = PhysicalMeasure.Create(
                 Id,
@@ -54,6 +57,9 @@ namespace FitRos.Domain.Entities.Client
                 arms);
 
             _measures.Add(measure);
+
+            AddDomainEvent(
+                new PhysicalMeasureAddedDomainEvent(Id, measure.Id));
         }
     }
 }
