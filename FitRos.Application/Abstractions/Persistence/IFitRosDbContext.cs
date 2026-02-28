@@ -1,9 +1,14 @@
-﻿using FitRos.Domain.Entities.Training;
+﻿using FitRos.Domain.Entities.Analytics;
+using FitRos.Domain.Entities.Auditing;
+using FitRos.Domain.Entities.Client;
+using FitRos.Domain.Entities.Enums;
+using FitRos.Domain.Entities.Outbox;
+using FitRos.Domain.Entities.Reports;
+using FitRos.Domain.Entities.Training;
 using FitRos.Domain.Entities.Users;
 using Microsoft.EntityFrameworkCore;
 using System.Threading;
 using System.Threading.Tasks;
-using FitRos.Domain.Entities.Users;
 
 namespace FitRos.Application.Abstractions.Persistence;
 
@@ -14,7 +19,16 @@ public interface IFitRosDbContext
     DbSet<WorkoutSession> WorkoutSessions { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
 
+
     DbSet<Exercise> Exercises { get; }
+
+    DbSet<ClientProfile> ClientProfiles { get; }
+    DbSet<PhysicalMeasure> PhysicalMeasures { get; }
+
+    DbSet<AuditLogEntry> AuditLogEntries { get; }
+    DbSet<ClientKpiSnapshot> ClientKpiSnapshots { get; }
+    DbSet<OutboxMessage> OutboxMessages { get; }
+    DbSet<ClientProgressReportSnapshot> ClientProgressReportSnapshots { get; }
 
     void Remove<TEntity>(TEntity entity) where TEntity : class;
 

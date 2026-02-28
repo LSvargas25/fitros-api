@@ -3,6 +3,7 @@ using System;
 using FitRos.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FitRos.Infrastructure.Migrations
 {
     [DbContext(typeof(FitRosDbContext))]
-    partial class FitRosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260227215140_FixClientProfileMeasuresMapping")]
+    partial class FixClientProfileMeasuresMapping
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,56 +24,6 @@ namespace FitRos.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("FitRos.Domain.Entities.Analytics.ClientKpiSnapshot", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal?>("BodyFatDelta")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid>("ClientProfileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("PhysicalMeasureId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal?>("WaistDelta")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal?>("WeightDelta")
-                        .HasColumnType("numeric");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ClientKpiSnapshots", (string)null);
-                });
-
-            modelBuilder.Entity("FitRos.Domain.Entities.Auditing.AuditLogEntry", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Data")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("AuditLogEntries", (string)null);
-                });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Client.ClientProfile", b =>
                 {
@@ -82,12 +35,6 @@ namespace FitRos.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -140,57 +87,6 @@ namespace FitRos.Infrastructure.Migrations
                     b.HasIndex("ClientProfileId", "RecordedAt");
 
                     b.ToTable("PhysicalMeasures", (string)null);
-                });
-
-            modelBuilder.Entity("FitRos.Domain.Entities.Outbox.OutboxMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Error")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("OccurredOnUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Payload")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("ProcessedOnUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("OutboxMessages", (string)null);
-                });
-
-            modelBuilder.Entity("FitRos.Domain.Entities.Reports.ClientProgressReportSnapshot", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ClientProfileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("PhysicalMeasureId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ReportJson")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ClientProgressReportSnapshots", (string)null);
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Training.Exercise", b =>
