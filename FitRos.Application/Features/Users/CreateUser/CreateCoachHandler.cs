@@ -1,12 +1,11 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
-using FitRos.Application.Abstractions.Security;
+using FitRos.Application.Features.Users.CreateUser;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-
-namespace FitRos.Application.Features.Users.CreateUser;
+using FitRos.Application.Abstractions.Security;
 
 public sealed class CreateCoachHandler
     : IRequestHandler<CreateCoachCommand, CreateUserResponse>
@@ -28,12 +27,11 @@ public sealed class CreateCoachHandler
     {
         var normalizedEmail = request.Email.Trim().ToUpperInvariant();
 
-        // Ensure email uniqueness
-        var emailExists = await _context.Users
+        var exists = await _context.Users
             .IgnoreQueryFilters()
             .AnyAsync(u => u.NormalizedEmail == normalizedEmail, ct);
 
-        if (emailExists)
+        if (exists)
             throw new DomainException("Email already exists.");
 
         var passwordHash = _hasher.Hash(request.Password);

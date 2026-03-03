@@ -1,21 +1,28 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
+using FitRos.Application.Abstractions.Security;
+using FitRos.Domain.Common;
+using FitRos.Domain.Entities.Analytics;
+using FitRos.Domain.Entities.Auditing;
 using FitRos.Domain.Entities.Client;
 using FitRos.Domain.Entities.Enums;
-using FitRos.Domain.Entities.Training;
-using FitRos.Domain.Entities.Users;
-using Microsoft.EntityFrameworkCore; 
-using FitRos.Domain.Entities.Auditing;
-using FitRos.Domain.Entities.Analytics;
 using FitRos.Domain.Entities.Outbox;
 using FitRos.Domain.Entities.Reports;
+using FitRos.Domain.Entities.Training;
+using FitRos.Domain.Entities.Users;
+using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Infrastructure.Persistence;
 
 public class FitRosDbContext : DbContext, IFitRosDbContext
 {
-    public FitRosDbContext(DbContextOptions<FitRosDbContext> options)
+    private readonly ICurrentUser _currentUser;
+
+    public FitRosDbContext(
+        DbContextOptions<FitRosDbContext> options,
+        ICurrentUser currentUser)
         : base(options)
     {
+        _currentUser = currentUser;
     }
 
     public DbSet<User> Users { get; set; } = null!;
@@ -31,25 +38,74 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
     public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
     public DbSet<ClientProgressReportSnapshot> ClientProgressReportSnapshots { get; set; } = null!;
 
-    DbSet<AuditLogEntry> IFitRosDbContext.AuditLogEntries => throw new NotImplementedException();
+    DbSet<AuditLogEntry> IFitRosDbContext.AuditLogEntries => AuditLogEntries;
+    DbSet<ClientKpiSnapshot> IFitRosDbContext.ClientKpiSnapshots => ClientKpiSnapshots;
+    DbSet<OutboxMessage> IFitRosDbContext.OutboxMessages => OutboxMessages;
+    DbSet<ClientProgressReportSnapshot> IFitRosDbContext.ClientProgressReportSnapshots => ClientProgressReportSnapshots;
 
-    DbSet<ClientKpiSnapshot> IFitRosDbContext.ClientKpiSnapshots => throw new NotImplementedException();
+    public override async Task<int> SaveChangesAsync(
+     CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUser?.UserId;
 
-    DbSet<OutboxMessage> IFitRosDbContext.OutboxMessages => throw new NotImplementedException();
+        foreach (var entry in ChangeTracker.Entries<IAuditableEntity>())
+        {
+            if (entry.State == EntityState.Added)
+            {
+                entry.Property(nameof(IAuditableEntity.CreatedAt))
+                     .CurrentValue = DateTime.UtcNow;
 
-    DbSet<ClientProgressReportSnapshot> IFitRosDbContext.ClientProgressReportSnapshots => throw new NotImplementedException();
+                if (userId.HasValue)
+                    entry.Property(nameof(IAuditableEntity.CreatedBy))
+                         .CurrentValue = userId.Value;
+            }
 
-    public Task<int> SaveChangesAsync(CancellationToken cancellationToken)
-        => base.SaveChangesAsync(cancellationToken);
+            if (entry.State == EntityState.Modified)
+            {
+                if (userId.HasValue)
+                    entry.Entity.SetModified(userId.Value);
+            }
+        }
+
+        return await base.SaveChangesAsync(cancellationToken);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(FitRosDbContext).Assembly);
+
+        modelBuilder.Entity<ClientProfile>()
+            .HasQueryFilter(c => c.Status != ClientStatus.Deleted);
+
+        // Apply xmin only when using PostgreSQL
+        if (Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL")
+        {
+            modelBuilder.Entity<ClientProfile>()
+                .UseXminAsConcurrencyToken();
+        }
+
+      
+        SeedOwner(modelBuilder);
+
         base.OnModelCreating(modelBuilder);
     }
 
     public void Remove<TEntity>(TEntity entity) where TEntity : class
     {
         Set<TEntity>().Remove(entity);
+    }
+    private static void SeedOwner(ModelBuilder modelBuilder)
+    {
+        var ownerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        var owner = User.CreateOwnerApp(
+            ownerId,
+            "owner@fitros.com",
+            "FitRos",
+            "Owner",
+            "AQAAAAIAAYagAAAAELe0J5jOZGpfuPmwQO01ca1V7Q7UBF6m/sJkq/Z8GrxFQYv6RxjKnlqfGpwRwMjWAQ=="
+        );
+
+        modelBuilder.Entity<User>().HasData(owner);
     }
 }

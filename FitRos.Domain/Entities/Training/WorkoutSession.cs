@@ -1,8 +1,9 @@
-﻿using FitRos.Domain.Enums;
+﻿using FitRos.Domain.Common;
+using FitRos.Domain.Enums;
 
 namespace FitRos.Domain.Entities.Training;
 
-public class WorkoutSession
+public class WorkoutSession : AggregateRoot
 {
     public Guid Id { get; private set; }
 

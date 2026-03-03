@@ -1,8 +1,10 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
+using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.Users.CreateUser;
 
@@ -24,6 +26,15 @@ public sealed class CreateClientHandler
         CreateClientCommand request,
         CancellationToken ct)
     {
+        var normalizedEmail = request.Email.Trim().ToUpperInvariant();
+
+        var exists = await _context.Users
+            .IgnoreQueryFilters()
+            .AnyAsync(u => u.NormalizedEmail == normalizedEmail, ct);
+
+        if (exists)
+            throw new DomainException("Email already exists.");
+
         var passwordHash = _hasher.Hash(request.Password);
 
         var user = User.Create(

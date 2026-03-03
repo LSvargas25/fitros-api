@@ -51,12 +51,32 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<AssemblyReference>();
 
 // =============================
-// MediatR + Validation Pipeline
+// MediatR + Pipeline Behaviors
 // =============================
 
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly));
 
+// 1️⃣ Authentication (runs first)
+builder.Services.AddTransient(
+    typeof(IPipelineBehavior<,>),
+    typeof(AuthenticationBehavior<,>));
+
+// 2️⃣ Authorization (runs after authentication)
+builder.Services.AddTransient(
+    typeof(IPipelineBehavior<,>),
+    typeof(AuthorizationBehavior<,>));
+
+// 3️⃣ Validation (runs after authorization)
+builder.Services.AddTransient(
+    typeof(IPipelineBehavior<,>),
+    typeof(ValidationBehavior<,>));
+// 1️⃣ Authentication (runs first)
+builder.Services.AddTransient(
+    typeof(IPipelineBehavior<,>),
+    typeof(AuthenticationBehavior<,>));
+
+// 2️⃣ Validation (runs after authentication)
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),
     typeof(ValidationBehavior<,>));
@@ -152,14 +172,10 @@ builder.Services.AddScoped<IPasswordResetTokenGenerator, PasswordResetTokenGener
 builder.Services.Configure<FrontendSettings>(
     builder.Configuration.GetSection("Frontend"));
 
-
-//Email reset token generator could be added here as well if needed in the future
 builder.Services.Configure<SmtpSettings>(
     builder.Configuration.GetSection("Smtp"));
 
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
-
-
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

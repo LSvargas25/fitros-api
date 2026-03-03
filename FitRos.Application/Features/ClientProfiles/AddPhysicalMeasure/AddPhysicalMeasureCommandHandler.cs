@@ -1,9 +1,10 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
+using FitRos.Application.Common.Security;
 using FitRos.Domain.Common;
-using FitRos.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+ 
 
 namespace FitRos.Application.Features.ClientProfiles.AddPhysicalMeasure;
 
@@ -26,10 +27,7 @@ public sealed class AddPhysicalMeasureCommandHandler
         CancellationToken cancellationToken)
     {
         if (!_currentUser.IsAuthenticated)
-            throw new UnauthorizedException("User is not authenticated.");
-
-        if (_currentUser.Role != UserRole.Coach)
-            throw new ForbiddenException("Only coaches can add physical measures.");
+            throw new UnauthorizedException("User not authenticated.");
 
         var profile = await _context.ClientProfiles
             .Include(x => x.Measures)
@@ -38,10 +36,9 @@ public sealed class AddPhysicalMeasureCommandHandler
                 cancellationToken);
 
         if (profile is null)
-            throw new KeyNotFoundException("Client profile not found.");
+            throw new NotFoundException("Client profile not found.");
 
-        if (profile.CoachId != _currentUser.UserId)
-            throw new ForbiddenException("You do not own this client.");
+        ValidatePermissions(profile);
 
         profile.AddMeasure(
             request.Weight,
@@ -60,5 +57,21 @@ public sealed class AddPhysicalMeasureCommandHandler
             throw new DomainException(
                 "The client profile was modified by another process. Please reload and try again.");
         }
+    }
+
+    private void ValidatePermissions(Domain.Entities.Client.ClientProfile profile)
+    {
+        if (_currentUser.IsOwner() || _currentUser.IsAdmin())
+            return;
+
+        if (_currentUser.IsCoach())
+        {
+            if (profile.CoachId != _currentUser.UserId)
+                throw new ForbiddenException("You do not own this client.");
+
+            return;
+        }
+
+        throw new ForbiddenException("You are not authorized.");
     }
 }

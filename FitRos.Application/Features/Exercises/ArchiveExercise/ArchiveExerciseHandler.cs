@@ -1,5 +1,6 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using Microsoft.EntityFrameworkCore;
+using FitRos.Domain.Common;
 
 namespace FitRos.Application.Features.Exercises.ArchiveExercise;
 
@@ -20,7 +21,7 @@ public class ArchiveExerciseHandler
             .FirstOrDefaultAsync(x => x.Id == command.Id, cancellationToken);
 
         if (exercise is null)
-            throw new KeyNotFoundException("Exercise not found.");
+            throw new NotFoundException("Exercise not found.");
 
         // Delegamos al dominio
         exercise.Archive();

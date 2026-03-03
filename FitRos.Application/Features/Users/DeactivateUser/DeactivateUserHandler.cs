@@ -1,10 +1,12 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
+using FitRos.Application.Features.Users.DeactivateUser;
 using MediatR;
+using FitRos.Domain.Common;
+ 
 using Microsoft.EntityFrameworkCore;
 
-namespace FitRos.Application.Features.Users.DeactivateUser;
-
-public sealed class DeactivateUserHandler : IRequestHandler<DeactivateUserCommand>
+public sealed class DeactivateUserHandler
+    : IRequestHandler<DeactivateUserCommand>
 {
     private readonly IFitRosDbContext _context;
 
@@ -13,16 +15,19 @@ public sealed class DeactivateUserHandler : IRequestHandler<DeactivateUserComman
         _context = context;
     }
 
-    public async Task Handle(DeactivateUserCommand request, CancellationToken cancellationToken)
+    public async Task Handle(
+        DeactivateUserCommand request,
+        CancellationToken ct)
     {
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == request.UserId, ct);
 
         if (user is null)
-            throw new KeyNotFoundException("User not found.");
+            throw new NotFoundException("User not found.");
 
         user.Deactivate();
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(ct);
     }
 }

@@ -1,19 +1,23 @@
-﻿using FitRos.Application.Features.Users.GetUsersAdvanced;
+﻿using FitRos.Application.Common.Security;
+using FitRos.Application.Features.Users.GetUsersAdvanced;
 using FitRos.Domain.Enums;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace FitRos.Application.Features.Users.UpdateUser
+namespace FitRos.Application.Features.Users.UpdateUser;
+
+public sealed record UpdateUserCommand(
+    Guid Id,
+    string FirstName,
+    string LastName,
+    string? Email,
+    UserRole? Role
+) : IRequest<UserListItemResponse>, IAuthorizeRequest
 {
-    public sealed record UpdateUserCommand(
-      Guid Id,
-      string FirstName,
-      string LastName,
-      string? Email,
-      UserRole? Role
-  ) : IRequest<UserListItemResponse>;
+    public UserRole[] AllowedRoles =>
+        new[]
+        {
+            UserRole.OwnerApp,
+            UserRole.Admin,
+            UserRole.Coach
+        };
 }

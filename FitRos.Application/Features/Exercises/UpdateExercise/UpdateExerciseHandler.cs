@@ -1,4 +1,5 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
+using FitRos.Domain.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.Exercises.UpdateExercise;
@@ -20,7 +21,7 @@ public class UpdateExerciseHandler
             .FirstOrDefaultAsync(x => x.Id == command.Id, cancellationToken);
 
         if (exercise is null)
-            throw new KeyNotFoundException("Exercise not found.");
+            throw new NotFoundException("Exercise not found.");
 
         // Validar nombre duplicado (excluyendo el actual)
         var normalized = command.Name.ToLower();

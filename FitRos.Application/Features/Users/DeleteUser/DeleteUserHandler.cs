@@ -1,13 +1,17 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
-using FitRos.Application.Features.Users.DeleteUser;
+using FitRos.Application.Common.Security;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
-using OpenQA.Selenium;
+ 
+
+namespace FitRos.Application.Features.Users.DeleteUser;
 
 public sealed class DeleteUserHandler
+    : IRequestHandler<DeleteUserCommand>
 {
     private readonly IFitRosDbContext _context;
     private readonly ICurrentUser _currentUser;
@@ -29,11 +33,9 @@ public sealed class DeleteUserHandler
         if (user is null)
             throw new NotFoundException("User not found.");
 
-        // 🔒 Cannot delete yourself
         if (_currentUser.UserId == user.Id)
             throw new DomainException("You cannot delete yourself.");
 
-        // 🧱 Must be soft-deleted first
         if (user.Status != UserStatus.Inactive)
             throw new DomainException("User must be deactivated before permanent deletion.");
 
@@ -50,22 +52,33 @@ public sealed class DeleteUserHandler
 
     private void ValidatePermissions(User target)
     {
-        if (_currentUser.Role == UserRole.Admin)
+        if (_currentUser.IsOwner())
             return;
 
-        if (_currentUser.Role == UserRole.Coach)
+        if (_currentUser.IsAdmin())
         {
-            if (target.Role != UserRole.Client)
-                throw new DomainException("Coach can only delete Client users.");
+            if (target.Role == UserRole.OwnerApp)
+                throw new ForbiddenException("Admin cannot delete OwnerApp.");
 
             return;
         }
 
-        throw new DomainException("You are not authorized to delete users.");
+        if (_currentUser.IsCoach())
+        {
+            if (target.Role != UserRole.Client)
+                throw new ForbiddenException("Coach can only delete Client users.");
+
+            return;
+        }
+
+        throw new ForbiddenException("You are not authorized to delete users.");
     }
 
     private async Task ValidateCriticalRoles(User target, CancellationToken ct)
     {
+        if (target.Role == UserRole.OwnerApp)
+            throw new ForbiddenException("OwnerApp cannot be deleted.");
+
         if (target.Role == UserRole.Admin)
         {
             var adminCount = await _context.Users

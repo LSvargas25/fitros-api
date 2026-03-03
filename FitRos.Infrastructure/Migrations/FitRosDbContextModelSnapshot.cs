@@ -83,16 +83,36 @@ namespace FitRos.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeactivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("Status");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -339,6 +359,15 @@ namespace FitRos.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("RoutineId")
                         .HasColumnType("uuid");
 
@@ -456,6 +485,20 @@ namespace FitRos.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Users", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            CreatedAt = new DateTime(2026, 3, 3, 0, 55, 18, 908, DateTimeKind.Utc).AddTicks(920),
+                            Email = "owner@fitros.com",
+                            FirstName = "FitRos",
+                            LastName = "Owner",
+                            NormalizedEmail = "OWNER@FITROS.COM",
+                            PasswordHash = "AQAAAAIAAYagAAAAELe0J5jOZGpfuPmwQO01ca1V7Q7UBF6m/sJkq/Z8GrxFQYv6RxjKnlqfGpwRwMjWAQ==",
+                            Role = 0,
+                            Status = 1
+                        });
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Enums.PhysicalMeasure", b =>

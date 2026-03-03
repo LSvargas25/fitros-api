@@ -47,13 +47,11 @@ public sealed class User
 
         CreatedAt = DateTime.UtcNow;
     }
-    // Factory method to create a new user
-    public static User Create(
-        string email,
-        string firstName,
-        string lastName,
-        string passwordHash,
-        UserRole role)
+    private static void ValidateCommon(
+    string email,
+    string firstName,
+    string lastName,
+    string passwordHash)
     {
         if (string.IsNullOrWhiteSpace(email))
             throw new DomainException("Email cannot be empty.");
@@ -66,6 +64,19 @@ public sealed class User
 
         if (string.IsNullOrWhiteSpace(passwordHash))
             throw new DomainException("PasswordHash cannot be empty.");
+    }
+    // Factory method to create a new user
+    public static User Create(
+        string email,
+        string firstName,
+        string lastName,
+        string passwordHash,
+        UserRole role)
+    {
+        if (role == UserRole.OwnerApp)
+            throw new DomainException("OwnerApp cannot be created through this method.");
+
+        ValidateCommon(email, firstName, lastName, passwordHash);
 
         return new User(
             Guid.NewGuid(),
@@ -74,6 +85,23 @@ public sealed class User
             lastName.Trim(),
             passwordHash.Trim(),
             role);
+    }
+    internal static User CreateOwnerApp(
+    Guid id,
+    string email,
+    string firstName,
+    string lastName,
+    string passwordHash)
+    {
+        ValidateCommon(email, firstName, lastName, passwordHash);
+
+        return new User(
+            id,
+            email.Trim(),
+            firstName.Trim(),
+            lastName.Trim(),
+            passwordHash.Trim(),
+            UserRole.OwnerApp);
     }
     // Methods to update user information
     public void UpdateProfile(string firstName, string lastName)
@@ -103,6 +131,9 @@ public sealed class User
     public void ChangeRole(UserRole newRole)
     {
         EnsureActive();
+
+        if (newRole == UserRole.OwnerApp)
+            throw new DomainException("Cannot assign OwnerApp role.");
 
         if (Role == newRole)
             return;

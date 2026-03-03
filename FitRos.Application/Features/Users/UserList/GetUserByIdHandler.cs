@@ -1,7 +1,10 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
+using FitRos.Application.Common.Security;
 using FitRos.Domain.Common;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
+ 
 
 namespace FitRos.Application.Features.Users.GetUserById;
 
@@ -22,12 +25,13 @@ public sealed class GetUserByIdHandler
         GetUserByIdQuery query,
         CancellationToken cancellationToken)
     {
-        if (!_currentUser.IsAuthenticated)
-            throw new DomainException("You are not authorized.");
-
-        return await _context.Users
+        var userQuery = _context.Users
             .AsNoTracking()
-            .Where(u => u.Id == query.Id)
+            .IgnoreQueryFilters()
+            .ApplyUserVisibility(_currentUser)
+            .Where(u => u.Id == query.Id);
+
+        var result = await userQuery
             .Select(u => new UserDetailsDto(
                 u.Id,
                 u.Email,
@@ -38,5 +42,10 @@ public sealed class GetUserByIdHandler
                 u.CreatedAt,
                 u.UpdatedAt))
             .FirstOrDefaultAsync(cancellationToken);
+
+        if (result is null)
+            throw new NotFoundException("User not found.");
+
+        return result;
     }
 }
