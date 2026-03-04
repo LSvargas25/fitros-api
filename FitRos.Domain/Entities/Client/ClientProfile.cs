@@ -4,7 +4,7 @@ using FitRos.Domain.Events;
 
 namespace FitRos.Domain.Entities.Client
 {
-    public sealed class ClientProfile : AggregateRoot
+    public sealed class ClientProfile : AggregateRoot, ITenantEntity
     {
         private readonly List<PhysicalMeasure> _measures = new();
 
@@ -13,6 +13,7 @@ namespace FitRos.Domain.Entities.Client
         public Guid CoachId { get; private set; }
 
         public ClientStatus Status { get; private set; }
+        public Guid? GymId { get; private set; }
 
         public IReadOnlyCollection<PhysicalMeasure> Measures => _measures.AsReadOnly();
 
@@ -23,25 +24,37 @@ namespace FitRos.Domain.Entities.Client
 
         private ClientProfile() { }
 
-        private ClientProfile(Guid id, Guid userId, Guid coachId)
+        private ClientProfile(Guid gymId, Guid id, Guid userId, Guid coachId)
         {
+            GymId = gymId;
+
             Id = id;
             UserId = userId;
             CoachId = coachId;
             Status = ClientStatus.Active;
         }
-        public static ClientProfile Create(Guid userId, Guid coachId)
+        public static ClientProfile Create(Guid gymId, Guid userId, Guid coachId)
         {
             if (userId == Guid.Empty)
                 throw new DomainException("UserId cannot be empty.");
 
             if (coachId == Guid.Empty)
                 throw new DomainException("CoachId cannot be empty.");
- 
 
-            return new ClientProfile(Guid.NewGuid(), userId, coachId);
+            return new ClientProfile(gymId, Guid.NewGuid(), userId, coachId);
+        }
+        public static ClientProfile Create(Guid userId, Guid coachId)
+    => Create(Guid.NewGuid(), userId, coachId);
+        // helper overloads for tests
+        public static ClientProfile Create(Guid coachId)
+        {
+            return Create(Guid.NewGuid(), Guid.NewGuid(), coachId);
         }
 
+        public static ClientProfile Create()
+        {
+            return Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        }
         public void Deactivate()
         {
             if (Status != ClientStatus.Active)

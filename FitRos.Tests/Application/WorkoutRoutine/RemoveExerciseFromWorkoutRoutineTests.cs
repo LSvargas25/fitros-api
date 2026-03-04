@@ -1,7 +1,7 @@
-﻿using FitRos.Application.Features.WorkoutRoutines.RemoveExerciseFromWorkoutRoutine;
+﻿ 
+using FitRos.Application.Features.WorkoutRoutines.RemoveExerciseFromWorkoutRoutine;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Training;
-using FitRos.Infrastructure.Persistence;
 using FitRos.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -11,15 +11,14 @@ namespace FitRos.Tests.Application.WorkoutRoutines;
 
 public class RemoveExerciseFromWorkoutRoutineTests
 {
-   
-
     [Fact]
     public async Task Handle_Should_Remove_Exercise_From_Routine()
     {
-        // Arrange
         var context = TestDbContextFactory.Create();
 
-        var routine = WorkoutRoutine.Create("Test Routine", "Desc");
+        var gymId = Guid.NewGuid();
+
+        var routine = WorkoutRoutine.Create(gymId, "Test Routine", "Desc");
 
         var exerciseId = Guid.NewGuid();
 
@@ -34,10 +33,8 @@ public class RemoveExerciseFromWorkoutRoutineTests
             routine.Id,
             exerciseId);
 
-        // Act
         var result = await handler.Handle(command, CancellationToken.None);
 
-        // Assert
         result.Should().BeTrue();
 
         var updatedRoutine = await context.WorkoutRoutines
@@ -50,7 +47,6 @@ public class RemoveExerciseFromWorkoutRoutineTests
     [Fact]
     public async Task Handle_Should_Throw_When_Routine_Not_Found()
     {
-        // Arrange
         var context = TestDbContextFactory.Create();
         var handler = new RemoveExerciseFromWorkoutRoutineHandler(context);
 
@@ -58,11 +54,9 @@ public class RemoveExerciseFromWorkoutRoutineTests
             Guid.NewGuid(),
             Guid.NewGuid());
 
-        // Act
         Func<Task> act = async () =>
             await handler.Handle(command, CancellationToken.None);
 
-        // Assert
         await act.Should()
             .ThrowAsync<DomainException>()
             .WithMessage("Workout routine not found.");
@@ -71,10 +65,10 @@ public class RemoveExerciseFromWorkoutRoutineTests
     [Fact]
     public async Task Handle_Should_Throw_When_Exercise_Not_In_Routine()
     {
-        // Arrange
         var context = TestDbContextFactory.Create();
 
-        var routine = WorkoutRoutine.Create("Test Routine", "Desc");
+        var gymId = Guid.NewGuid();
+        var routine = WorkoutRoutine.Create(gymId, "Test Routine", "Desc");
         context.WorkoutRoutines.Add(routine);
         await context.SaveChangesAsync(CancellationToken.None);
 
@@ -84,13 +78,12 @@ public class RemoveExerciseFromWorkoutRoutineTests
             routine.Id,
             Guid.NewGuid());
 
-        // Act
         Func<Task> act = async () =>
             await handler.Handle(command, CancellationToken.None);
 
-        // Assert
         await act.Should()
             .ThrowAsync<DomainException>()
             .WithMessage("Exercise not found in routine.");
     }
 }
+ 

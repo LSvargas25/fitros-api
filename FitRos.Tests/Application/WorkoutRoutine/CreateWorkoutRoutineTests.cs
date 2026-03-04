@@ -1,8 +1,8 @@
 ﻿using FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutine;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Training;
-using FitRos.Infrastructure.Persistence;
 using FitRos.Tests.Infrastructure;
+using FitRos.Tests.TestDoubles;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -14,13 +14,15 @@ namespace FitRos.Tests.Application.WorkoutRoutines;
 
 public class CreateWorkoutRoutineTests
 {
-   
-
     [Fact]
     public async Task Should_Create_Routine_When_Name_Is_Unique()
     {
         var context = TestDbContextFactory.Create();
-        var handler = new CreateWorkoutRoutineHandler(context);
+
+        var gymId = Guid.NewGuid();
+        var currentUser = new FakeCurrentUser(gymId);
+
+        var handler = new CreateWorkoutRoutineHandler(context, currentUser);
 
         var command = new CreateWorkoutRoutineCommand
         {
@@ -36,6 +38,9 @@ public class CreateWorkoutRoutineTests
 
         (await context.WorkoutRoutines.CountAsync())
             .Should().Be(1);
+
+        var saved = await context.WorkoutRoutines.FirstAsync();
+        saved.GymId.Should().Be(gymId);
     }
 
     [Fact]
@@ -43,11 +48,14 @@ public class CreateWorkoutRoutineTests
     {
         var context = TestDbContextFactory.Create();
 
-        var existing = WorkoutRoutine.Create("Push Day", "Chest routine");
+        var gymId = Guid.NewGuid();
+        var currentUser = new FakeCurrentUser(gymId);
+
+        var existing = WorkoutRoutine.Create(gymId, "Push Day", "Chest routine");
         context.Add(existing);
         await context.SaveChangesAsync();
 
-        var handler = new CreateWorkoutRoutineHandler(context);
+        var handler = new CreateWorkoutRoutineHandler(context, currentUser);
 
         var command = new CreateWorkoutRoutineCommand
         {
@@ -60,6 +68,6 @@ public class CreateWorkoutRoutineTests
 
         await action.Should()
             .ThrowAsync<DomainException>()
-            .WithMessage("*already exists*");
+            .WithMessage("A routine with this name already exists.");
     }
 }

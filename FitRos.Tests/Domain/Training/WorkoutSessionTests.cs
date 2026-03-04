@@ -11,6 +11,7 @@ public class WorkoutSessionTests
         return WorkoutSession.Create(
             Guid.NewGuid(),
             Guid.NewGuid(),
+            Guid.NewGuid(),
             "Push Day",
             1,
             DateTime.UtcNow);

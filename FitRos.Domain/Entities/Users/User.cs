@@ -3,7 +3,7 @@ using FitRos.Domain.Enums;
 
 namespace FitRos.Domain.Entities.Users;
 
-public sealed class User
+public sealed class User : ITenantEntity
 {
     public Guid Id { get; private set; }
 

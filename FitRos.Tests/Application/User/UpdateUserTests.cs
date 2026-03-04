@@ -17,6 +17,8 @@ public class UpdateUserTests
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var user = User.Create(
             "client@test.com",
             "Client",
@@ -27,7 +29,7 @@ public class UpdateUserTests
         context.Add(user);
         await context.SaveChangesAsync();
 
-        var fakeCurrentUser = new FakeCurrentUser
+        var fakeCurrentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
@@ -57,6 +59,8 @@ public class UpdateUserTests
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var user = User.Create(
             "client@test.com",
             "Client",
@@ -67,7 +71,7 @@ public class UpdateUserTests
         context.Add(user);
         await context.SaveChangesAsync();
 
-        var fakeCurrentUser = new FakeCurrentUser
+        var fakeCurrentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
             Role = UserRole.Coach,
@@ -96,6 +100,8 @@ public class UpdateUserTests
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var admin = User.Create(
             "admin@test.com",
             "Admin",
@@ -106,7 +112,7 @@ public class UpdateUserTests
         context.Add(admin);
         await context.SaveChangesAsync();
 
-        var fakeCurrentUser = new FakeCurrentUser
+        var fakeCurrentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
@@ -135,6 +141,8 @@ public class UpdateUserTests
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var client = User.Create(
             "client@test.com",
             "Client",
@@ -146,6 +154,7 @@ public class UpdateUserTests
         await context.SaveChangesAsync();
 
         var session = WorkoutSession.Create(
+            gymId,
             client.Id,
             Guid.NewGuid(),
             "Routine",
@@ -155,7 +164,7 @@ public class UpdateUserTests
         context.WorkoutSessions.Add(session);
         await context.SaveChangesAsync();
 
-        var fakeCurrentUser = new FakeCurrentUser
+        var fakeCurrentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
             Role = UserRole.Admin,

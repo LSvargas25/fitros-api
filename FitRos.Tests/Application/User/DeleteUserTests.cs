@@ -3,7 +3,6 @@ using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Training;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
-using FitRos.Infrastructure.Persistence;
 using FitRos.Tests.Infrastructure;
 using FitRos.Tests.TestDoubles;
 using FluentAssertions;
@@ -13,12 +12,12 @@ namespace FitRos.Tests.Application.Users;
 
 public class DeleteUserTests
 {
-     
-
     [Fact]
     public async Task Should_Not_Delete_If_User_Is_Active()
     {
         var context = TestDbContextFactory.Create();
+
+        var gymId = Guid.NewGuid();
 
         var client = User.Create(
             "client@test.com",
@@ -30,7 +29,7 @@ public class DeleteUserTests
         context.Add(client);
         await context.SaveChangesAsync();
 
-        var currentUser = new FakeCurrentUser
+        var currentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
@@ -51,6 +50,8 @@ public class DeleteUserTests
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var client = User.Create(
             "client@test.com",
             "Client",
@@ -63,7 +64,7 @@ public class DeleteUserTests
         context.Add(client);
         await context.SaveChangesAsync();
 
-        var currentUser = new FakeCurrentUser
+        var currentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
@@ -86,6 +87,8 @@ public class DeleteUserTests
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var admin = User.Create(
             "admin@test.com",
             "Admin",
@@ -98,7 +101,7 @@ public class DeleteUserTests
         context.Add(admin);
         await context.SaveChangesAsync();
 
-        var currentUser = new FakeCurrentUser
+        var currentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
@@ -119,6 +122,8 @@ public class DeleteUserTests
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var coach = User.Create(
             "coach@test.com",
             "Coach",
@@ -131,7 +136,7 @@ public class DeleteUserTests
         context.Add(coach);
         await context.SaveChangesAsync();
 
-        var currentUser = new FakeCurrentUser
+        var currentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
@@ -152,6 +157,8 @@ public class DeleteUserTests
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var client = User.Create(
             "client@test.com",
             "Client",
@@ -165,16 +172,17 @@ public class DeleteUserTests
         await context.SaveChangesAsync();
 
         var session = WorkoutSession.Create(
-            client.Id,
-            Guid.NewGuid(),
-            "Routine",
-            1,
-            DateTime.UtcNow);
+            gymId: gymId,
+            userId: client.Id,
+            routineId: Guid.NewGuid(),
+            routineName: "Routine",
+            routineVersion: 1,
+            scheduledDate: DateTime.UtcNow);
 
         context.WorkoutSessions.Add(session);
         await context.SaveChangesAsync();
 
-        var currentUser = new FakeCurrentUser
+        var currentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
@@ -195,6 +203,8 @@ public class DeleteUserTests
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var coach = User.Create(
             "coach@test.com",
             "Coach",
@@ -207,7 +217,7 @@ public class DeleteUserTests
         context.Add(coach);
         await context.SaveChangesAsync();
 
-        var currentUser = new FakeCurrentUser
+        var currentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
             Role = UserRole.Coach,
@@ -220,14 +230,16 @@ public class DeleteUserTests
             await handler.Handle(new DeleteUserCommand(coach.Id), CancellationToken.None);
 
         await act.Should()
-        .ThrowAsync<ForbiddenException>()
-        .WithMessage("Coach can only delete Client users.");
+            .ThrowAsync<ForbiddenException>()
+            .WithMessage("Coach can only delete Client users.");
     }
 
     [Fact]
     public async Task Should_Not_Allow_User_To_Delete_Himself()
     {
         var context = TestDbContextFactory.Create();
+
+        var gymId = Guid.NewGuid();
 
         var client = User.Create(
             "self@test.com",
@@ -241,7 +253,7 @@ public class DeleteUserTests
         context.Add(client);
         await context.SaveChangesAsync();
 
-        var currentUser = new FakeCurrentUser
+        var currentUser = new FakeCurrentUser(gymId)
         {
             UserId = client.Id,
             Role = UserRole.Admin,

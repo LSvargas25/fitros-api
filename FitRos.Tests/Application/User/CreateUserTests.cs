@@ -2,7 +2,6 @@
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
-using FitRos.Infrastructure.Persistence;
 using FitRos.Tests.Infrastructure;
 using FitRos.Tests.TestDoubles;
 using FluentAssertions;
@@ -13,16 +12,17 @@ namespace FitRos.Tests.Application.Users;
 
 public class CreateUserTests
 {
-
-
     [Fact]
     public async Task Admin_Should_Create_Coach_Successfully()
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var fakeHasher = new FakePasswordHasher();
-        var fakeCurrentUser = new FakeCurrentUser
+        var fakeCurrentUser = new FakeCurrentUser(gymId)
         {
+            UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
             IsAuthenticated = true
         };
@@ -53,9 +53,12 @@ public class CreateUserTests
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var fakeHasher = new FakePasswordHasher();
-        var fakeCurrentUser = new FakeCurrentUser
+        var fakeCurrentUser = new FakeCurrentUser(gymId)
         {
+            UserId = Guid.NewGuid(),
             Role = UserRole.Coach,
             IsAuthenticated = true
         };
@@ -81,9 +84,13 @@ public class CreateUserTests
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var fakeHasher = new FakePasswordHasher();
-        var fakeCurrentUser = new FakeCurrentUser
+
+        var fakeCurrentUser = new FakeCurrentUser(gymId)
         {
+            UserId = Guid.NewGuid(),
             Role = UserRole.Coach,
             IsAuthenticated = true
         };
@@ -102,8 +109,8 @@ public class CreateUserTests
             CancellationToken.None);
 
         await act.Should()
-      .ThrowAsync<ForbiddenException>()
-      .WithMessage("Coach can only create Client users.");
+            .ThrowAsync<ForbiddenException>()
+            .WithMessage("Coach can only create Client users.");
     }
 
     [Fact]
@@ -111,9 +118,12 @@ public class CreateUserTests
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var fakeHasher = new FakePasswordHasher();
-        var fakeCurrentUser = new FakeCurrentUser
+        var fakeCurrentUser = new FakeCurrentUser(gymId)
         {
+            UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
             IsAuthenticated = true
         };
@@ -151,9 +161,12 @@ public class CreateUserTests
     {
         var context = TestDbContextFactory.Create();
 
+        var gymId = Guid.NewGuid();
+
         var fakeHasher = new FakePasswordHasher();
-        var fakeCurrentUser = new FakeCurrentUser
+        var fakeCurrentUser = new FakeCurrentUser(gymId)
         {
+            UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
             IsAuthenticated = false
         };
@@ -172,7 +185,7 @@ public class CreateUserTests
             CancellationToken.None);
 
         await act.Should()
-       .ThrowAsync<UnauthorizedException>()
-       .WithMessage("User not authenticated.");
+            .ThrowAsync<UnauthorizedException>()
+            .WithMessage("User not authenticated.");
     }
 }

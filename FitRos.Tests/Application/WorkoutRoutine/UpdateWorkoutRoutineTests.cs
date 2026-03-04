@@ -1,30 +1,21 @@
-﻿using FitRos.Application.Features.WorkoutRoutines.AddExerciseToWorkoutRoutine;
-using FitRos.Application.Features.WorkoutRoutines.UpdateWorkoutRoutine;
-using FitRos.Domain.Common;
-using FitRos.Domain.Entities.Enums;
+﻿using FitRos.Application.Features.WorkoutRoutines.UpdateWorkoutRoutine;
 using FitRos.Domain.Entities.Training;
-using FitRos.Domain.Enums;
-using FitRos.Infrastructure.Persistence;
 using FitRos.Tests.Infrastructure;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace FitRos.Tests.Application.WorkoutRoutines;
 
 public class UpdateWorkoutRoutineTests
 {
-   
-
     [Fact]
     public async Task Should_Update_Routine_When_In_Draft_State()
     {
         var context = TestDbContextFactory.Create();
 
-        var routine = WorkoutRoutine.Create("Push Day", "Chest");
+        var gymId = Guid.NewGuid();
+
+        var routine = WorkoutRoutine.Create(gymId, "Push Day", "Chest");
         context.Add(routine);
         await context.SaveChangesAsync();
 
@@ -63,15 +54,15 @@ public class UpdateWorkoutRoutineTests
 
         result.Should().BeFalse();
     }
- 
-    
 
     [Fact]
     public async Task Should_Throw_When_Name_Is_Empty()
     {
         var context = TestDbContextFactory.Create();
 
-        var routine = WorkoutRoutine.Create("Push Day", "Chest");
+        var gymId = Guid.NewGuid();
+
+        var routine = WorkoutRoutine.Create(gymId, "Push Day", "Chest");
         context.Add(routine);
         await context.SaveChangesAsync();
 

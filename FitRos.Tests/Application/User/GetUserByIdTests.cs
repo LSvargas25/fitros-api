@@ -2,7 +2,6 @@
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
-using FitRos.Infrastructure.Persistence;
 using FitRos.Tests.Infrastructure;
 using FitRos.Tests.TestDoubles;
 using FluentAssertions;
@@ -13,12 +12,12 @@ namespace FitRos.Tests.Application.Users;
 
 public class GetUserByIdTests
 {
-  
-
     [Fact]
     public async Task Should_Return_User_When_Exists()
     {
         var context = TestDbContextFactory.Create();
+
+        var gymId = Guid.NewGuid();
 
         var user = User.Create(
             "test@test.com",
@@ -30,8 +29,9 @@ public class GetUserByIdTests
         context.Users.Add(user);
         await context.SaveChangesAsync(CancellationToken.None);
 
-        var fakeCurrentUser = new FakeCurrentUser
+        var fakeCurrentUser = new FakeCurrentUser(gymId)
         {
+            UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
             IsAuthenticated = true
         };
@@ -51,8 +51,11 @@ public class GetUserByIdTests
     {
         var context = TestDbContextFactory.Create();
 
-        var fakeCurrentUser = new FakeCurrentUser
+        var gymId = Guid.NewGuid();
+
+        var fakeCurrentUser = new FakeCurrentUser(gymId)
         {
+            UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
             IsAuthenticated = true
         };
@@ -73,8 +76,11 @@ public class GetUserByIdTests
     {
         var context = TestDbContextFactory.Create();
 
-        var fakeCurrentUser = new FakeCurrentUser
+        var gymId = Guid.NewGuid();
+
+        var fakeCurrentUser = new FakeCurrentUser(gymId)
         {
+            UserId = Guid.NewGuid(),
             IsAuthenticated = false
         };
 
@@ -85,7 +91,7 @@ public class GetUserByIdTests
             CancellationToken.None);
 
         await act.Should()
-      .ThrowAsync<UnauthorizedException>()
-      .WithMessage("User not authenticated.");
+            .ThrowAsync<UnauthorizedException>()
+            .WithMessage("User not authenticated.");
     }
 }

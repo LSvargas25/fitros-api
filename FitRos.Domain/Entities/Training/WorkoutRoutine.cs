@@ -3,7 +3,7 @@ using FitRos.Domain.Enums;
 
 namespace FitRos.Domain.Entities.Training;
 
-public class WorkoutRoutine
+public class WorkoutRoutine : ITenantEntity
 {
     public Guid Id { get; private set; }
 
@@ -20,17 +20,19 @@ public class WorkoutRoutine
     public RoutineStatus Status { get; private set; }
 
     public DateTime CreatedAt { get; private set; }
+    public Guid? GymId { get; private set; }
 
     private readonly List<WorkoutRoutineExercise> _exercises = new();
     public IReadOnlyCollection<WorkoutRoutineExercise> Exercises => _exercises;
 
     private WorkoutRoutine() { } // EF Core
 
-    private WorkoutRoutine(Guid id, string name, string description)
+    private WorkoutRoutine(Guid gymId, Guid id, string name, string description)
     {
+        GymId = gymId;
+
         Id = id;
 
-        // First version uses its own Id as the group identifier
         RoutineGroupId = id;
 
         Name = name;
@@ -46,12 +48,13 @@ public class WorkoutRoutine
     // Factory
     // ============================
 
-    public static WorkoutRoutine Create(string name, string description)
+    public static WorkoutRoutine Create(Guid gymId, string name, string description)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Routine name cannot be empty.");
 
         return new WorkoutRoutine(
+            gymId,
             Guid.NewGuid(),
             name.Trim(),
             description.Trim());
@@ -209,12 +212,11 @@ public class WorkoutRoutine
     {
         if (Status != RoutineStatus.Published)
             throw new DomainException("Only published routines can be versioned.");
-
         var newRoutine = new WorkoutRoutine(
-            Guid.NewGuid(),
-            Name,
-            Description);
-
+    GymId!.Value,
+    Guid.NewGuid(),
+    Name,
+    Description);
         // Keep same group identifier
         newRoutine.RoutineGroupId = this.RoutineGroupId;
 

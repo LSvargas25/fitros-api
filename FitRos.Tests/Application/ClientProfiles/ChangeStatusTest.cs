@@ -48,8 +48,11 @@ namespace FitRos.Tests.Application.ClientProfiles
         [Fact]
         public async Task Coach_should_activate_client()
         {
+            var gymId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             var coachId = Guid.NewGuid();
-            var client = ClientProfile.Create(Guid.NewGuid(), coachId);
+
+            var client = ClientProfile.Create(gymId, userId, coachId);
             client.Deactivate();
 
             using var context = CreateContext(client);
@@ -67,8 +70,11 @@ namespace FitRos.Tests.Application.ClientProfiles
         [Fact]
         public async Task Coach_should_deactivate_client()
         {
+            var gymId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             var coachId = Guid.NewGuid();
-            var client = ClientProfile.Create(Guid.NewGuid(), coachId);
+
+            var client = ClientProfile.Create(gymId, userId, coachId);
 
             using var context = CreateContext(client);
             var user = MockUser(coachId, UserRole.Coach);
@@ -85,7 +91,11 @@ namespace FitRos.Tests.Application.ClientProfiles
         [Fact]
         public async Task Admin_should_modify_any_client()
         {
-            var client = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
+            var gymId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var coachId = Guid.NewGuid();
+
+            var client = ClientProfile.Create(gymId, userId, coachId);
 
             using var context = CreateContext(client);
             var user = MockUser(Guid.NewGuid(), UserRole.Admin);
@@ -102,7 +112,12 @@ namespace FitRos.Tests.Application.ClientProfiles
         [Fact]
         public async Task Coach_should_not_modify_other_coach_client()
         {
-            var client = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
+            var gymId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var coachId = Guid.NewGuid();
+
+            var client = ClientProfile.Create(gymId, userId, coachId);
+            client.Deactivate();
 
             using var context = CreateContext(client);
             var user = MockUser(Guid.NewGuid(), UserRole.Coach);
@@ -132,7 +147,11 @@ namespace FitRos.Tests.Application.ClientProfiles
         [Fact]
         public async Task Should_throw_if_client_deleted()
         {
-            var client = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
+            var gymId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var coachId = Guid.NewGuid();
+
+            var client = ClientProfile.Create(gymId, userId, coachId);
             client.SoftDelete();
 
             using var context = CreateContext(client);

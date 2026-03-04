@@ -29,10 +29,11 @@ public class ActivateUserTests
 
         context.Add(user);
         await context.SaveChangesAsync();
+        var gymId = Guid.NewGuid();
 
-        var currentUser = new FakeCurrentUser
+        var currentUser = new FakeCurrentUser(gymId)
         {
-            IsAuthenticated = true,
+            UserId = Guid.NewGuid(),
             Role = UserRole.OwnerApp
         };
 
@@ -64,9 +65,11 @@ public class ActivateUserTests
         context.Add(user);
         await context.SaveChangesAsync();
 
-        var currentUser = new FakeCurrentUser
+        var gymId = Guid.NewGuid();
+
+        var currentUser = new FakeCurrentUser(gymId)
         {
-            IsAuthenticated = true,
+            UserId = Guid.NewGuid(),
             Role = UserRole.OwnerApp
         };
 
@@ -87,9 +90,11 @@ public class ActivateUserTests
     {
         var context = TestDbContextFactory.Create();
 
-        var currentUser = new FakeCurrentUser
+        var gymId = Guid.NewGuid();
+
+        var currentUser = new FakeCurrentUser(gymId)
         {
-            IsAuthenticated = true,
+            UserId = Guid.NewGuid(),
             Role = UserRole.OwnerApp
         };
 
@@ -122,9 +127,11 @@ public class ActivateUserTests
         context.Add(owner);
         await context.SaveChangesAsync();
 
-        var currentUser = new FakeCurrentUser
+        var gymId = Guid.NewGuid();
+
+        var currentUser = new FakeCurrentUser(gymId)
         {
-            IsAuthenticated = true,
+            UserId = Guid.NewGuid(),
             Role = UserRole.Admin
         };
 
@@ -151,9 +158,16 @@ public class ActivateUserTests
         context.Add(user);
         await context.SaveChangesAsync();
 
-        var currentUser = new FakeCurrentUser
+      
+
+        var gymId = Guid.NewGuid();
+
+        var currentUser = new FakeCurrentUser(gymId)
         {
-            IsAuthenticated = false
+            UserId = Guid.NewGuid(),
+         
+              IsAuthenticated = false
+
         };
 
         var handler = new ActivateUserHandler(context, currentUser);

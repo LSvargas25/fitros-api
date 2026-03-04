@@ -12,7 +12,8 @@ public class WorkoutRoutineMoveExerciseTests
     private static WorkoutRoutine CreateRoutineWithThreeExercises(
         out Guid ex1, out Guid ex2, out Guid ex3)
     {
-        var routine = WorkoutRoutine.Create("Test", "Desc");
+        var gymId = Guid.NewGuid();
+        var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
 
         ex1 = Guid.NewGuid();
         ex2 = Guid.NewGuid();
@@ -38,7 +39,6 @@ public class WorkoutRoutineMoveExerciseTests
                 .ContainSingle(e => e.ExerciseId == exerciseId && e.Order == order);
         }
 
-        // Orders must be contiguous 1..N and unique
         routine.Exercises.Select(e => e.Order)
             .Should()
             .BeEquivalentTo(Enumerable.Range(1, routine.Exercises.Count));
@@ -48,7 +48,6 @@ public class WorkoutRoutineMoveExerciseTests
             .OnlyHaveUniqueItems();
     }
 
-    // This test verifies moving an exercise up (e.g., 3 -> 1) shifts other exercises down.
     [Fact]
     public void MoveExercise_Should_Move_Up_Correctly()
     {
@@ -63,7 +62,6 @@ public class WorkoutRoutineMoveExerciseTests
             (ex2, 3));
     }
 
-    // This test verifies moving an exercise down (e.g., 1 -> 3) shifts other exercises up.
     [Fact]
     public void MoveExercise_Should_Move_Down_Correctly()
     {
@@ -78,7 +76,6 @@ public class WorkoutRoutineMoveExerciseTests
             (ex1, 3));
     }
 
-    // This test ensures the method is idempotent when newOrder equals originalOrder.
     [Fact]
     public void MoveExercise_Should_Not_Change_When_NewOrder_Equals_OriginalOrder()
     {
@@ -93,7 +90,6 @@ public class WorkoutRoutineMoveExerciseTests
             (ex3, 3));
     }
 
-    // This test verifies boundary behavior: moving to the last position (2 -> 3).
     [Fact]
     public void MoveExercise_Should_Move_To_Last_Position_Correctly()
     {
@@ -108,7 +104,6 @@ public class WorkoutRoutineMoveExerciseTests
             (ex2, 3));
     }
 
-    // This test verifies boundary behavior: moving to the first position (2 -> 1).
     [Fact]
     public void MoveExercise_Should_Move_To_First_Position_Correctly()
     {
@@ -123,11 +118,11 @@ public class WorkoutRoutineMoveExerciseTests
             (ex3, 3));
     }
 
-    // This test ensures an exception is thrown when the exercise is not part of the routine.
     [Fact]
     public void MoveExercise_Should_Throw_When_Exercise_Not_Found()
     {
-        var routine = WorkoutRoutine.Create("Test", "Desc");
+        var gymId = Guid.NewGuid();
+        var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
 
         var ex1 = Guid.NewGuid();
         routine.AddExercise(ex1, 1, 3, 10, 60);
@@ -139,13 +134,13 @@ public class WorkoutRoutineMoveExerciseTests
             .WithMessage("Exercise not found in routine.");
     }
 
-    // This test ensures newOrder must be greater than zero.
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
     public void MoveExercise_Should_Throw_When_NewOrder_Is_Less_Than_Or_Equal_To_Zero(int invalidOrder)
     {
-        var routine = WorkoutRoutine.Create("Test", "Desc");
+        var gymId = Guid.NewGuid();
+        var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
 
         var ex1 = Guid.NewGuid();
         routine.AddExercise(ex1, 1, 3, 10, 60);
@@ -159,11 +154,11 @@ public class WorkoutRoutineMoveExerciseTests
             .WithMessage("New order must be greater than zero.");
     }
 
-    // This test ensures newOrder cannot exceed the number of exercises in the routine.
     [Fact]
     public void MoveExercise_Should_Throw_When_NewOrder_Exceeds_Exercise_Count()
     {
-        var routine = WorkoutRoutine.Create("Test", "Desc");
+        var gymId = Guid.NewGuid();
+        var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
 
         var ex1 = Guid.NewGuid();
         routine.AddExercise(ex1, 1, 3, 10, 60);
@@ -176,11 +171,12 @@ public class WorkoutRoutineMoveExerciseTests
             .Throw<DomainException>()
             .WithMessage("New order exceeds the number of exercises.");
     }
-    // This test ensures the routine can only be modified in Draft status.
+
     [Fact]
     public void MoveExercise_Should_Throw_When_Routine_Is_Not_Draft()
     {
-        var routine = WorkoutRoutine.Create("Test", "Desc");
+        var gymId = Guid.NewGuid();
+        var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
 
         var ex1 = Guid.NewGuid();
         routine.AddExercise(ex1, 1, 3, 10, 60);
@@ -193,6 +189,4 @@ public class WorkoutRoutineMoveExerciseTests
             .Throw<DomainException>()
             .WithMessage("Routine can only be modified in Draft state.");
     }
-
-
 }

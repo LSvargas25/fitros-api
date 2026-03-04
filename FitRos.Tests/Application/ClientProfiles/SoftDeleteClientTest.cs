@@ -5,6 +5,7 @@ using FitRos.Domain.Entities.Client;
 using FitRos.Domain.Entities.Enums;
 using FitRos.Domain.Enums;
 using FitRos.Infrastructure.Persistence;
+using FitRos.Tests.Helpers; // ✅ AÑADIR
 using FitRos.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -43,7 +44,7 @@ namespace FitRos.Tests.Application.ClientProfiles
         public async Task Coach_should_soft_delete_own_client()
         {
             var coachId = Guid.NewGuid();
-            var client = ClientProfile.Create(Guid.NewGuid(), coachId);
+            var client = ClientProfileMother.ForCoach(coachId); 
 
             using var context = CreateContext(client);
             var user = MockUser(coachId, UserRole.Coach);
@@ -61,7 +62,7 @@ namespace FitRos.Tests.Application.ClientProfiles
         [Fact]
         public async Task Admin_should_soft_delete_any_client()
         {
-            var client = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
+            var client = ClientProfileMother.Create(); 
 
             using var context = CreateContext(client);
             var user = MockUser(Guid.NewGuid(), UserRole.Admin);
@@ -78,10 +79,11 @@ namespace FitRos.Tests.Application.ClientProfiles
         [Fact]
         public async Task Coach_should_not_delete_other_coach_client()
         {
-            var client = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
+            var ownerCoachId = Guid.NewGuid();
+            var client = ClientProfileMother.ForCoach(ownerCoachId);  
 
             using var context = CreateContext(client);
-            var user = MockUser(Guid.NewGuid(), UserRole.Coach);
+            var user = MockUser(Guid.NewGuid(), UserRole.Coach);  
 
             var handler = new SoftDeleteClientCommandHandler(context, user);
 

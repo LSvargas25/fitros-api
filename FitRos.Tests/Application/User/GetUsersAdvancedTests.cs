@@ -40,9 +40,11 @@ public class GetUsersAdvancedTests
 
         await context.SaveChangesAsync(CancellationToken.None);
 
-        var currentUser = new FakeCurrentUser
+        var gymId = Guid.NewGuid();
+
+        var currentUser = new FakeCurrentUser(gymId)
         {
-            IsAuthenticated = true,
+            UserId = Guid.NewGuid(),
             Role = UserRole.OwnerApp
         };
         var handler = new GetUsersAdvancedHandler(context, currentUser);

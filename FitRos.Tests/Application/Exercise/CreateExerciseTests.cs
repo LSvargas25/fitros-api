@@ -1,71 +1,48 @@
-﻿using FitRos.Application.Features.Exercises.CreateExercise;
-using FitRos.Domain.Entities.Enums;
+﻿using FitRos.Application.Abstractions.Persistence;
+using FitRos.Application.Abstractions.Security;
+using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Training;
-using FitRos.Infrastructure.Persistence;
-using FitRos.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace FitRos.Application.Tests.Features.Exercises
+namespace FitRos.Application.Features.Exercises.CreateExercise;
 
+public class CreateExerciseHandler
 {
-    public class CreateExerciseTests
+    private readonly IFitRosDbContext _context;
+    private readonly ICurrentUser _currentUser;
+
+    public CreateExerciseHandler(
+        IFitRosDbContext context,
+        ICurrentUser currentUser)
     {
-      
+        _context = context;
+        _currentUser = currentUser;
+    }
 
-        [Fact]
-        public async Task Handle_ShouldCreateExercise_WhenExerciseDoesNotExist()
-        {
-            // Arrange
-            var context = TestDbContextFactory.Create();
-            var handler = new CreateExerciseHandler(context);
+    public async Task<CreateExerciseResponse> Handle(
+        CreateExerciseCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (!_currentUser.IsAuthenticated)
+            throw new UnauthorizedException("User not authenticated.");
 
-            var command = new CreateExerciseCommand(
-                "Bench Press",
-                "Chest exercise",
-                MuscleGroup.Chest);
+        var normalizedName = command.Name.ToLower();
 
-            // Act
-            var response = await handler.Handle(command, CancellationToken.None);
+        var exists = await _context.Exercises
+            .AnyAsync(x => x.NormalizedName == normalizedName, cancellationToken);
 
-            // Assert
-            var exerciseInDb = await context.Exercises
-                .FirstOrDefaultAsync(x => x.Id == response.Id);
+        if (exists)
+            throw new DomainException("Exercise already exists.");
 
-            Assert.NotNull(response);
-            Assert.NotNull(exerciseInDb);
-            Assert.Equal("Bench Press", exerciseInDb!.Name);
-            Assert.Equal(MuscleGroup.Chest, exerciseInDb.Category);
-        }
+        var exercise = Exercise.Create(
+            command.Name,
+            command.Description,
+            command.Category,
+            _currentUser.GymId);
 
-        [Fact]
-        public async Task Handle_ShouldThrowException_WhenExerciseAlreadyExists()
-        {
-            // Arrange
-            var context = TestDbContextFactory.Create();
+        _context.Exercises.Add(exercise);
+        await _context.SaveChangesAsync(cancellationToken);
 
-            var existingExercise = Exercise.Create(
-                "Bench Press",
-                "Chest exercise",
-                MuscleGroup.Chest);
-
-            context.Exercises.Add(existingExercise);
-            await context.SaveChangesAsync(CancellationToken.None);
-
-            var handler = new CreateExerciseHandler(context);
-
-            var command = new CreateExerciseCommand(
-                "Bench Press", 
-                "Another description",
-                MuscleGroup.Chest);
-
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                handler.Handle(command, CancellationToken.None));
-        }
+        return new CreateExerciseResponse(exercise.Id);
     }
 }

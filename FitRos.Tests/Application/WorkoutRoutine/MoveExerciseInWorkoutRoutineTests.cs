@@ -1,22 +1,22 @@
 ﻿using FitRos.Application.Features.WorkoutRoutines.MoveExerciseInWorkoutRoutine;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Training;
-using FitRos.Infrastructure.Persistence;
 using FitRos.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Xunit;
 
 namespace FitRos.Tests.Application.WorkoutRoutines;
 
 public class MoveExerciseInWorkoutRoutineHandlerTests
 {
-   
     private static WorkoutRoutine CreateRoutineWithThreeExercises(
-        out Guid ex1, out Guid ex2, out Guid ex3)
+        Guid gymId,
+        out Guid ex1,
+        out Guid ex2,
+        out Guid ex3)
     {
-        var routine = WorkoutRoutine.Create("Test", "Desc");
+        var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
 
         ex1 = Guid.NewGuid();
         ex2 = Guid.NewGuid();
@@ -39,7 +39,6 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
                 .ContainSingle(e => e.ExerciseId == exerciseId && e.Order == order);
         }
 
-        // Ensure no duplicates and contiguous range 1..N
         updatedRoutine.Exercises.Select(e => e.Order)
             .Should()
             .BeEquivalentTo(Enumerable.Range(1, updatedRoutine.Exercises.Count));
@@ -54,7 +53,8 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     {
         var context = TestDbContextFactory.Create();
 
-        var routine = CreateRoutineWithThreeExercises(out var ex1, out var ex2, out var ex3);
+        var gymId = Guid.NewGuid();
+        var routine = CreateRoutineWithThreeExercises(gymId, out var ex1, out var ex2, out var ex3);
 
         context.WorkoutRoutines.Add(routine);
         await context.SaveChangesAsync(CancellationToken.None);
@@ -82,7 +82,8 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     {
         var context = TestDbContextFactory.Create();
 
-        var routine = CreateRoutineWithThreeExercises(out var ex1, out var ex2, out var ex3);
+        var gymId = Guid.NewGuid();
+        var routine = CreateRoutineWithThreeExercises(gymId, out var ex1, out var ex2, out var ex3);
 
         context.WorkoutRoutines.Add(routine);
         await context.SaveChangesAsync(CancellationToken.None);
@@ -110,7 +111,8 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     {
         var context = TestDbContextFactory.Create();
 
-        var routine = WorkoutRoutine.Create("Test", "Desc");
+        var gymId = Guid.NewGuid();
+        var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
         var ex1 = Guid.NewGuid();
         var ex2 = Guid.NewGuid();
 
@@ -160,7 +162,8 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     {
         var context = TestDbContextFactory.Create();
 
-        var routine = WorkoutRoutine.Create("Test", "Desc");
+        var gymId = Guid.NewGuid();
+        var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
         context.WorkoutRoutines.Add(routine);
         await context.SaveChangesAsync(CancellationToken.None);
 
@@ -183,7 +186,8 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     {
         var context = TestDbContextFactory.Create();
 
-        var routine = WorkoutRoutine.Create("Test", "Desc");
+        var gymId = Guid.NewGuid();
+        var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
         var ex1 = Guid.NewGuid();
 
         routine.AddExercise(ex1, 1, 3, 10, 60);
@@ -207,7 +211,8 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     {
         var context = TestDbContextFactory.Create();
 
-        var routine = WorkoutRoutine.Create("Test", "Desc");
+        var gymId = Guid.NewGuid();
+        var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
         var ex1 = Guid.NewGuid();
 
         routine.AddExercise(ex1, 1, 3, 10, 60);
@@ -231,7 +236,8 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     {
         var context = TestDbContextFactory.Create();
 
-        var routine = WorkoutRoutine.Create("Test", "Desc");
+        var gymId = Guid.NewGuid();
+        var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
         var ex1 = Guid.NewGuid();
 
         routine.AddExercise(ex1, 1, 3, 10, 60);
@@ -259,7 +265,8 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     {
         var context = TestDbContextFactory.Create();
 
-        var routine = CreateRoutineWithThreeExercises(out var ex1, out var ex2, out var ex3);
+        var gymId = Guid.NewGuid();
+        var routine = CreateRoutineWithThreeExercises(gymId, out var ex1, out var ex2, out var ex3);
 
         context.WorkoutRoutines.Add(routine);
         await context.SaveChangesAsync(CancellationToken.None);

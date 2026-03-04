@@ -19,6 +19,7 @@ using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using FitRos.Application.Common.Behaviors;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,29 +58,21 @@ builder.Services.AddValidatorsFromAssemblyContaining<AssemblyReference>();
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly));
 
-// 1️⃣ Authentication (runs first)
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),
     typeof(AuthenticationBehavior<,>));
 
-// 2️⃣ Authorization (runs after authentication)
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),
     typeof(AuthorizationBehavior<,>));
 
-// 3️⃣ Validation (runs after authorization)
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),
     typeof(ValidationBehavior<,>));
-// 1️⃣ Authentication (runs first)
-builder.Services.AddTransient(
-    typeof(IPipelineBehavior<,>),
-    typeof(AuthenticationBehavior<,>));
 
-// 2️⃣ Validation (runs after authentication)
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),
-    typeof(ValidationBehavior<,>));
+    typeof(TenantGuardBehavior<,>));
 
 // =============================
 // Swagger

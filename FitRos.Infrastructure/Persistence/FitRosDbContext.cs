@@ -85,11 +85,7 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
                 .UseXminAsConcurrencyToken();
         }
 
-        // Multi-tenant filter
-        modelBuilder.Entity<User>()
-            .HasQueryFilter(u =>
-                !_currentUser.GymId.HasValue ||
-                u.GymId == _currentUser.GymId);
+        modelBuilder.ApplyTenantQueryFilters(_currentUser.GymId);
 
         SeedOwner(modelBuilder);
 
