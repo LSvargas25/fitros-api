@@ -1,4 +1,5 @@
-﻿using FitRos.Domain.Entities.Users;
+﻿using FitRos.Domain.Entities.Gym;
+using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -53,11 +54,20 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.UpdatedAt);
 
         builder.Property(x => x.PasswordResetTokenHash)
-       .HasMaxLength(500)
-       .IsRequired(false);
+            .HasMaxLength(500)
+            .IsRequired(false);
 
         builder.Property(x => x.PasswordResetTokenExpiresAtUtc)
             .IsRequired(false);
+
+        builder.Property(x => x.GymId)
+            .IsRequired(false);
+
+        builder
+            .HasOne<Gym>()
+            .WithMany()
+            .HasForeignKey(x => x.GymId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasQueryFilter(u => u.Status == UserStatus.Active);
     }

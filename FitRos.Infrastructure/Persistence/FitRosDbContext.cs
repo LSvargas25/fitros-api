@@ -5,6 +5,7 @@ using FitRos.Domain.Entities.Analytics;
 using FitRos.Domain.Entities.Auditing;
 using FitRos.Domain.Entities.Client;
 using FitRos.Domain.Entities.Enums;
+using FitRos.Domain.Entities.Gym;
 using FitRos.Domain.Entities.Outbox;
 using FitRos.Domain.Entities.Reports;
 using FitRos.Domain.Entities.Training;
@@ -18,9 +19,9 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
     private readonly ICurrentUser _currentUser;
 
     public FitRosDbContext(
-        DbContextOptions<FitRosDbContext> options,
-        ICurrentUser currentUser)
-        : base(options)
+       DbContextOptions<FitRosDbContext> options,
+       ICurrentUser currentUser)
+       : base(options)
     {
         _currentUser = currentUser;
     }
@@ -28,6 +29,7 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<WorkoutRoutine> WorkoutRoutines { get; set; } = null!;
     public DbSet<WorkoutSession> WorkoutSessions { get; set; } = null!;
+    public DbSet<Gym> Gyms { get; set; } = null!;
     public DbSet<Exercise> Exercises { get; set; } = null!;
     public DbSet<WorkoutRoutineExercise> WorkoutRoutineExercises { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
@@ -77,14 +79,18 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
         modelBuilder.Entity<ClientProfile>()
             .HasQueryFilter(c => c.Status != ClientStatus.Deleted);
 
-        // Apply xmin only when using PostgreSQL
         if (Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL")
         {
             modelBuilder.Entity<ClientProfile>()
                 .UseXminAsConcurrencyToken();
         }
 
-      
+        // Multi-tenant filter
+        modelBuilder.Entity<User>()
+            .HasQueryFilter(u =>
+                !_currentUser.GymId.HasValue ||
+                u.GymId == _currentUser.GymId);
+
         SeedOwner(modelBuilder);
 
         base.OnModelCreating(modelBuilder);

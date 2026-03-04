@@ -3,16 +3,12 @@ using FitRos.Domain.Entities.Analytics;
 using FitRos.Domain.Entities.Auditing;
 using FitRos.Domain.Entities.Client;
 using FitRos.Domain.Entities.Enums;
+using FitRos.Domain.Entities.Gym;
 using FitRos.Domain.Entities.Outbox;
 using FitRos.Domain.Entities.Reports;
 using FitRos.Domain.Entities.Training;
 using FitRos.Domain.Entities.Users;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FitRos.Tests.Application.ClientProfiles
 {
@@ -23,10 +19,11 @@ namespace FitRos.Tests.Application.ClientProfiles
             public TestFitRosDbContext(DbContextOptions<TestFitRosDbContext> options) : base(options) { }
 
             public DbSet<User> Users { get; set; } = null!;
+            public DbSet<Gym> Gyms => Set<Gym>();
+
             public DbSet<ClientProfile> ClientProfiles { get; set; } = null!;
             public DbSet<PhysicalMeasure> PhysicalMeasures { get; set; } = null!;
 
-            // New required DbSets
             public DbSet<AuditLogEntry> AuditLogEntries { get; set; } = null!;
             public DbSet<ClientKpiSnapshot> ClientKpiSnapshots { get; set; } = null!;
             public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
@@ -43,6 +40,8 @@ namespace FitRos.Tests.Application.ClientProfiles
             {
                 modelBuilder.Entity<User>().HasKey(x => x.Id);
 
+                modelBuilder.Entity<Gym>().HasKey(x => x.Id);
+
                 modelBuilder.Entity<ClientProfile>().HasKey(x => x.Id);
 
                 modelBuilder.Entity<PhysicalMeasure>().HasKey(x => x.Id);
@@ -52,7 +51,6 @@ namespace FitRos.Tests.Application.ClientProfiles
                     .WithOne()
                     .HasForeignKey(x => x.ClientProfileId);
 
-                // Minimal keys so InMemory does not complain
                 modelBuilder.Entity<AuditLogEntry>().HasKey(x => x.Id);
                 modelBuilder.Entity<ClientKpiSnapshot>().HasKey(x => x.Id);
                 modelBuilder.Entity<OutboxMessage>().HasKey(x => x.Id);
@@ -61,7 +59,5 @@ namespace FitRos.Tests.Application.ClientProfiles
                 base.OnModelCreating(modelBuilder);
             }
         }
-
-
     }
 }

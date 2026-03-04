@@ -18,17 +18,35 @@ public sealed class HttpContextCurrentUser : ICurrentUser
     private ClaimsPrincipal? User =>
         _httpContextAccessor.HttpContext?.User;
 
-    public Guid UserId
+    private string? GetClaim(string type)
+    {
+        return User?.FindFirstValue(type);
+    }
+
+    public Guid? UserId
     {
         get
         {
-            var sub = User?.FindFirstValue(JwtRegisteredClaimNames.Sub)
-                      ?? User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            var sub = GetClaim(JwtRegisteredClaimNames.Sub)
+                      ?? GetClaim(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrWhiteSpace(sub))
-                return Guid.Empty;
+                return null;
 
             return Guid.Parse(sub);
+        }
+    }
+
+    public Guid? GymId
+    {
+        get
+        {
+            var gymClaim = GetClaim("gymId");
+
+            if (string.IsNullOrWhiteSpace(gymClaim))
+                return null;
+
+            return Guid.Parse(gymClaim);
         }
     }
 
@@ -36,7 +54,7 @@ public sealed class HttpContextCurrentUser : ICurrentUser
     {
         get
         {
-            var roleClaim = User?.FindFirstValue(ClaimTypes.Role);
+            var roleClaim = GetClaim(ClaimTypes.Role);
 
             if (string.IsNullOrWhiteSpace(roleClaim))
                 return default;
@@ -47,6 +65,4 @@ public sealed class HttpContextCurrentUser : ICurrentUser
 
     public bool IsAuthenticated =>
         User?.Identity?.IsAuthenticated ?? false;
-
-    Guid? ICurrentUser.UserId => UserId;
 }

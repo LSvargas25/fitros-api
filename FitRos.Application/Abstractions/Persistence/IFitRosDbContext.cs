@@ -2,6 +2,7 @@
 using FitRos.Domain.Entities.Auditing;
 using FitRos.Domain.Entities.Client;
 using FitRos.Domain.Entities.Enums;
+using FitRos.Domain.Entities.Gym;
 using FitRos.Domain.Entities.Outbox;
 using FitRos.Domain.Entities.Reports;
 using FitRos.Domain.Entities.Training;
@@ -18,7 +19,7 @@ public interface IFitRosDbContext
     DbSet<WorkoutRoutine> WorkoutRoutines { get; }
     DbSet<WorkoutSession> WorkoutSessions { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
-
+    DbSet<Gym> Gyms { get; }
 
     DbSet<Exercise> Exercises { get; }
 

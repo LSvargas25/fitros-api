@@ -26,12 +26,17 @@ public sealed class TokenService : ITokenService
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new List<Claim>
+    {
+        new(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+        new(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email, user.Email),
+        new(ClaimTypes.Role, user.Role.ToString()),
+        new("roleId", ((int)user.Role).ToString())
+    };
+
+        if (user.GymId.HasValue)
         {
-            new(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email, user.Email),
-            new(ClaimTypes.Role, user.Role.ToString()),
-            new("roleId", ((int)user.Role).ToString())
-        };
+            claims.Add(new Claim("gymId", user.GymId.Value.ToString()));
+        }
 
         var token = new JwtSecurityToken(
             issuer: _settings.Issuer,
