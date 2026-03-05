@@ -155,9 +155,16 @@ public class DeleteUserTests
     [Fact]
     public async Task Should_Not_Delete_Client_With_Sessions()
     {
-        var context = TestDbContextFactory.Create();
-
         var gymId = Guid.NewGuid();
+
+        var currentUser = new FakeCurrentUser(gymId)
+        {
+            UserId = Guid.NewGuid(),
+            Role = UserRole.Admin,
+            IsAuthenticated = true
+        };
+
+        var context = TestDbContextFactory.Create(currentUser);
 
         var client = User.Create(
             "client@test.com",
@@ -166,6 +173,7 @@ public class DeleteUserTests
             "hashed",
             UserRole.Client);
 
+        client.AssignToGym(gymId);
         client.Deactivate();
 
         context.Add(client);
@@ -182,22 +190,15 @@ public class DeleteUserTests
         context.WorkoutSessions.Add(session);
         await context.SaveChangesAsync();
 
-        var currentUser = new FakeCurrentUser(gymId)
-        {
-            UserId = Guid.NewGuid(),
-            Role = UserRole.Admin,
-            IsAuthenticated = true
-        };
-
         var handler = new DeleteUserHandler(context, currentUser);
 
         var act = async () =>
             await handler.Handle(new DeleteUserCommand(client.Id), CancellationToken.None);
 
-        await act.Should().ThrowAsync<DomainException>()
+        await act.Should()
+            .ThrowAsync<DomainException>()
             .WithMessage("Cannot delete user with related workout sessions.");
     }
-
     [Fact]
     public async Task Coach_Should_Not_Delete_Coach()
     {

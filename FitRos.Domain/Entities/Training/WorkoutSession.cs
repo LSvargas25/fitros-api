@@ -17,6 +17,12 @@ public class WorkoutSession : AggregateRoot, ITenantEntity
 
     public Guid? GymId { get; private set; }
 
+    Guid? ITenantEntity.GymId
+    {
+        get => GymId;
+        set => GymId = value;
+    }
+
     public DateTime ScheduledDate { get; private set; }
 
     public WorkoutSessionStatus Status { get; private set; }

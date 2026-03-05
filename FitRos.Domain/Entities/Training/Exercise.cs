@@ -18,8 +18,13 @@ public class Exercise : ITenantEntity
     public bool IsArchived { get; private set; }
 
     public DateTime CreatedAt { get; private set; }
-
     public Guid? GymId { get; private set; }
+
+    Guid? ITenantEntity.GymId
+    {
+        get => GymId;
+        set => GymId = value;
+    }
 
     private Exercise() { }
 

@@ -27,14 +27,19 @@ public class AddPhysicalMeasureTests
     private static Mock<ICurrentUser> CreateCurrentUser(
         bool isAuthenticated,
         UserRole role,
-        Guid? userId)
+        Guid? userId,
+        Guid? gymId = null)
     {
         var mock = new Mock<ICurrentUser>();
+
         mock.Setup(x => x.IsAuthenticated).Returns(isAuthenticated);
         mock.Setup(x => x.Role).Returns(role);
         mock.Setup(x => x.UserId).Returns(userId);
+        mock.Setup(x => x.GymId).Returns(gymId);
+
         return mock;
     }
+
 
     [Fact]
     public async Task Should_Throw_When_User_Not_Authenticated()
@@ -88,15 +93,17 @@ public class AddPhysicalMeasureTests
     [Fact]
     public async Task Should_Throw_When_Coach_Not_Owner()
     {
+        var gymId = Guid.NewGuid();
         var realCoachId = Guid.NewGuid();
         var otherCoachId = Guid.NewGuid();
         var clientUserId = Guid.NewGuid();
 
-        var mockUser = CreateCurrentUser(true, UserRole.Coach, otherCoachId);
+        var mockUser = CreateCurrentUser(true, UserRole.Coach, otherCoachId, gymId);
 
         using var context = CreateContext(mockUser.Object);
 
-        var profile = ClientProfile.Create(clientUserId, realCoachId);
+        var profile = ClientProfile.Create(gymId, clientUserId, realCoachId);
+
         context.ClientProfiles.Add(profile);
         await context.SaveChangesAsync();
 
@@ -109,17 +116,20 @@ public class AddPhysicalMeasureTests
             handler.Handle(command, CancellationToken.None));
     }
 
+    
     [Fact]
     public async Task Should_Add_PhysicalMeasure_When_Valid()
     {
+        var gymId = Guid.NewGuid();
         var coachId = Guid.NewGuid();
         var clientUserId = Guid.NewGuid();
 
-        var mockUser = CreateCurrentUser(true, UserRole.Coach, coachId);
+        var mockUser = CreateCurrentUser(true, UserRole.Coach, coachId, gymId);
 
         using var context = CreateContext(mockUser.Object);
 
-        var profile = ClientProfile.Create(clientUserId, coachId);
+        var profile = ClientProfile.Create(gymId, clientUserId, coachId);
+
         context.ClientProfiles.Add(profile);
         await context.SaveChangesAsync();
 
@@ -131,8 +141,9 @@ public class AddPhysicalMeasureTests
         await handler.Handle(command, CancellationToken.None);
 
         var updated = await context.ClientProfiles
+            .IgnoreQueryFilters()
             .Include(x => x.Measures)
-            .FirstAsync();
+            .SingleAsync(x => x.Id == profile.Id);
 
         Assert.Single(updated.Measures);
     }

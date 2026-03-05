@@ -16,6 +16,12 @@ public sealed class ClientProgressReportSnapshot : ITenantEntity
 
     public Guid? GymId { get; private set; }
 
+    Guid? ITenantEntity.GymId
+    {
+        get => GymId;
+        set => GymId = value;
+    }
+
     private ClientProgressReportSnapshot() { }
 
     private ClientProgressReportSnapshot(

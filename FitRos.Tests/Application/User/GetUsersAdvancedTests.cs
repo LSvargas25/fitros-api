@@ -1,23 +1,28 @@
 ﻿using FitRos.Application.Features.Users.GetUsersAdvanced;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
-using FitRos.Infrastructure.Persistence;
 using FitRos.Tests.Infrastructure;
 using FitRos.Tests.TestDoubles;
 using FluentAssertions;
-using Microsoft.Data.Sqlite;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+
 namespace FitRos.Tests.Application.Users;
 
 public class GetUsersAdvancedTests
 {
- 
-
     [Fact]
     public async Task Should_Paginate_With_Composite_Cursor_Without_Duplicates()
     {
-        var context = TestDbContextFactory.Create();
+        var gymId = Guid.NewGuid();
+
+        var currentUser = new FakeCurrentUser(gymId)
+        {
+            UserId = Guid.NewGuid(),
+            Role = UserRole.OwnerApp,
+            IsAuthenticated = true
+        };
+
+        var context = TestDbContextFactory.Create(currentUser);
 
         var baseDate = DateTime.UtcNow;
 
@@ -31,6 +36,8 @@ public class GetUsersAdvancedTests
                 "hash",
                 UserRole.Client);
 
+            user.AssignToGym(gymId);
+
             // Force same CreatedAt
             typeof(User).GetProperty(nameof(User.CreatedAt))!
                 .SetValue(user, baseDate);
@@ -40,13 +47,6 @@ public class GetUsersAdvancedTests
 
         await context.SaveChangesAsync(CancellationToken.None);
 
-        var gymId = Guid.NewGuid();
-
-        var currentUser = new FakeCurrentUser(gymId)
-        {
-            UserId = Guid.NewGuid(),
-            Role = UserRole.OwnerApp
-        };
         var handler = new GetUsersAdvancedHandler(context, currentUser);
 
         // PAGE 1
@@ -56,7 +56,7 @@ public class GetUsersAdvancedTests
                 PageSize: 2,
                 SortBy: "createdAt",
                 SortDirection: "desc",
-                IncludeInactive: true  
+                IncludeInactive: true
             ),
             CancellationToken.None);
 
@@ -70,7 +70,7 @@ public class GetUsersAdvancedTests
                 PageSize: 2,
                 SortBy: "createdAt",
                 SortDirection: "desc",
-                IncludeInactive: true  
+                IncludeInactive: true
             ),
             CancellationToken.None);
 

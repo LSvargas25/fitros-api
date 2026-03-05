@@ -13,9 +13,9 @@ public class CreateWorkoutRoutineVersionTests
     [Fact]
     public async Task Should_Not_Create_New_Version_When_Draft_Already_Exists()
     {
-        var context = TestDbContextFactory.Create();
-
-        var gymId = Guid.NewGuid();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
         var v1 = WorkoutRoutine.Create(gymId, "Push Day", "Chest");
         v1.AddExercise(Guid.NewGuid(), 1, 3, 10, 60);

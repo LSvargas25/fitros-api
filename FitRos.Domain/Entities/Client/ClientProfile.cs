@@ -15,6 +15,12 @@ namespace FitRos.Domain.Entities.Client
         public ClientStatus Status { get; private set; }
         public Guid? GymId { get; private set; }
 
+        Guid? ITenantEntity.GymId
+        {
+            get => GymId;
+            set => GymId = value;
+        }
+
         public IReadOnlyCollection<PhysicalMeasure> Measures => _measures.AsReadOnly();
 
     

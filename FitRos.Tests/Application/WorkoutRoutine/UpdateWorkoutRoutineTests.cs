@@ -11,12 +11,13 @@ public class UpdateWorkoutRoutineTests
     [Fact]
     public async Task Should_Update_Routine_When_In_Draft_State()
     {
-        var context = TestDbContextFactory.Create();
-
-        var gymId = Guid.NewGuid();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
         var routine = WorkoutRoutine.Create(gymId, "Push Day", "Chest");
-        context.Add(routine);
+
+        context.WorkoutRoutines.Add(routine);
         await context.SaveChangesAsync();
 
         var handler = new UpdateWorkoutRoutineHandler(context);
@@ -58,12 +59,13 @@ public class UpdateWorkoutRoutineTests
     [Fact]
     public async Task Should_Throw_When_Name_Is_Empty()
     {
-        var context = TestDbContextFactory.Create();
-
-        var gymId = Guid.NewGuid();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
         var routine = WorkoutRoutine.Create(gymId, "Push Day", "Chest");
-        context.Add(routine);
+
+        context.WorkoutRoutines.Add(routine);
         await context.SaveChangesAsync();
 
         var handler = new UpdateWorkoutRoutineHandler(context);

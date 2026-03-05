@@ -5,16 +5,16 @@ namespace FitRos.Tests.TestDoubles;
 
 public class FakeCurrentUser : ICurrentUser
 {
-    public FakeCurrentUser(Guid gymId)
+    public FakeCurrentUser(Guid? gymId)
     {
         GymId = gymId;
     }
 
     public Guid? UserId { get; set; }
 
-    public UserRole Role { get; set; }
-
     public Guid? GymId { get; set; }
 
-    public bool IsAuthenticated { get; set; } = true;
+    public UserRole Role { get; set; } = UserRole.Admin;
+
+    public bool IsAuthenticated { get; set; }
 }

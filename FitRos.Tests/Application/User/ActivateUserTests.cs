@@ -34,7 +34,8 @@ public class ActivateUserTests
         var currentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
-            Role = UserRole.OwnerApp
+            Role = UserRole.OwnerApp,
+            IsAuthenticated = true
         };
 
         var handler = new ActivateUserHandler(context, currentUser);
@@ -70,7 +71,8 @@ public class ActivateUserTests
         var currentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
-            Role = UserRole.OwnerApp
+            Role = UserRole.OwnerApp,
+            IsAuthenticated = true
         };
 
         var handler = new ActivateUserHandler(context, currentUser);
@@ -95,7 +97,8 @@ public class ActivateUserTests
         var currentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
-            Role = UserRole.OwnerApp
+            Role = UserRole.OwnerApp,
+            IsAuthenticated = true
         };
 
         var handler = new ActivateUserHandler(context, currentUser);
@@ -132,7 +135,8 @@ public class ActivateUserTests
         var currentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
-            Role = UserRole.Admin
+            Role = UserRole.Admin,
+            IsAuthenticated = true
         };
 
         var handler = new ActivateUserHandler(context, currentUser);
@@ -165,9 +169,8 @@ public class ActivateUserTests
         var currentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
-         
-              IsAuthenticated = false
-
+            Role = UserRole.OwnerApp,
+            IsAuthenticated = false
         };
 
         var handler = new ActivateUserHandler(context, currentUser);

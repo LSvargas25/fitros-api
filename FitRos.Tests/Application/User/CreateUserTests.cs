@@ -15,17 +15,18 @@ public class CreateUserTests
     [Fact]
     public async Task Admin_Should_Create_Coach_Successfully()
     {
-        var context = TestDbContextFactory.Create();
-
         var gymId = Guid.NewGuid();
 
-        var fakeHasher = new FakePasswordHasher();
         var fakeCurrentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
             Role = UserRole.Admin,
             IsAuthenticated = true
         };
+
+        var context = TestDbContextFactory.Create(fakeCurrentUser);
+
+        var fakeHasher = new FakePasswordHasher();
 
         var handler = new CreateUserHandler(context, fakeHasher, fakeCurrentUser);
 
@@ -44,6 +45,7 @@ public class CreateUserTests
         response.Email.Should().Be("coach@test.com");
 
         var userInDb = await context.Users.FirstAsync();
+
         userInDb.PasswordHash.Should().Be("HASHED_Password123");
         userInDb.Role.Should().Be(UserRole.Coach);
     }

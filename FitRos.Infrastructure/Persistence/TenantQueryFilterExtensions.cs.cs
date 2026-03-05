@@ -24,8 +24,7 @@ public static class TenantQueryFilterExtensions
                 parameter,
                 nameof(ITenantEntity.GymId));
 
-            var constant = Expression.Constant(gymId);
-
+            var constant = Expression.Constant(gymId, typeof(Guid?));
             var body = Expression.Equal(property, constant);
 
             var lambda = Expression.Lambda(body, parameter);

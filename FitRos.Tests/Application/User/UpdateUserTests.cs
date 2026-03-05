@@ -139,9 +139,9 @@ public class UpdateUserTests
     [Fact]
     public async Task Should_Not_Change_Role_If_User_Has_Sessions()
     {
-        var context = TestDbContextFactory.Create();
-
         var gymId = Guid.NewGuid();
+
+        var context = TestDbContextFactory.Create(gymId);
 
         var client = User.Create(
             "client@test.com",
@@ -149,6 +149,9 @@ public class UpdateUserTests
             "User",
             "hashed",
             UserRole.Client);
+
+        // IMPORTANT
+        client.AssignToGym(gymId);
 
         context.Add(client);
         await context.SaveChangesAsync();

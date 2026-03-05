@@ -14,9 +14,9 @@ public class RemoveExerciseFromWorkoutRoutineTests
     [Fact]
     public async Task Handle_Should_Remove_Exercise_From_Routine()
     {
-        var context = TestDbContextFactory.Create();
-
-        var gymId = Guid.NewGuid();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
         var routine = WorkoutRoutine.Create(gymId, "Test Routine", "Desc");
 
@@ -43,7 +43,6 @@ public class RemoveExerciseFromWorkoutRoutineTests
 
         updatedRoutine.Exercises.Should().BeEmpty();
     }
-
     [Fact]
     public async Task Handle_Should_Throw_When_Routine_Not_Found()
     {
@@ -65,10 +64,12 @@ public class RemoveExerciseFromWorkoutRoutineTests
     [Fact]
     public async Task Handle_Should_Throw_When_Exercise_Not_In_Routine()
     {
-        var context = TestDbContextFactory.Create();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-        var gymId = Guid.NewGuid();
         var routine = WorkoutRoutine.Create(gymId, "Test Routine", "Desc");
+
         context.WorkoutRoutines.Add(routine);
         await context.SaveChangesAsync(CancellationToken.None);
 

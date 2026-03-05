@@ -2,6 +2,8 @@
 using FitRos.Application.Features.Gyms.CreateGym;
 using FitRos.Domain.Enums;
 using FitRos.Tests.Infrastructure;
+using FitRos.Tests.TestDoubles;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using Xunit;
 
@@ -12,8 +14,14 @@ public class CreateGymHandlerTests
     [Fact]
     public async Task Should_Create_Gym_And_Admin()
     {
-        var context = TestDbContextFactory.Create(
-            role: UserRole.OwnerApp);
+        var fakeUser = new FakeCurrentUser(null)
+        {
+            UserId = Guid.NewGuid(),
+            Role = UserRole.OwnerApp,
+            IsAuthenticated = true
+        };
+
+        var context = TestDbContextFactory.Create(fakeUser);
 
         var passwordHasher = new Mock<IPasswordHasher>();
 
@@ -21,18 +29,10 @@ public class CreateGymHandlerTests
             .Setup(x => x.Hash(It.IsAny<string>()))
             .Returns("hashed-password");
 
-        var currentUser = new Mock<ICurrentUser>();
-
-        currentUser.Setup(x => x.UserId)
-            .Returns(Guid.NewGuid());
-
-        currentUser.Setup(x => x.Role)
-            .Returns(UserRole.OwnerApp);
-
         var handler = new CreateGymHandler(
             context,
             passwordHasher.Object,
-            currentUser.Object);
+            fakeUser);
 
         var command = new CreateGymCommand(
             "FitRos Gym",
@@ -46,19 +46,27 @@ public class CreateGymHandlerTests
 
         var result = await handler.Handle(command, CancellationToken.None);
 
-        var gym = context.Gyms.First();
+        var gym = context.Gyms
+            .IgnoreQueryFilters()
+            .First();
 
         Assert.Equal("FitRos Gym", gym.Name);
 
-        var admin = context.Users.First(x => x.Role == UserRole.Admin);
+        var admin = context.Users
+            .IgnoreQueryFilters()
+            .First(x => x.Role == UserRole.Admin);
 
         Assert.Equal(gym.Id, admin.GymId);
 
-        var audit = context.AuditLogEntries.First();
+        var audit = context.AuditLogEntries
+            .IgnoreQueryFilters()
+            .First();
 
         Assert.Equal("GymCreated", audit.EventType);
 
-        var outbox = context.OutboxMessages.First();
+        var outbox = context.OutboxMessages
+            .IgnoreQueryFilters()
+            .First();
 
         Assert.Equal("GymCreated", outbox.Type);
     }

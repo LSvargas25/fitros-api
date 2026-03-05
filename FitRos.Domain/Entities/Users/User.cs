@@ -26,6 +26,12 @@ public sealed class User : ITenantEntity
 
     public Guid? GymId { get; private set; }
 
+    Guid? ITenantEntity.GymId
+    {
+        get => GymId;
+        set => GymId = value;
+    }
+
     private User() { }
 
     private User(

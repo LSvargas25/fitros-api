@@ -22,6 +22,12 @@ public class WorkoutRoutine : ITenantEntity
     public DateTime CreatedAt { get; private set; }
     public Guid? GymId { get; private set; }
 
+    Guid? ITenantEntity.GymId
+    {
+        get => GymId;
+        set => GymId = value;
+    }
+
     private readonly List<WorkoutRoutineExercise> _exercises = new();
     public IReadOnlyCollection<WorkoutRoutineExercise> Exercises => _exercises;
 

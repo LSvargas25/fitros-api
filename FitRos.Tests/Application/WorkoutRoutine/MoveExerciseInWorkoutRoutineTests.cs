@@ -51,9 +51,10 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     [Fact]
     public async Task Handle_Should_Move_Exercise_Up_Correctly()
     {
-        var context = TestDbContextFactory.Create();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-        var gymId = Guid.NewGuid();
         var routine = CreateRoutineWithThreeExercises(gymId, out var ex1, out var ex2, out var ex3);
 
         context.WorkoutRoutines.Add(routine);
@@ -80,7 +81,7 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     [Fact]
     public async Task Handle_Should_Move_Exercise_Down_Correctly()
     {
-        var context = TestDbContextFactory.Create();
+        using var context = SqliteTestDbContextFactory.Create();
 
         var gymId = Guid.NewGuid();
         var routine = CreateRoutineWithThreeExercises(gymId, out var ex1, out var ex2, out var ex3);
@@ -109,10 +110,12 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     [Fact]
     public async Task Handle_Should_Not_Change_When_NewOrder_Is_Same_As_CurrentOrder()
     {
-        var context = TestDbContextFactory.Create();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-        var gymId = Guid.NewGuid();
         var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
+
         var ex1 = Guid.NewGuid();
         var ex2 = Guid.NewGuid();
 
@@ -124,7 +127,10 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
 
         var handler = new MoveExerciseInWorkoutRoutineHandler(context);
 
-        var command = new MoveExerciseInWorkoutRoutineCommand(routine.Id, ex1, 1);
+        var command = new MoveExerciseInWorkoutRoutineCommand(
+            routine.Id,
+            ex1,
+            1);
 
         var result = await handler.Handle(command, CancellationToken.None);
 
@@ -160,10 +166,12 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     [Fact]
     public async Task Handle_Should_Throw_When_Exercise_Not_In_Routine()
     {
-        var context = TestDbContextFactory.Create();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-        var gymId = Guid.NewGuid();
         var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
+
         context.WorkoutRoutines.Add(routine);
         await context.SaveChangesAsync(CancellationToken.None);
 
@@ -184,9 +192,10 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     [Fact]
     public async Task Handle_Should_Throw_When_NewOrder_Is_Less_Than_Or_Equal_To_Zero()
     {
-        var context = TestDbContextFactory.Create();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-        var gymId = Guid.NewGuid();
         var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
         var ex1 = Guid.NewGuid();
 
@@ -209,9 +218,10 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     [Fact]
     public async Task Handle_Should_Throw_When_NewOrder_Exceeds_Exercise_Count()
     {
-        var context = TestDbContextFactory.Create();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-        var gymId = Guid.NewGuid();
         var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
         var ex1 = Guid.NewGuid();
 
@@ -234,9 +244,10 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     [Fact]
     public async Task Handle_Should_Not_Fail_When_Only_One_Exercise()
     {
-        var context = TestDbContextFactory.Create();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-        var gymId = Guid.NewGuid();
         var routine = WorkoutRoutine.Create(gymId, "Test", "Desc");
         var ex1 = Guid.NewGuid();
 
@@ -263,17 +274,25 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     [Fact]
     public async Task Handle_Should_Not_Leave_Temporary_Order_Values()
     {
-        var context = TestDbContextFactory.Create();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-        var gymId = Guid.NewGuid();
-        var routine = CreateRoutineWithThreeExercises(gymId, out var ex1, out var ex2, out var ex3);
+        var routine = CreateRoutineWithThreeExercises(
+            gymId,
+            out var ex1,
+            out var ex2,
+            out var ex3);
 
         context.WorkoutRoutines.Add(routine);
         await context.SaveChangesAsync(CancellationToken.None);
 
         var handler = new MoveExerciseInWorkoutRoutineHandler(context);
 
-        var command = new MoveExerciseInWorkoutRoutineCommand(routine.Id, ex3, 1);
+        var command = new MoveExerciseInWorkoutRoutineCommand(
+            routine.Id,
+            ex3,
+            1);
 
         await handler.Handle(command, CancellationToken.None);
 
@@ -281,6 +300,8 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
             .Include(r => r.Exercises)
             .FirstAsync(r => r.Id == routine.Id);
 
-        updatedRoutine.Exercises.Should().OnlyContain(e => e.Order > 0);
+        updatedRoutine.Exercises
+            .Should()
+            .OnlyContain(e => e.Order > 0);
     }
 }

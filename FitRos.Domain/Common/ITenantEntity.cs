@@ -8,7 +8,7 @@ namespace FitRos.Domain.Common
 {
     public interface ITenantEntity
     {
-        Guid? GymId { get; }
+        Guid? GymId { get; set; }
     }
     
 }

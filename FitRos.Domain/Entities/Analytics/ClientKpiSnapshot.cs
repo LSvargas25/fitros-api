@@ -20,6 +20,12 @@ public sealed class ClientKpiSnapshot : ITenantEntity
 
     public Guid? GymId { get; private set; }
 
+    Guid? ITenantEntity.GymId
+    {
+        get => GymId;
+        set => GymId = value;
+    }
+
 
     private ClientKpiSnapshot() { }
 

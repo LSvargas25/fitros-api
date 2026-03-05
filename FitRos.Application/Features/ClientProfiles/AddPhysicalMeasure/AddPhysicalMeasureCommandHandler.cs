@@ -23,13 +23,14 @@ public sealed class AddPhysicalMeasureCommandHandler
     }
 
     public async Task Handle(
-        AddPhysicalMeasureCommand request,
-        CancellationToken cancellationToken)
+     AddPhysicalMeasureCommand request,
+     CancellationToken cancellationToken)
     {
         if (!_currentUser.IsAuthenticated)
             throw new UnauthorizedException("User not authenticated.");
 
         var profile = await _context.ClientProfiles
+            .IgnoreQueryFilters()
             .Include(x => x.Measures)
             .FirstOrDefaultAsync(
                 x => x.Id == request.ClientProfileId,
@@ -37,6 +38,10 @@ public sealed class AddPhysicalMeasureCommandHandler
 
         if (profile is null)
             throw new NotFoundException("Client profile not found.");
+
+        // tenant validation
+        if (profile.GymId != _currentUser.GymId)
+            throw new ForbiddenException("Client does not belong to your gym.");
 
         ValidatePermissions(profile);
 

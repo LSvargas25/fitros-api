@@ -46,26 +46,49 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
     DbSet<ClientProgressReportSnapshot> IFitRosDbContext.ClientProgressReportSnapshots => ClientProgressReportSnapshots;
 
     public override async Task<int> SaveChangesAsync(
-     CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default)
     {
         var userId = _currentUser?.UserId;
+        var gymId = _currentUser?.GymId;
 
-        foreach (var entry in ChangeTracker.Entries<IAuditableEntity>())
+        foreach (var entry in ChangeTracker.Entries())
         {
-            if (entry.State == EntityState.Added)
-            {
-                entry.Property(nameof(IAuditableEntity.CreatedAt))
-                     .CurrentValue = DateTime.UtcNow;
+            // =========================
+            // AUDIT
+            // =========================
 
-                if (userId.HasValue)
-                    entry.Property(nameof(IAuditableEntity.CreatedBy))
-                         .CurrentValue = userId.Value;
+            if (entry.Entity is IAuditableEntity auditable)
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    entry.Property(nameof(IAuditableEntity.CreatedAt))
+                         .CurrentValue = DateTime.UtcNow;
+
+                    if (userId.HasValue)
+                        entry.Property(nameof(IAuditableEntity.CreatedBy))
+                             .CurrentValue = userId.Value;
+                }
+
+                if (entry.State == EntityState.Modified)
+                {
+                    if (userId.HasValue)
+                        auditable.SetModified(userId.Value);
+                }
             }
 
-            if (entry.State == EntityState.Modified)
+            // =========================
+            // TENANT AUTO ASSIGN
+            // =========================
+
+            if (entry.Entity is ITenantEntity tenantEntity)
             {
-                if (userId.HasValue)
-                    entry.Entity.SetModified(userId.Value);
+                if (entry.State == EntityState.Added)
+                {
+                    if (tenantEntity.GymId == null && gymId.HasValue)
+                    {
+                        tenantEntity.GymId = gymId.Value;
+                    }
+                }
             }
         }
 

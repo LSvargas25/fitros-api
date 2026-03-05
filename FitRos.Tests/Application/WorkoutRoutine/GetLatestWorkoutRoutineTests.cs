@@ -15,9 +15,9 @@ public class WorkoutRoutineVersioningFlowTests
     [Fact]
     public async Task Full_Versioning_Flow_Should_Work_Correctly()
     {
-        var context = TestDbContextFactory.Create();
-
-        var gymId = Guid.NewGuid();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
         var v1 = WorkoutRoutine.Create(gymId, "Push Day", "Chest");
         v1.AddExercise(Guid.NewGuid(), 1, 3, 10, 60);
@@ -26,11 +26,13 @@ public class WorkoutRoutineVersioningFlowTests
         await context.SaveChangesAsync(CancellationToken.None);
 
         var publishHandler = new PublishWorkoutRoutineHandler(context);
+
         await publishHandler.Handle(
             new PublishWorkoutRoutineCommand(v1.Id),
             CancellationToken.None);
 
         var publishedV1 = await context.WorkoutRoutines.FirstAsync(r => r.Id == v1.Id);
+
         publishedV1.Status.Should().Be(FitRos.Domain.Enums.RoutineStatus.Published);
         publishedV1.Version.Should().Be(1);
 

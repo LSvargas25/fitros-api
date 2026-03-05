@@ -17,9 +17,10 @@ public class CreateWorkoutRoutineTests
     [Fact]
     public async Task Should_Create_Routine_When_Name_Is_Unique()
     {
-        var context = TestDbContextFactory.Create();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-        var gymId = Guid.NewGuid();
         var currentUser = new FakeCurrentUser(gymId);
 
         var handler = new CreateWorkoutRoutineHandler(context, currentUser);
@@ -46,13 +47,18 @@ public class CreateWorkoutRoutineTests
     [Fact]
     public async Task Should_Throw_When_Name_Already_Exists()
     {
-        var context = TestDbContextFactory.Create();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-        var gymId = Guid.NewGuid();
         var currentUser = new FakeCurrentUser(gymId);
 
-        var existing = WorkoutRoutine.Create(gymId, "Push Day", "Chest routine");
-        context.Add(existing);
+        var existing = WorkoutRoutine.Create(
+            gymId,
+            "Push Day",
+            "Chest routine");
+
+        context.WorkoutRoutines.Add(existing);
         await context.SaveChangesAsync();
 
         var handler = new CreateWorkoutRoutineHandler(context, currentUser);
@@ -63,10 +69,10 @@ public class CreateWorkoutRoutineTests
             Description = "Another description"
         };
 
-        Func<Task> action = () =>
-            handler.Handle(command, CancellationToken.None);
+        Func<Task> act = async () =>
+            await handler.Handle(command, CancellationToken.None);
 
-        await action.Should()
+        await act.Should()
             .ThrowAsync<DomainException>()
             .WithMessage("A routine with this name already exists.");
     }

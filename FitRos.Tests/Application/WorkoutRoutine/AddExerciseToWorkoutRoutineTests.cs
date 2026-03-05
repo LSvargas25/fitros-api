@@ -10,144 +10,145 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace FitRos.Tests.Application.WorkoutRoutines
+namespace FitRos.Tests.Application.WorkoutRoutines;
+
+public class AddExerciseToWorkoutRoutineTests
 {
-    public class AddExerciseToWorkoutRoutineTests
+    [Fact]
+    public async Task Handle_Should_Add_Exercise_To_Routine()
     {
-        [Fact]
-        public async Task Handle_Should_Add_Exercise_To_Routine()
-        {
-            var context = TestDbContextFactory.Create();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-            var gymId = Guid.NewGuid();
+        var routine = WorkoutRoutine.Create(
+            gymId,
+            "Test Routine",
+            "Description");
 
-            var routine = WorkoutRoutine.Create(
-                gymId,
-                "Test Routine",
-                "Description");
+        var exercise = Exercise.Create(
+     "Bench Press",
+     "Chest exercise",
+     MuscleGroup.Chest,
+     gymId);
 
-            var exercise = Exercise.Create(
-                "Bench Press",
-                "Chest exercise",
-                MuscleGroup.Chest);
+        context.WorkoutRoutines.Add(routine);
+        context.Exercises.Add(exercise);
 
-            context.WorkoutRoutines.Add(routine);
-            context.Exercises.Add(exercise);
+        await context.SaveChangesAsync(CancellationToken.None);
 
-            await context.SaveChangesAsync(CancellationToken.None);
+        var handler = new AddExerciseToWorkoutRoutineHandler(context);
 
-            var handler = new AddExerciseToWorkoutRoutineHandler(context);
+        var command = new AddExerciseToWorkoutRoutineCommand(
+            routine.Id,
+            exercise.Id,
+            1,
+            4,
+            10,
+            90);
 
-            var command = new AddExerciseToWorkoutRoutineCommand(
-                WorkoutRoutineId: routine.Id,
-                ExerciseId: exercise.Id,
-                Order: 1,
-                SuggestedSets: 4,
-                SuggestedReps: 10,
-                SuggestedRestSeconds: 90);
+        var result = await handler.Handle(command, CancellationToken.None);
 
-            var result = await handler.Handle(command, CancellationToken.None);
+        result.Should().BeTrue();
 
-            result.Should().BeTrue();
+        var updatedRoutine = await context.WorkoutRoutines
+            .Include(r => r.Exercises)
+            .FirstAsync(r => r.Id == routine.Id);
 
-            var updatedRoutine = await context.WorkoutRoutines
-                .Include(r => r.Exercises)
-                .FirstAsync();
+        updatedRoutine.Exercises.Should().HaveCount(1);
+    }
 
-            updatedRoutine.Exercises.Should().HaveCount(1);
-        }
+    [Fact]
+    public async Task Handle_Should_Throw_When_Adding_Duplicate_Exercise()
+    {
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-        [Fact]
-        public async Task Handle_Should_Throw_When_Adding_Duplicate_Exercise()
-        {
-            var context = TestDbContextFactory.Create();
+        var routine = WorkoutRoutine.Create(
+            gymId,
+            "Test Routine",
+            "Description");
 
-            var gymId = Guid.NewGuid();
+        var exercise = Exercise.Create(
+            "Bench Press",
+            "Chest exercise",
+            MuscleGroup.Chest,
+            gymId);
 
-            var routine = WorkoutRoutine.Create(
-                gymId,
-                "Test Routine",
-                "Description");
+        context.WorkoutRoutines.Add(routine);
+        context.Exercises.Add(exercise);
 
-            var exercise = Exercise.Create(
-                "Bench Press",
-                "Chest exercise",
-                MuscleGroup.Chest);
+        await context.SaveChangesAsync(CancellationToken.None);
 
-            context.WorkoutRoutines.Add(routine);
-            context.Exercises.Add(exercise);
+        var handler = new AddExerciseToWorkoutRoutineHandler(context);
 
-            await context.SaveChangesAsync(CancellationToken.None);
+        var command = new AddExerciseToWorkoutRoutineCommand(
+            routine.Id,
+            exercise.Id,
+            1,
+            4,
+            10,
+            90);
 
-            var handler = new AddExerciseToWorkoutRoutineHandler(context);
+        await handler.Handle(command, CancellationToken.None);
 
-            var command = new AddExerciseToWorkoutRoutineCommand(
-                WorkoutRoutineId: routine.Id,
-                ExerciseId: exercise.Id,
-                Order: 1,
-                SuggestedSets: 4,
-                SuggestedReps: 10,
-                SuggestedRestSeconds: 90);
-
+        Func<Task> act = async () =>
             await handler.Handle(command, CancellationToken.None);
 
-            Func<Task> act = async () =>
-                await handler.Handle(command, CancellationToken.None);
+        await act.Should()
+            .ThrowAsync<DomainException>()
+            .WithMessage("This exercise is already part of the routine.");
+    }
 
-            await act.Should()
-                .ThrowAsync<DomainException>()
-                .WithMessage("This exercise is already part of the routine.");
-        }
+    [Fact]
+    public async Task Handle_Should_Throw_When_Routine_Is_Published()
+    {
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-        [Fact]
-        public async Task Handle_Should_Throw_When_Routine_Is_Published()
-        {
-            var context = TestDbContextFactory.Create();
+        var routine = WorkoutRoutine.Create(
+            gymId,
+            "Test Routine",
+            "Description");
 
-            var gymId = Guid.NewGuid();
+        var firstExercise = Exercise.Create(
+            "Bench Press",
+            "Chest exercise",
+            MuscleGroup.Chest);
 
-            var routine = WorkoutRoutine.Create(
-                gymId,
-                "Test Routine",
-                "Description");
+        var secondExercise = Exercise.Create(
+            "Lat Pulldown",
+            "Back exercise",
+            MuscleGroup.Back);
 
-            var firstExercise = Exercise.Create(
-                "Bench Press",
-                "Chest exercise",
-                MuscleGroup.Chest);
+        context.WorkoutRoutines.Add(routine);
+        context.Exercises.Add(firstExercise);
+        context.Exercises.Add(secondExercise);
 
-            var secondExercise = Exercise.Create(
-                "Lat Pulldown",
-                "Back exercise",
-                MuscleGroup.Back);
+        await context.SaveChangesAsync(CancellationToken.None);
 
-            context.WorkoutRoutines.Add(routine);
-            context.Exercises.Add(firstExercise);
-            context.Exercises.Add(secondExercise);
+        routine.AddExercise(firstExercise.Id, 1, 4, 10, 90);
+        routine.Publish();
 
-            await context.SaveChangesAsync(CancellationToken.None);
+        await context.SaveChangesAsync(CancellationToken.None);
 
-            routine.AddExercise(firstExercise.Id, 1, 4, 10, 90);
-            routine.Publish();
+        var handler = new AddExerciseToWorkoutRoutineHandler(context);
 
-            await context.SaveChangesAsync(CancellationToken.None);
+        var command = new AddExerciseToWorkoutRoutineCommand(
+            routine.Id,
+            secondExercise.Id,
+            2,
+            3,
+            12,
+            60);
 
-            var handler = new AddExerciseToWorkoutRoutineHandler(context);
+        Func<Task> act = async () =>
+            await handler.Handle(command, CancellationToken.None);
 
-            var command = new AddExerciseToWorkoutRoutineCommand(
-                WorkoutRoutineId: routine.Id,
-                ExerciseId: secondExercise.Id,
-                Order: 2,
-                SuggestedSets: 3,
-                SuggestedReps: 12,
-                SuggestedRestSeconds: 60);
-
-            Func<Task> act = async () =>
-                await handler.Handle(command, CancellationToken.None);
-
-            await act.Should()
-                .ThrowAsync<DomainException>()
-                .WithMessage("Routine can only be modified in Draft state.");
-        }
+        await act.Should()
+            .ThrowAsync<DomainException>()
+            .WithMessage("Routine can only be modified in Draft state.");
     }
 }

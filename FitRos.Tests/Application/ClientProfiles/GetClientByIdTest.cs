@@ -3,10 +3,8 @@ using FitRos.Application.Features.ClientProfiles.GetById;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Client;
 using FitRos.Domain.Enums;
-using FitRos.Infrastructure.Persistence;
 using FitRos.Tests.Infrastructure;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Moq;
 using System;
 using System.Threading;
@@ -14,110 +12,115 @@ using System.Threading.Tasks;
 using Xunit;
 
 namespace FitRos.Tests.Application.ClientProfiles.GetById
-{ 
-public sealed class GetClientByIdTest
 {
-    private static ICurrentUser MockUser(Guid? id, UserRole role)
+    public sealed class GetClientByIdTest
     {
-        var mock = new Mock<ICurrentUser>();
-        mock.Setup(x => x.UserId).Returns(id);
-        mock.Setup(x => x.Role).Returns(role);
-        mock.Setup(x => x.IsAuthenticated).Returns(true);
-        return mock.Object;
-    }
+        private static ICurrentUser MockUser(Guid? id, UserRole role)
+        {
+            var mock = new Mock<ICurrentUser>();
+            mock.Setup(x => x.UserId).Returns(id);
+            mock.Setup(x => x.Role).Returns(role);
+            mock.Setup(x => x.IsAuthenticated).Returns(true);
+            mock.Setup(x => x.GymId).Returns(Guid.NewGuid());
+            return mock.Object;
+        }
 
-    [Fact]
-    public async Task Coach_should_get_own_client()
-    {
-        var coachId = Guid.NewGuid();
-        var createdBy = Guid.NewGuid();
+        [Fact]
+        public async Task Coach_should_get_own_client()
+        {
+            var gymId = Guid.NewGuid();
+            var coachId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
 
-        var user = MockUser(coachId, UserRole.Coach);
-        var context = TestDbContextFactory.Create(UserRole.Coach, coachId);
+            var user = MockUser(coachId, UserRole.Coach);
+            var context = TestDbContextFactory.Create(user);
 
-        var client = ClientProfile.Create(
-            Guid.NewGuid(),
-            coachId);
+            var client = ClientProfile.Create(
+                gymId,
+                userId,
+                coachId);
 
-        context.ClientProfiles.Add(client);
-        await context.SaveChangesAsync();
+            context.ClientProfiles.Add(client);
+            await context.SaveChangesAsync();
 
-        var handler = new GetClientByIdQueryHandler(context, user);
+            var handler = new GetClientByIdQueryHandler(context, user);
 
-        var result = await handler.Handle(
-            new GetClientByIdQuery(client.Id),
-            CancellationToken.None);
-
-        result.Id.Should().Be(client.Id);
-    }
-
-    [Fact]
-    public async Task Coach_should_not_access_other_client()
-    {
-        var coachId = Guid.NewGuid();
-        var otherCoachId = Guid.NewGuid();
-        var createdBy = Guid.NewGuid();
-
-        var user = MockUser(coachId, UserRole.Coach);
-        var context = TestDbContextFactory.Create(UserRole.Coach, coachId);
-
-        var client = ClientProfile.Create(
-            Guid.NewGuid(),
-            otherCoachId
-            );
-
-        context.ClientProfiles.Add(client);
-        await context.SaveChangesAsync();
-
-        var handler = new GetClientByIdQueryHandler(context, user);
-
-        await Assert.ThrowsAsync<ForbiddenException>(() =>
-            handler.Handle(
+            var result = await handler.Handle(
                 new GetClientByIdQuery(client.Id),
-                CancellationToken.None));
-    }
+                CancellationToken.None);
 
-    [Fact]
-    public async Task Admin_should_access_any_client()
-    {
-        var adminId = Guid.NewGuid();
-        var createdBy = Guid.NewGuid();
+            result.Id.Should().Be(client.Id);
+        }
 
-        var user = MockUser(adminId, UserRole.Admin);
-        var context = TestDbContextFactory.Create(UserRole.Admin, adminId);
+        [Fact]
+        public async Task Coach_should_not_access_other_client()
+        {
+            var gymId = Guid.NewGuid();
+            var coachId = Guid.NewGuid();
+            var otherCoachId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
 
-        var client = ClientProfile.Create(
-            Guid.NewGuid(),
-            Guid.NewGuid());
+            var user = MockUser(coachId, UserRole.Coach);
+            var context = TestDbContextFactory.Create(user);
 
-        context.ClientProfiles.Add(client);
-        await context.SaveChangesAsync();
+            var client = ClientProfile.Create(
+                gymId,
+                userId,
+                otherCoachId);
 
-        var handler = new GetClientByIdQueryHandler(context, user);
+            context.ClientProfiles.Add(client);
+            await context.SaveChangesAsync();
 
-        var result = await handler.Handle(
-            new GetClientByIdQuery(client.Id),
-            CancellationToken.None);
+            var handler = new GetClientByIdQueryHandler(context, user);
 
-        result.Id.Should().Be(client.Id);
-    }
+            await Assert.ThrowsAsync<ForbiddenException>(() =>
+                handler.Handle(
+                    new GetClientByIdQuery(client.Id),
+                    CancellationToken.None));
+        }
 
-    [Fact]
-    public async Task Should_throw_if_not_found()
-    {
-        var adminId = Guid.NewGuid();
+        [Fact]
+        public async Task Admin_should_access_any_client()
+        {
+            var gymId = Guid.NewGuid();
+            var adminId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var coachId = Guid.NewGuid();
 
-        var user = MockUser(adminId, UserRole.Admin);
-        var context = TestDbContextFactory.Create(UserRole.Admin, adminId);
+            var user = MockUser(adminId, UserRole.Admin);
+            var context = TestDbContextFactory.Create(user);
 
-        var handler = new GetClientByIdQueryHandler(context, user);
+            var client = ClientProfile.Create(
+                gymId,
+                userId,
+                coachId);
+
+            context.ClientProfiles.Add(client);
+            await context.SaveChangesAsync();
+
+            var handler = new GetClientByIdQueryHandler(context, user);
+
+            var result = await handler.Handle(
+                new GetClientByIdQuery(client.Id),
+                CancellationToken.None);
+
+            result.Id.Should().Be(client.Id);
+        }
+
+        [Fact]
+        public async Task Should_throw_if_not_found()
+        {
+            var adminId = Guid.NewGuid();
+
+            var user = MockUser(adminId, UserRole.Admin);
+            var context = TestDbContextFactory.Create(user);
+
+            var handler = new GetClientByIdQueryHandler(context, user);
 
             await Assert.ThrowsAsync<NotFoundException>(() =>
-                   handler.Handle(
-                new GetClientByIdQuery(Guid.NewGuid()),
-                CancellationToken.None));
+                handler.Handle(
+                    new GetClientByIdQuery(Guid.NewGuid()),
+                    CancellationToken.None));
+        }
     }
-}
-
-    
 }

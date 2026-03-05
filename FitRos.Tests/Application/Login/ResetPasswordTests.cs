@@ -2,188 +2,227 @@
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
-using FitRos.Infrastructure.Persistence;
 using FitRos.Tests.Infrastructure;
 using FitRos.Tests.TestDoubles;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace FitRos.Tests.Application.Login
+namespace FitRos.Tests.Application.Login;
+
+public sealed class ResetPasswordTests
 {
-    public sealed class ResetPasswordTests
+    [Fact]
+    public async Task Should_Reset_Password_And_Clear_Token_When_Valid()
     {
-       
+        // Arrange
+        var tokenGenerator = new FakeResetTokenGenerator();
+        var passwordHasher = new FakePasswordHasher();
 
-        [Fact]
-        public async Task Should_Reset_Password_And_Clear_Token_When_Valid()
-        {
-            var context = TestDbContextFactory.Create();
+        var rawToken = "valid-token";
+        var hashedToken = tokenGenerator.Hash(rawToken);
 
-            var tokenGenerator = new FakeResetTokenGenerator();
-            var passwordHasher = new FakePasswordHasher();
+        var gymId = Guid.NewGuid();
 
-            var rawToken = "valid-token";
-            var hashedToken = tokenGenerator.Hash(rawToken);
+        var context = TestDbContextFactory.Create(gymId);
 
-            var user = User.Create(
+        var user = User.CreateForGym(
+            gymId,
+            "user@test.com",
+            "John",
+            "Doe",
+            "old-hash",
+            UserRole.Client);
+
+        user.SetPasswordResetToken(
+            hashedToken,
+            DateTime.UtcNow.AddMinutes(30));
+
+        context.Users.Add(user);
+
+        context.RefreshTokens.Add(
+            RefreshToken.Create(
+                user.Id,
+                "refresh-hash",
+                DateTime.UtcNow.AddDays(30)));
+
+        await context.SaveChangesAsync();
+
+        context.ChangeTracker.Clear();
+
+        var handler = new ResetPasswordHandler(
+            context,
+            passwordHasher,
+            tokenGenerator);
+
+        // Act
+        await handler.Handle(
+            new ResetPasswordCommand(
                 "user@test.com",
-                "John",
-                "Doe",
-                "old-hash",
-                UserRole.Client);
+                rawToken,
+                "NewPassword123"),
+            CancellationToken.None);
 
-            user.SetPasswordResetToken(hashedToken, DateTime.UtcNow.AddMinutes(30));
+        // Assert
+        var expectedHash = passwordHasher.Hash("NewPassword123");
 
-            context.Users.Add(user);
-            context.RefreshTokens.Add(
-                RefreshToken.Create(
-                    user.Id,
-                    "refresh-hash",
-                    DateTime.UtcNow.AddDays(30)));
+        var updatedUser = await context.Users.FirstAsync();
 
-            await context.SaveChangesAsync();
+        updatedUser.PasswordHash.Should().Be(expectedHash);
+        updatedUser.PasswordResetTokenHash.Should().BeNull();
+        updatedUser.PasswordResetTokenExpiresAtUtc.Should().BeNull();
 
-            var handler = new ResetPasswordHandler(
-                context,
-                passwordHasher,
-                tokenGenerator);
+        context.RefreshTokens.Should().BeEmpty();
+    }
 
+    [Fact]
+    public async Task Should_Throw_When_User_Not_Found()
+    {
+        var gymId = Guid.NewGuid();
+        var context = TestDbContextFactory.Create(gymId);
+
+        var handler = new ResetPasswordHandler(
+            context,
+            new FakePasswordHasher(),
+            new FakeResetTokenGenerator());
+
+        var act = async () =>
             await handler.Handle(
-                new ResetPasswordCommand("user@test.com", rawToken, "NewPassword123"),
+                new ResetPasswordCommand(
+                    "notfound@test.com",
+                    "token",
+                    "Password123"),
                 CancellationToken.None);
 
-            var expectedHash = passwordHasher.Hash("NewPassword123");
+        await act.Should().ThrowAsync<DomainException>()
+            .WithMessage("Invalid reset token.");
+    }
 
-            user.PasswordHash.Should().Be(expectedHash);
-            user.PasswordResetTokenHash.Should().BeNull();
-            user.PasswordResetTokenExpiresAtUtc.Should().BeNull();
+    [Fact]
+    public async Task Should_Throw_When_User_Is_Inactive()
+    {
+        var gymId = Guid.NewGuid();
+        var context = TestDbContextFactory.Create(gymId);
 
-            context.RefreshTokens.Should().BeEmpty();
-        }
+        var tokenGenerator = new FakeResetTokenGenerator();
 
-        [Fact]
-        public async Task Should_Throw_When_User_Not_Found()
-        {
-            var context = TestDbContextFactory.Create();
+        var rawToken = "valid-token";
+        var hashedToken = tokenGenerator.Hash(rawToken);
 
-            var handler = new ResetPasswordHandler(
-                context,
-                new FakePasswordHasher(),
-                new FakeResetTokenGenerator());
+        var user = User.CreateForGym(
+            gymId,
+            "user@test.com",
+            "John",
+            "Doe",
+            "old-hash",
+            UserRole.Client);
 
-            var act = async () =>
-                await handler.Handle(
-                    new ResetPasswordCommand("notfound@test.com", "token", "Password123"),
-                    CancellationToken.None);
+        user.SetPasswordResetToken(hashedToken, DateTime.UtcNow.AddMinutes(30));
+        user.Deactivate();
 
-            await act.Should().ThrowAsync<DomainException>()
-                .WithMessage("Invalid reset token.");
-        }
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
 
-        [Fact]
-        public async Task Should_Throw_When_User_Is_Inactive()
-        {
-            var context = TestDbContextFactory.Create();
+        context.ChangeTracker.Clear();
 
-            var tokenGenerator = new FakeResetTokenGenerator();
-            var rawToken = "valid-token";
-            var hashedToken = tokenGenerator.Hash(rawToken);
+        var handler = new ResetPasswordHandler(
+            context,
+            new FakePasswordHasher(),
+            tokenGenerator);
 
-            var user = User.Create(
-                "user@test.com",
-                "John",
-                "Doe",
-                "old-hash",
-                UserRole.Client);
+        var act = async () =>
+            await handler.Handle(
+                new ResetPasswordCommand(
+                    "user@test.com",
+                    rawToken,
+                    "Password123"),
+                CancellationToken.None);
 
-            user.SetPasswordResetToken(hashedToken, DateTime.UtcNow.AddMinutes(30));
-            user.Deactivate();
+        await act.Should().ThrowAsync<DomainException>()
+            .WithMessage("Invalid reset token.");
+    }
 
-            context.Users.Add(user);
-            await context.SaveChangesAsync();
+    [Fact]
+    public async Task Should_Throw_When_Token_Is_Invalid()
+    {
+        var gymId = Guid.NewGuid();
+        var context = TestDbContextFactory.Create(gymId);
 
-            var handler = new ResetPasswordHandler(
-                context,
-                new FakePasswordHasher(),
-                tokenGenerator);
+        var tokenGenerator = new FakeResetTokenGenerator();
+        var validHash = tokenGenerator.Hash("valid-token");
 
-            var act = async () =>
-                await handler.Handle(
-                    new ResetPasswordCommand("user@test.com", rawToken, "Password123"),
-                    CancellationToken.None);
+        var user = User.CreateForGym(
+            gymId,
+            "user@test.com",
+            "John",
+            "Doe",
+            "old-hash",
+            UserRole.Client);
 
-            await act.Should().ThrowAsync<DomainException>()
-                .WithMessage("Invalid reset token.");
-        }
+        user.SetPasswordResetToken(validHash, DateTime.UtcNow.AddMinutes(30));
 
-        [Fact]
-        public async Task Should_Throw_When_Token_Is_Invalid()
-        {
-            var context = TestDbContextFactory.Create();
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
 
-            var tokenGenerator = new FakeResetTokenGenerator();
-            var validHash = tokenGenerator.Hash("valid-token");
+        context.ChangeTracker.Clear();
 
-            var user = User.Create(
-                "user@test.com",
-                "John",
-                "Doe",
-                "old-hash",
-                UserRole.Client);
+        var handler = new ResetPasswordHandler(
+            context,
+            new FakePasswordHasher(),
+            tokenGenerator);
 
-            user.SetPasswordResetToken(validHash, DateTime.UtcNow.AddMinutes(30));
+        var act = async () =>
+            await handler.Handle(
+                new ResetPasswordCommand(
+                    "user@test.com",
+                    "wrong-token",
+                    "Password123"),
+                CancellationToken.None);
 
-            context.Users.Add(user);
-            await context.SaveChangesAsync();
+        await act.Should().ThrowAsync<DomainException>()
+            .WithMessage("Invalid reset token.");
+    }
 
-            var handler = new ResetPasswordHandler(
-                context,
-                new FakePasswordHasher(),
-                tokenGenerator);
+    [Fact]
+    public async Task Should_Throw_When_Token_Is_Expired()
+    {
+        var gymId = Guid.NewGuid();
+        var context = TestDbContextFactory.Create(gymId);
 
-            var act = async () =>
-                await handler.Handle(
-                    new ResetPasswordCommand("user@test.com", "wrong-token", "Password123"),
-                    CancellationToken.None);
+        var tokenGenerator = new FakeResetTokenGenerator();
 
-            await act.Should().ThrowAsync<DomainException>()
-                .WithMessage("Invalid reset token.");
-        }
+        var rawToken = "valid-token";
+        var hashedToken = tokenGenerator.Hash(rawToken);
 
-        [Fact]
-        public async Task Should_Throw_When_Token_Is_Expired()
-        {
-            var context = TestDbContextFactory.Create();
+        var user = User.CreateForGym(
+            gymId,
+            "user@test.com",
+            "John",
+            "Doe",
+            "old-hash",
+            UserRole.Client);
 
-            var tokenGenerator = new FakeResetTokenGenerator();
-            var rawToken = "valid-token";
-            var hashedToken = tokenGenerator.Hash(rawToken);
+        user.SetPasswordResetToken(hashedToken, DateTime.UtcNow.AddMinutes(-5));
 
-            var user = User.Create(
-                "user@test.com",
-                "John",
-                "Doe",
-                "old-hash",
-                UserRole.Client);
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
 
-            user.SetPasswordResetToken(hashedToken, DateTime.UtcNow.AddMinutes(-5));
+        context.ChangeTracker.Clear();
 
-            context.Users.Add(user);
-            await context.SaveChangesAsync();
+        var handler = new ResetPasswordHandler(
+            context,
+            new FakePasswordHasher(),
+            tokenGenerator);
 
-            var handler = new ResetPasswordHandler(
-                context,
-                new FakePasswordHasher(),
-                tokenGenerator);
+        var act = async () =>
+            await handler.Handle(
+                new ResetPasswordCommand(
+                    "user@test.com",
+                    rawToken,
+                    "Password123"),
+                CancellationToken.None);
 
-            var act = async () =>
-                await handler.Handle(
-                    new ResetPasswordCommand("user@test.com", rawToken, "Password123"),
-                    CancellationToken.None);
-
-            await act.Should().ThrowAsync<DomainException>()
-                .WithMessage("Invalid reset token.");
-        }
+        await act.Should().ThrowAsync<DomainException>()
+            .WithMessage("Invalid reset token.");
     }
 }

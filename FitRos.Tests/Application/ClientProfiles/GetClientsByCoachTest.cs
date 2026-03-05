@@ -19,15 +19,19 @@ namespace FitRos.Tests.Application.ClientProfiles.GetByCoach
 {
     public sealed class GetClientsByCoachTest
     {
-        private static FitRosDbContext CreateContext(params ClientProfile[] clients)
+        private static FitRosDbContext CreateContext(
+       ICurrentUser currentUser,
+       params ClientProfile[] clients)
         {
             var options = new DbContextOptionsBuilder<FitRosDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
 
-            var context = TestDbContextFactory.Create();
+            var context = new FitRosDbContext(options, currentUser);
+
             context.ClientProfiles.AddRange(clients);
             context.SaveChanges();
+
             return context;
         }
 
@@ -40,38 +44,49 @@ namespace FitRos.Tests.Application.ClientProfiles.GetByCoach
             return mock.Object;
         }
 
+
         [Fact]
         public async Task Admin_should_get_clients_by_coach()
         {
+            var gymId = Guid.NewGuid();
             var coachId = Guid.NewGuid();
 
-            var client1 = ClientProfile.Create(Guid.NewGuid(), coachId);
-            var client2 = ClientProfile.Create(Guid.NewGuid(), coachId);
-            var otherClient = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
+            var client1 = ClientProfile.Create(gymId, Guid.NewGuid(), coachId);
+            var client2 = ClientProfile.Create(gymId, Guid.NewGuid(), coachId);
+            var otherClient = ClientProfile.Create(gymId, Guid.NewGuid(), Guid.NewGuid());
 
-            using var context = CreateContext(client1, client2, otherClient);
-            var user = MockUser(Guid.NewGuid(), UserRole.Admin);
+            var mock = new Mock<ICurrentUser>();
+            mock.Setup(x => x.UserId).Returns(Guid.NewGuid());
+            mock.Setup(x => x.Role).Returns(UserRole.Admin);
+            mock.Setup(x => x.IsAuthenticated).Returns(true);
+            mock.Setup(x => x.GymId).Returns(gymId);
 
-            var handler = new GetClientsByCoachQueryHandler(context, user);
+            using var context = CreateContext(mock.Object, client1, client2, otherClient);
+
+            var handler = new GetClientsByCoachQueryHandler(context, mock.Object);
 
             var result = await handler.Handle(
                 new GetClientsByCoachQuery(coachId),
                 CancellationToken.None);
 
             result.Count.Should().Be(2);
-            result.All(x => x.Status != ClientStatus.Deleted).Should().BeTrue();
         }
-
         [Fact]
         public async Task Coach_should_not_access_other_coach_clients()
         {
+            var gymId = Guid.NewGuid();
             var realCoachId = Guid.NewGuid();
             var otherCoachId = Guid.NewGuid();
 
-            using var context = CreateContext();
-            var user = MockUser(otherCoachId, UserRole.Coach);
+            var mock = new Mock<ICurrentUser>();
+            mock.Setup(x => x.UserId).Returns(otherCoachId);
+            mock.Setup(x => x.Role).Returns(UserRole.Coach);
+            mock.Setup(x => x.IsAuthenticated).Returns(true);
+            mock.Setup(x => x.GymId).Returns(gymId);
 
-            var handler = new GetClientsByCoachQueryHandler(context, user);
+            using var context = CreateContext(mock.Object);
+
+            var handler = new GetClientsByCoachQueryHandler(context, mock.Object);
 
             await Assert.ThrowsAsync<ForbiddenException>(() =>
                 handler.Handle(

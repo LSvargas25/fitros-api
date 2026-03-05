@@ -62,11 +62,12 @@ public sealed class CreateUserHandler
 
         if (exists)
             throw new DomainException("Email already exists.");
- 
-      
+
+
         var hash = _passwordHasher.Hash(command.Password);
- 
-        var user = User.Create(
+
+        var user = User.CreateForGym(
+            _currentUser.GymId!.Value,
             command.Email,
             command.FirstName,
             command.LastName,

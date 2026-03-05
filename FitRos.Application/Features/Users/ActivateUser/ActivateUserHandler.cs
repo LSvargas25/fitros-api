@@ -4,7 +4,6 @@ using FitRos.Application.Common.Security;
 using FitRos.Domain.Common;
 using FitRos.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
- 
 
 namespace FitRos.Application.Features.Users.ActivateUser;
 
@@ -21,11 +20,20 @@ public sealed class ActivateUserHandler
         _currentUser = currentUser;
     }
 
-    public async Task Handle(ActivateUserCommand command, CancellationToken ct)
+    public async Task Handle(
+        ActivateUserCommand command,
+        CancellationToken ct)
     {
-  
+        // =========================
+        // Authentication
+        // =========================
+
         if (!_currentUser.IsAuthenticated)
             throw new UnauthorizedException("User not authenticated.");
+
+        // =========================
+        // Load target user
+        // =========================
 
         var user = await _context.Users
             .IgnoreQueryFilters()
@@ -34,19 +42,27 @@ public sealed class ActivateUserHandler
         if (user is null)
             throw new NotFoundException("User not found.");
 
-       
-        if (!_currentUser.IsOwner())
+        // =========================
+        // Authorization rules
+        // =========================
+
+        if (_currentUser.IsOwner())
         {
-            if (_currentUser.IsAdmin())
-            {
-                if (user.Role == UserRole.OwnerApp)
-                    throw new ForbiddenException("Admin cannot activate OwnerApp.");
-            }
-            else
-            {
-                throw new ForbiddenException("You are not authorized to activate users.");
-            }
+            // OwnerApp can activate anyone
         }
+        else if (_currentUser.IsAdmin())
+        {
+            if (user.Role == UserRole.OwnerApp)
+                throw new ForbiddenException("Admin cannot activate OwnerApp.");
+        }
+        else
+        {
+            throw new ForbiddenException("You are not authorized to activate users.");
+        }
+
+        // =========================
+        // Domain action
+        // =========================
 
         user.Activate();
 

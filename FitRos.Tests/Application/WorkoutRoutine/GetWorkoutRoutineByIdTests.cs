@@ -15,12 +15,13 @@ public class GetWorkoutRoutineByIdTests
     [Fact]
     public async Task Should_Return_Routine_When_Exists()
     {
-        var context = TestDbContextFactory.Create();
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+        var gymId = container.CurrentUser.GymId!.Value;
 
-        var gymId = Guid.NewGuid();
         var routine = WorkoutRoutine.Create(gymId, "Push Day", "Chest routine");
 
-        context.Add(routine);
+        context.WorkoutRoutines.Add(routine);
         await context.SaveChangesAsync();
 
         var handler = new GetWorkoutRoutineByIdHandler(context);
