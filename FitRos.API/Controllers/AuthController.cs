@@ -116,6 +116,7 @@ public sealed class AuthController : ControllerBase
     // =============================
 
     [HttpPost("logout")]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [SwaggerOperation(
         Summary = "Logout",

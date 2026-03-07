@@ -1,5 +1,6 @@
-﻿using FitRos.Application.Abstractions.Persistence;
+﻿ using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
+using FitRos.Application.Features.Users.CreateUser;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
@@ -9,23 +10,33 @@ using Microsoft.EntityFrameworkCore;
 namespace FitRos.Application.Features.Users.CreateUser;
 
 public sealed class CreateClientHandler
-    : IRequestHandler<CreateClientCommand, CreateUserResponse>
+: IRequestHandler<CreateClientCommand, CreateUserResponse>
 {
     private readonly IFitRosDbContext _context;
     private readonly IPasswordHasher _hasher;
+    private readonly ICurrentUser _currentUser;
 
-    public CreateClientHandler(
-        IFitRosDbContext context,
-        IPasswordHasher hasher)
+ 
+public CreateClientHandler(
+    IFitRosDbContext context,
+    IPasswordHasher hasher,
+    ICurrentUser currentUser)
     {
         _context = context;
         _hasher = hasher;
+        _currentUser = currentUser;
     }
 
     public async Task<CreateUserResponse> Handle(
         CreateClientCommand request,
         CancellationToken ct)
     {
+        if (!_currentUser.IsAuthenticated)
+            throw new UnauthorizedException("User not authenticated.");
+
+        if (_currentUser.GymId is null)
+            throw new DomainException("Current user is not assigned to a gym.");
+
         var normalizedEmail = request.Email.Trim().ToUpperInvariant();
 
         var exists = await _context.Users
@@ -37,7 +48,8 @@ public sealed class CreateClientHandler
 
         var passwordHash = _hasher.Hash(request.Password);
 
-        var user = User.Create(
+        var user = User.CreateForGym(
+            _currentUser.GymId.Value,
             request.Email,
             request.FirstName,
             request.LastName,
@@ -45,6 +57,7 @@ public sealed class CreateClientHandler
             UserRole.Client);
 
         _context.Users.Add(user);
+
         await _context.SaveChangesAsync(ct);
 
         return new CreateUserResponse(
@@ -55,3 +68,5 @@ public sealed class CreateClientHandler
             (int)user.Role);
     }
 }
+
+ 

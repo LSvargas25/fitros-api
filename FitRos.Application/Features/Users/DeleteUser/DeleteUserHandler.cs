@@ -105,7 +105,8 @@ public sealed class DeleteUserHandler
         if (target.Role == UserRole.Client)
         {
             var hasSessions = await _context.WorkoutSessions
-                .AnyAsync(x => x.UserId == target.Id, ct);
+     .IgnoreQueryFilters()
+     .AnyAsync(x => x.UserId == target.Id, ct);
 
             if (hasSessions)
                 throw new DomainException("Cannot delete user with related workout sessions.");

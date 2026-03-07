@@ -1,20 +1,20 @@
-﻿using FitRos.Application.Abstractions.Security;
+﻿using FitRos.Application.Abstractions.Persistence;
+using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Common.Security;
 using FitRos.Domain.Common;
 using FitRos.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
 namespace FitRos.Application.Common.Behaviors;
 
 public sealed class TenantGuardBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ITenantGuardedRequest
 {
-    private readonly DbContext _db;
+    private readonly IFitRosDbContext _db;
     private readonly ICurrentUser _currentUser;
 
-    public TenantGuardBehavior(DbContext db, ICurrentUser currentUser)
+    public TenantGuardBehavior(IFitRosDbContext db, ICurrentUser currentUser)
     {
         _db = db;
         _currentUser = currentUser;
@@ -42,22 +42,22 @@ public sealed class TenantGuardBehavior<TRequest, TResponse> : IPipelineBehavior
         if (!typeof(ITenantEntity).IsAssignableFrom(entityType))
             return await next();
 
-        var method = typeof(DbContext)
-            .GetMethod(nameof(DbContext.Set), Type.EmptyTypes)!
-            .MakeGenericMethod(entityType);
+        var dbContext = (DbContext)_db;
 
-        var set = (IQueryable)method.Invoke(_db, null)!;
+        // Use FindAsync — bypasses query filters entirely, works on both
+        // InMemory and real databases, and finds by primary key directly
+        var entity = await dbContext.FindAsync(entityType, request.ResourceId);
 
-        var gymId = await set
-            .Cast<object>()
-            .Where(e => EF.Property<Guid>(e, "Id") == request.ResourceId)
-            .Select(e => EF.Property<Guid?>(e, nameof(ITenantEntity.GymId)))
-            .FirstOrDefaultAsync(cancellationToken);
+        if (entity is null)
+            throw new NotFoundException("Resource not found.");
 
-        if (!gymId.HasValue)
-            throw new KeyNotFoundException("Resource not found.");
+        if (entity is not ITenantEntity tenantEntity)
+            return await next();
 
-        if (gymId.Value != _currentUser.GymId.Value)
+        if (!tenantEntity.GymId.HasValue)
+            throw new NotFoundException("Resource not found.");
+
+        if (tenantEntity.GymId.Value != _currentUser.GymId.Value)
             throw new ForbiddenException("Cross-tenant access denied.");
 
         return await next();

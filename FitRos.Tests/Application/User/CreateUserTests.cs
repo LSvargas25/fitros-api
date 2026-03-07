@@ -44,7 +44,9 @@ public class CreateUserTests
         response.Should().NotBeNull();
         response.Email.Should().Be("coach@test.com");
 
-        var userInDb = await context.Users.FirstAsync();
+        var userInDb = await context.Users
+           .IgnoreQueryFilters()
+           .FirstAsync();
 
         userInDb.PasswordHash.Should().Be("HASHED_Password123");
         userInDb.Role.Should().Be(UserRole.Coach);

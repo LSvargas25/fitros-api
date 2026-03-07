@@ -21,6 +21,8 @@ using System.Security.Claims;
 using System.Text;
 using FitRos.Application.Common.Behaviors;
 
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // =============================
@@ -203,8 +205,26 @@ builder.Services.AddAuthorization();
 // Current User (JWT-based)
 // =============================
 
+ 
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+
+// =============================
+// WorkoutRoutine Handlers (direct, no MediatR)
+// =============================
+
+var applicationAssembly = typeof(AssemblyReference).Assembly;
+
+var handlerTypes = applicationAssembly
+    .GetTypes()
+    .Where(t => t.IsClass && !t.IsAbstract && t.Name.EndsWith("Handler")
+             && !typeof(IPipelineBehavior<,>).IsAssignableFrom(t));
+
+foreach (var handlerType in handlerTypes)
+{
+    builder.Services.AddScoped(handlerType);
+}
 
 // =============================
 // Build App

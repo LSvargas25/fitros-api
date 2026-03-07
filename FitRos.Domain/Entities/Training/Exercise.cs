@@ -46,10 +46,10 @@ public class Exercise : ITenantEntity
     }
 
     public static Exercise Create(
-        string name,
-        string description,
-        MuscleGroup category,
-        Guid? gymId)
+     string name,
+     string description,
+     MuscleGroup category,
+     Guid? gymId)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Exercise name cannot be empty.");
@@ -81,8 +81,7 @@ public class Exercise : ITenantEntity
         Description = description.Trim();
         Category = category;
     }
-    public static Exercise Create(string name, string description, MuscleGroup category)
-    => Create(name, description, category, Guid.NewGuid());
+    
     public void Archive()
     {
         if (IsArchived)

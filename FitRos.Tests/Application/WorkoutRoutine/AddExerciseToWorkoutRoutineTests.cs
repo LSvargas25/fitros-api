@@ -27,10 +27,10 @@ public class AddExerciseToWorkoutRoutineTests
             "Description");
 
         var exercise = Exercise.Create(
-     "Bench Press",
-     "Chest exercise",
-     MuscleGroup.Chest,
-     gymId);
+            "Bench Press",
+            "Chest exercise",
+            MuscleGroup.Chest,
+            gymId);
 
         context.WorkoutRoutines.Add(routine);
         context.Exercises.Add(exercise);
@@ -52,6 +52,7 @@ public class AddExerciseToWorkoutRoutineTests
         result.Should().BeTrue();
 
         var updatedRoutine = await context.WorkoutRoutines
+            .IgnoreQueryFilters()
             .Include(r => r.Exercises)
             .FirstAsync(r => r.Id == routine.Id);
 
@@ -100,7 +101,6 @@ public class AddExerciseToWorkoutRoutineTests
             .ThrowAsync<DomainException>()
             .WithMessage("This exercise is already part of the routine.");
     }
-
     [Fact]
     public async Task Handle_Should_Throw_When_Routine_Is_Published()
     {
@@ -116,12 +116,14 @@ public class AddExerciseToWorkoutRoutineTests
         var firstExercise = Exercise.Create(
             "Bench Press",
             "Chest exercise",
-            MuscleGroup.Chest);
+            MuscleGroup.Chest,
+            gymId);
 
         var secondExercise = Exercise.Create(
             "Lat Pulldown",
             "Back exercise",
-            MuscleGroup.Back);
+            MuscleGroup.Back,
+            gymId);
 
         context.WorkoutRoutines.Add(routine);
         context.Exercises.Add(firstExercise);

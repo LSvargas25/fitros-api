@@ -10,7 +10,6 @@ namespace FitRos.Tests.Application.WorkoutRoutines.PublishWorkoutRoutine;
 
 public class PublishWorkoutRoutineHandlerTests
 {
-
     [Fact]
     public async Task Handle_Should_Throw_When_Routine_Is_Not_Latest_Version()
     {
@@ -55,14 +54,19 @@ public class PublishWorkoutRoutineHandlerTests
         var v2 = v1.CreateNewVersion();
         v2.AddExercise(Guid.NewGuid(), 2, 3, 10, 60);
 
+        ((ITenantEntity)v1).GymId = gymId;
+        ((ITenantEntity)v2).GymId = gymId;
+
         context.WorkoutRoutines.AddRange(v1, v2);
-        await context.SaveChangesAsync(CancellationToken.None);
+        await context.SaveChangesAsync();
 
         var handler = new PublishWorkoutRoutineHandler(context);
 
         await handler.Handle(new PublishWorkoutRoutineCommand(v2.Id), CancellationToken.None);
 
-        var reloaded = await context.WorkoutRoutines.FirstAsync(r => r.Id == v2.Id);
+        var reloaded = await context.WorkoutRoutines
+      .IgnoreQueryFilters()
+      .FirstAsync(r => r.Id == v2.Id);
 
         reloaded.Status.Should().Be(FitRos.Domain.Enums.RoutineStatus.Published);
     }

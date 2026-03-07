@@ -34,7 +34,7 @@ public sealed class GlobalExceptionMiddleware
         {
             UnauthorizedException => HttpStatusCode.Unauthorized, //  401
             ForbiddenException => HttpStatusCode.Forbidden,       //  403
-
+            NotFoundException => HttpStatusCode.NotFound,           // 404
             DomainException => HttpStatusCode.BadRequest,         //  400
             ValidationException => HttpStatusCode.BadRequest,     //  400
             InvalidOperationException => HttpStatusCode.BadRequest,

@@ -31,7 +31,9 @@ public class WorkoutRoutineVersioningFlowTests
             new PublishWorkoutRoutineCommand(v1.Id),
             CancellationToken.None);
 
-        var publishedV1 = await context.WorkoutRoutines.FirstAsync(r => r.Id == v1.Id);
+        var publishedV1 = await context.WorkoutRoutines
+       .IgnoreQueryFilters()
+       .FirstAsync(r => r.Id == v1.Id);
 
         publishedV1.Status.Should().Be(FitRos.Domain.Enums.RoutineStatus.Published);
         publishedV1.Version.Should().Be(1);

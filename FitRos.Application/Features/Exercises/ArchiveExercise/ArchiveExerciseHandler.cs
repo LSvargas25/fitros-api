@@ -1,10 +1,12 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
-using Microsoft.EntityFrameworkCore;
 using FitRos.Domain.Common;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.Exercises.ArchiveExercise;
 
-public class ArchiveExerciseHandler
+public sealed class ArchiveExerciseHandler
+    : IRequestHandler<ArchiveExerciseCommand>
 {
     private readonly IFitRosDbContext _context;
 
@@ -21,9 +23,8 @@ public class ArchiveExerciseHandler
             .FirstOrDefaultAsync(x => x.Id == command.Id, cancellationToken);
 
         if (exercise is null)
-            throw new NotFoundException("Exercise not found.");
+            throw new DomainException("Exercise not found.");
 
-        // Delegamos al dominio
         exercise.Archive();
 
         await _context.SaveChangesAsync(cancellationToken);

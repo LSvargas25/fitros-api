@@ -1,4 +1,5 @@
 ﻿using FitRos.Application.Features.Gyms.CreateGym;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -12,11 +13,11 @@ public sealed class GymsController : ControllerBase
 {
     private const string TagGyms = "Gyms";
 
-    private readonly CreateGymHandler _handler;
+    private readonly IMediator _mediator;
 
-    public GymsController(CreateGymHandler handler)
+    public GymsController(IMediator mediator)
     {
-        _handler = handler;
+        _mediator = mediator;
     }
 
     [HttpPost]
@@ -29,7 +30,7 @@ public sealed class GymsController : ControllerBase
         [FromBody] CreateGymCommand command,
         CancellationToken cancellationToken)
     {
-        var gymId = await _handler.Handle(command, cancellationToken);
+        var gymId = await _mediator.Send(command, cancellationToken);
 
         return CreatedAtAction(nameof(CreateGym), new { id = gymId }, gymId);
     }

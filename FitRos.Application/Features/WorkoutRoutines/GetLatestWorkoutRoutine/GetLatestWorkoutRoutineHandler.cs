@@ -18,6 +18,7 @@ public sealed class GetLatestWorkoutRoutineHandler
         CancellationToken cancellationToken)
     {
         var routine = await _context.WorkoutRoutines
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == query.WorkoutRoutineId, cancellationToken);
 
@@ -25,6 +26,7 @@ public sealed class GetLatestWorkoutRoutineHandler
             return null;
 
         var latest = await _context.WorkoutRoutines
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .Include(r => r.Exercises)
             .Where(r => r.RoutineGroupId == routine.RoutineGroupId)

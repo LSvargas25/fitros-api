@@ -3,11 +3,13 @@ using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Common.Security;
 using FitRos.Domain.Common;
 using FitRos.Domain.Enums;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.Users.ActivateUser;
 
 public sealed class ActivateUserHandler
+    : IRequestHandler<ActivateUserCommand>
 {
     private readonly IFitRosDbContext _context;
     private readonly ICurrentUser _currentUser;
@@ -24,16 +26,8 @@ public sealed class ActivateUserHandler
         ActivateUserCommand command,
         CancellationToken ct)
     {
-        // =========================
-        // Authentication
-        // =========================
-
         if (!_currentUser.IsAuthenticated)
             throw new UnauthorizedException("User not authenticated.");
-
-        // =========================
-        // Load target user
-        // =========================
 
         var user = await _context.Users
             .IgnoreQueryFilters()
@@ -42,13 +36,8 @@ public sealed class ActivateUserHandler
         if (user is null)
             throw new NotFoundException("User not found.");
 
-        // =========================
-        // Authorization rules
-        // =========================
-
         if (_currentUser.IsOwner())
         {
-            // OwnerApp can activate anyone
         }
         else if (_currentUser.IsAdmin())
         {
@@ -59,10 +48,6 @@ public sealed class ActivateUserHandler
         {
             throw new ForbiddenException("You are not authorized to activate users.");
         }
-
-        // =========================
-        // Domain action
-        // =========================
 
         user.Activate();
 

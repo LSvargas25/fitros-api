@@ -1,9 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using FitRos.Application.Common.Security;
+using FitRos.Domain.Entities.Users;
+using MediatR;
 
 namespace FitRos.Application.Features.Users.GetUserById;
 
-public sealed record GetUserByIdQuery(Guid Id);
+public sealed record GetUserByIdQuery(Guid Id)
+    : IRequest<UserDetailsDto>, ITenantGuardedRequest
+{
+    public Guid ResourceId => Id;
+
+    public Type EntityType => typeof(User);
+}

@@ -66,7 +66,9 @@ public sealed class ResetPasswordTests
         // Assert
         var expectedHash = passwordHasher.Hash("NewPassword123");
 
-        var updatedUser = await context.Users.FirstAsync();
+        var updatedUser = await context.Users
+     .IgnoreQueryFilters()
+     .FirstAsync(); ;
 
         updatedUser.PasswordHash.Should().Be(expectedHash);
         updatedUser.PasswordResetTokenHash.Should().BeNull();

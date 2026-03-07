@@ -17,26 +17,19 @@ namespace FitRos.Tests.Application.TenantIsolation
         [Fact]
         public async Task GymA_Should_Not_See_Data_From_GymB()
         {
-            // Arrange
-
             var gymA = Guid.NewGuid();
             var gymB = Guid.NewGuid();
 
             var exercise = Exercise.Create(
                 "Bench Press",
                 "Chest exercise",
-                MuscleGroup.Chest);
-
-            exercise.GetType()
-                .GetProperty("GymId")!
-                .SetValue(exercise, gymA);
+                MuscleGroup.Chest,
+                gymA);
 
             using var context = TestDbContextFactory.Create();
 
             context.Exercises.Add(exercise);
             await context.SaveChangesAsync();
-
-            // Act
 
             var currentUserGymB = new FakeCurrentUser(gymB)
             {
@@ -48,11 +41,8 @@ namespace FitRos.Tests.Application.TenantIsolation
 
             var exercises = await contextGymB.Exercises.ToListAsync();
 
-            // Assert
-
             exercises.Should().BeEmpty();
         }
-
         [Fact]
         public async Task Gym_Should_See_Its_Own_Data()
         {
@@ -65,26 +55,24 @@ namespace FitRos.Tests.Application.TenantIsolation
                 IsAuthenticated = true
             };
 
-            var context = TestDbContextFactory.Create(user);
+            using var context = TestDbContextFactory.Create(user);
 
             var exercise = Exercise.Create(
                 "Squat",
                 "Leg exercise",
-                MuscleGroup.Legs);
-
-            // asignar GymId manualmente para el test
-            exercise.GetType()
-                .GetProperty("GymId")!
-                .SetValue(exercise, gymId);
+                MuscleGroup.Legs,
+                gymId);
 
             context.Exercises.Add(exercise);
+
             await context.SaveChangesAsync();
+
+            context.ChangeTracker.Clear(); // ⭐ importante
 
             var exercises = await context.Exercises.ToListAsync();
 
             exercises.Should().HaveCount(1);
         }
-
     }
 }
 

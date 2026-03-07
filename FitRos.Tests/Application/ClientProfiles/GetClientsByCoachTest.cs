@@ -51,17 +51,21 @@ namespace FitRos.Tests.Application.ClientProfiles.GetByCoach
             var gymId = Guid.NewGuid();
             var coachId = Guid.NewGuid();
 
-            var client1 = ClientProfile.Create(gymId, Guid.NewGuid(), coachId);
-            var client2 = ClientProfile.Create(gymId, Guid.NewGuid(), coachId);
-            var otherClient = ClientProfile.Create(gymId, Guid.NewGuid(), Guid.NewGuid());
-
             var mock = new Mock<ICurrentUser>();
             mock.Setup(x => x.UserId).Returns(Guid.NewGuid());
             mock.Setup(x => x.Role).Returns(UserRole.Admin);
             mock.Setup(x => x.IsAuthenticated).Returns(true);
             mock.Setup(x => x.GymId).Returns(gymId);
 
-            using var context = CreateContext(mock.Object, client1, client2, otherClient);
+            var client1 = ClientProfile.Create(gymId, Guid.NewGuid(), coachId);
+            var client2 = ClientProfile.Create(gymId, Guid.NewGuid(), coachId);
+            var otherClient = ClientProfile.Create(gymId, Guid.NewGuid(), Guid.NewGuid());
+
+            using var context = CreateContext(
+                mock.Object,
+                client1,
+                client2,
+                otherClient);
 
             var handler = new GetClientsByCoachQueryHandler(context, mock.Object);
 

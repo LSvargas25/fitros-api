@@ -33,6 +33,9 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
     public DbSet<Exercise> Exercises { get; set; } = null!;
     public DbSet<WorkoutRoutineExercise> WorkoutRoutineExercises { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+
+    public Guid? CurrentGymId => _currentUser.GymId;
+
     public DbSet<ClientProfile> ClientProfiles { get; set; } = null!;
     public DbSet<PhysicalMeasure> PhysicalMeasures { get; set; } = null!;
     public DbSet<AuditLogEntry> AuditLogEntries { get; set; } = null!;
@@ -108,7 +111,7 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
                 .UseXminAsConcurrencyToken();
         }
 
-        modelBuilder.ApplyTenantQueryFilters(_currentUser.GymId);
+        modelBuilder.ApplyTenantQueryFilters(this);
 
         SeedOwner(modelBuilder);
 

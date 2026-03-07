@@ -1,14 +1,13 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
-using FitRos.Application.Common.Security;
 using FitRos.Domain.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
- 
 
 namespace FitRos.Application.Features.Users.GetUserById;
 
 public sealed class GetUserByIdHandler
+    : IRequestHandler<GetUserByIdQuery, UserDetailsDto>
 {
     private readonly IFitRosDbContext _context;
     private readonly ICurrentUser _currentUser;
@@ -21,31 +20,29 @@ public sealed class GetUserByIdHandler
         _currentUser = currentUser;
     }
 
-    public async Task<UserDetailsDto?> Handle(
-        GetUserByIdQuery query,
-        CancellationToken cancellationToken)
+    public async Task<UserDetailsDto> Handle(
+      GetUserByIdQuery query,
+      CancellationToken ct)
     {
-        var userQuery = _context.Users
+        if (!_currentUser.IsAuthenticated)
+            throw new UnauthorizedException("User not authenticated.");
+
+        var user = await _context.Users
             .AsNoTracking()
             .IgnoreQueryFilters()
-            .ApplyUserVisibility(_currentUser)
-            .Where(u => u.Id == query.Id);
+            .FirstOrDefaultAsync(x => x.Id == query.Id, ct);
 
-        var result = await userQuery
-            .Select(u => new UserDetailsDto(
-                u.Id,
-                u.Email,
-                u.FirstName,
-                u.LastName,
-                (int)u.Role,
-                (int)u.Status,
-                u.CreatedAt,
-                u.UpdatedAt))
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (result is null)
+        if (user is null)
             throw new NotFoundException("User not found.");
 
-        return result;
+        return new UserDetailsDto(
+            user.Id,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            (int)user.Role,
+            (int)user.Status,
+            user.CreatedAt,
+            user.UpdatedAt);
     }
 }

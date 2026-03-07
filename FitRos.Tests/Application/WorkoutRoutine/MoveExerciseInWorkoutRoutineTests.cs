@@ -81,10 +81,15 @@ public class MoveExerciseInWorkoutRoutineHandlerTests
     [Fact]
     public async Task Handle_Should_Move_Exercise_Down_Correctly()
     {
-        using var context = SqliteTestDbContextFactory.Create();
-
         var gymId = Guid.NewGuid();
-        var routine = CreateRoutineWithThreeExercises(gymId, out var ex1, out var ex2, out var ex3);
+
+        using var context = SqliteTestDbContextFactory.Create(gymId);
+
+        var routine = CreateRoutineWithThreeExercises(
+            gymId,
+            out var ex1,
+            out var ex2,
+            out var ex3);
 
         context.WorkoutRoutines.Add(routine);
         await context.SaveChangesAsync(CancellationToken.None);

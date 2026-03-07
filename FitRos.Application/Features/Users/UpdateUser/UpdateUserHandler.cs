@@ -73,7 +73,8 @@ public sealed class UpdateUserHandler
             }
 
             var hasSessions = await _context.WorkoutSessions
-                .AnyAsync(s => s.UserId == user.Id, cancellationToken);
+       .IgnoreQueryFilters()
+       .AnyAsync(s => s.UserId == user.Id, cancellationToken);
 
             if (hasSessions)
                 throw new DomainException("User with sessions cannot change role.");

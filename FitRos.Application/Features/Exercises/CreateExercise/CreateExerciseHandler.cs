@@ -2,11 +2,13 @@
 using FitRos.Application.Abstractions.Security;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Training;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.Exercises.CreateExercise;
 
-public class CreateExerciseHandler
+public sealed class CreateExerciseHandler
+    : IRequestHandler<CreateExerciseCommand, CreateExerciseResponse>
 {
     private readonly IFitRosDbContext _context;
     private readonly ICurrentUser _currentUser;
@@ -41,6 +43,7 @@ public class CreateExerciseHandler
             _currentUser.GymId);
 
         _context.Exercises.Add(exercise);
+
         await _context.SaveChangesAsync(cancellationToken);
 
         return new CreateExerciseResponse(exercise.Id);
