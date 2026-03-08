@@ -3,6 +3,7 @@ using FitRos.Domain.Entities.Auditing;
 using FitRos.Domain.Entities.Client;
 using FitRos.Domain.Entities.Enums;
 using FitRos.Domain.Entities.Gym;
+using FitRos.Domain.Entities.Notifications;
 using FitRos.Domain.Entities.Outbox;
 using FitRos.Domain.Entities.Reports;
 using FitRos.Domain.Entities.Training;
@@ -30,6 +31,8 @@ public interface IFitRosDbContext
     DbSet<ClientKpiSnapshot> ClientKpiSnapshots { get; }
     DbSet<OutboxMessage> OutboxMessages { get; }
     DbSet<ClientProgressReportSnapshot> ClientProgressReportSnapshots { get; }
+
+    DbSet<Notification> Notifications { get; }
 
     void Remove<TEntity>(TEntity entity) where TEntity : class;
 

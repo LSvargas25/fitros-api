@@ -6,6 +6,7 @@ using FitRos.Domain.Entities.Auditing;
 using FitRos.Domain.Entities.Client;
 using FitRos.Domain.Entities.Enums;
 using FitRos.Domain.Entities.Gym;
+using FitRos.Domain.Entities.Notifications;
 using FitRos.Domain.Entities.Outbox;
 using FitRos.Domain.Entities.Reports;
 using FitRos.Domain.Entities.Training;
@@ -42,6 +43,8 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
     public DbSet<ClientKpiSnapshot> ClientKpiSnapshots { get; set; } = null!;
     public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
     public DbSet<ClientProgressReportSnapshot> ClientProgressReportSnapshots { get; set; } = null!;
+
+    public DbSet<Notification> Notifications { get; set; } = null!;
 
     DbSet<AuditLogEntry> IFitRosDbContext.AuditLogEntries => AuditLogEntries;
     DbSet<ClientKpiSnapshot> IFitRosDbContext.ClientKpiSnapshots => ClientKpiSnapshots;

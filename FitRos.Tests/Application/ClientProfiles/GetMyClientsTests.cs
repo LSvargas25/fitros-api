@@ -4,6 +4,7 @@ using FitRos.Domain.Entities.Auditing;
 using FitRos.Domain.Entities.Client;
 using FitRos.Domain.Entities.Enums;
 using FitRos.Domain.Entities.Gym;
+using FitRos.Domain.Entities.Notifications;
 using FitRos.Domain.Entities.Outbox;
 using FitRos.Domain.Entities.Reports;
 using FitRos.Domain.Entities.Training;
@@ -28,6 +29,8 @@ namespace FitRos.Tests.Application.ClientProfiles
             public DbSet<ClientKpiSnapshot> ClientKpiSnapshots { get; set; } = null!;
             public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
             public DbSet<ClientProgressReportSnapshot> ClientProgressReportSnapshots { get; set; } = null!;
+
+            public DbSet<Notification> Notifications => Set<Notification>();
 
             public DbSet<WorkoutRoutine> WorkoutRoutines => Set<WorkoutRoutine>();
             public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();
