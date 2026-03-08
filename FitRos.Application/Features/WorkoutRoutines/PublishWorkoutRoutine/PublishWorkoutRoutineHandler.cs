@@ -18,14 +18,15 @@ public sealed class PublishWorkoutRoutineHandler
         CancellationToken cancellationToken)
     {
         var routine = await _context.WorkoutRoutines
+            .IgnoreQueryFilters()
             .Include(r => r.Exercises)
             .FirstOrDefaultAsync(r => r.Id == command.Id, cancellationToken);
 
         if (routine is null)
             throw new KeyNotFoundException("Workout routine not found.");
 
-        //   Only the latest version in the group can be published.
         var maxVersionInGroup = await _context.WorkoutRoutines
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(r => r.RoutineGroupId == routine.RoutineGroupId)
             .MaxAsync(r => r.Version, cancellationToken);

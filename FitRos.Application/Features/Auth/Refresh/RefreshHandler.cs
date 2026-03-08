@@ -25,12 +25,12 @@ public sealed class RefreshHandler : MediatR.IRequestHandler<RefreshCommand, Ref
 
         var stored = await _context.RefreshTokens
             .FirstOrDefaultAsync(x => x.TokenHash == incomingHash, ct);
-         
+
         if (stored is null)
-            throw new UnauthorizedException("Invalid refresh token.");
+            throw new DomainException("Invalid refresh token.");
 
         if (stored.IsExpired(_utcNow()))
-            throw new UnauthorizedException("Refresh token is not valid.");
+            throw new DomainException("Refresh token is not valid.");
 
         if (stored.IsRevoked)
         {
@@ -44,15 +44,15 @@ public sealed class RefreshHandler : MediatR.IRequestHandler<RefreshCommand, Ref
 
             await _context.SaveChangesAsync(ct);
 
-            throw new UnauthorizedException("Refresh token is not valid.");
+            throw new DomainException("Refresh token is not valid.");
         }
 
         var user = await _context.Users
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => u.Id == stored.UserId, ct);
-         
+
         if (user is null || user.Status != Domain.Enums.UserStatus.Active)
-            throw new UnauthorizedException("User is not valid.");
+            throw new DomainException("User is not valid.");
 
         var newAccess = _tokens.CreateAccessToken(user);
 

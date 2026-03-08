@@ -1,9 +1,12 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
+using FitRos.Domain.Common;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.Exercises.UpdateExercise;
 
-public class UpdateExerciseHandler
+public sealed class UpdateExerciseHandler
+    : IRequestHandler<UpdateExerciseCommand>
 {
     private readonly IFitRosDbContext _context;
 
@@ -20,27 +23,12 @@ public class UpdateExerciseHandler
             .FirstOrDefaultAsync(x => x.Id == command.Id, cancellationToken);
 
         if (exercise is null)
-            throw new KeyNotFoundException("Exercise not found.");
+            throw new DomainException("Exercise not found.");
 
-        // Validar nombre duplicado (excluyendo el actual)
-        var normalized = command.Name.ToLower();
-
-        var exists = await _context.Exercises
-            .AnyAsync(x =>
-                x.Id != command.Id &&
-                x.NormalizedName == normalized,
-                cancellationToken);
-
-        if (exists)
-            throw new InvalidOperationException(
-                $"Exercise '{command.Name}' already exists.");
-
-        // Delegar al dominio
         exercise.Update(
             command.Name,
             command.Description,
-            command.Category
-        );
+            command.Category);
 
         await _context.SaveChangesAsync(cancellationToken);
     }

@@ -1,6 +1,8 @@
-﻿namespace FitRos.Domain.Entities.Analytics;
+﻿using FitRos.Domain.Common;
 
-public sealed class ClientKpiSnapshot
+namespace FitRos.Domain.Entities.Analytics;
+
+public sealed class ClientKpiSnapshot : ITenantEntity
 {
     public Guid Id { get; private set; }
 
@@ -15,6 +17,15 @@ public sealed class ClientKpiSnapshot
     public decimal? WaistDelta { get; private set; }
 
     public DateTime CreatedAtUtc { get; private set; }
+
+    public Guid? GymId { get; private set; }
+
+    Guid? ITenantEntity.GymId
+    {
+        get => GymId;
+        set => GymId = value;
+    }
+
 
     private ClientKpiSnapshot() { }
 

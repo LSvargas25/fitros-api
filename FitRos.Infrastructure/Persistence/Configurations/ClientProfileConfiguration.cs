@@ -20,14 +20,34 @@ public class ClientProfileConfiguration : IEntityTypeConfiguration<ClientProfile
         builder.Property(x => x.CoachId)
             .IsRequired();
 
+        builder.Property(x => x.Status)
+            .IsRequired()
+            .HasConversion<int>();
+
         builder.Property(x => x.CreatedAt)
             .IsRequired();
+
+        builder.Property(x => x.CreatedBy)
+            .IsRequired();
+
+        builder.Property(x => x.ModifiedBy)
+            .IsRequired(false);
+
+        builder.Property(x => x.ModifiedAt)
+            .IsRequired(false);
+
+        builder.Property(x => x.DeactivatedAt)
+            .IsRequired(false);
+
+        builder.Property(x => x.DeletedAt)
+            .IsRequired(false);
 
         builder.HasIndex(x => x.UserId)
             .IsUnique();
 
-        builder
-            .HasMany(x => x.Measures)
+        builder.HasIndex(x => x.Status);
+
+        builder.HasMany(x => x.Measures)
             .WithOne()
             .HasForeignKey(x => x.ClientProfileId)
             .OnDelete(DeleteBehavior.Cascade);
@@ -36,9 +56,6 @@ public class ClientProfileConfiguration : IEntityTypeConfiguration<ClientProfile
             .FindNavigation(nameof(ClientProfile.Measures))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.Property(x => x.RowVersion)
-     .IsRequired()
-     .IsConcurrencyToken()
-     .ValueGeneratedOnAddOrUpdate();
+       
     }
 }

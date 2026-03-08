@@ -18,8 +18,8 @@ public sealed class CreateWorkoutRoutineVersionHandler
         CreateWorkoutRoutineVersionCommand command,
         CancellationToken cancellationToken)
     {
-        // 1️⃣ Load routine
         var routine = await _context.WorkoutRoutines
+            .IgnoreQueryFilters()
             .Include(r => r.Exercises)
             .FirstOrDefaultAsync(
                 r => r.Id == command.WorkoutRoutineId,
@@ -28,12 +28,11 @@ public sealed class CreateWorkoutRoutineVersionHandler
         if (routine is null)
             throw new KeyNotFoundException("Workout routine not found.");
 
-        // 2️⃣ Must be Published to create a new version
         if (routine.Status != RoutineStatus.Published)
             throw new DomainException("Only published routines can be versioned.");
 
-        // 3️⃣ Only one Draft per RoutineGroupId
         var draftExists = await _context.WorkoutRoutines
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .AnyAsync(r =>
                 r.RoutineGroupId == routine.RoutineGroupId &&
@@ -43,10 +42,8 @@ public sealed class CreateWorkoutRoutineVersionHandler
         if (draftExists)
             throw new DomainException("A draft version already exists for this routine group.");
 
-        // 4️⃣ Create new version from aggregate
         var newRoutine = routine.CreateNewVersion();
 
-        // 5️⃣ Persist
         _context.WorkoutRoutines.Add(newRoutine);
         await _context.SaveChangesAsync(cancellationToken);
 

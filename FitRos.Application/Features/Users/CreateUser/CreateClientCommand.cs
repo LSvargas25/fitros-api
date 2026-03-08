@@ -1,17 +1,16 @@
-﻿using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using FitRos.Application.Common.Security;
+using FitRos.Domain.Enums;
+using MediatR;
 
-namespace FitRos.Application.Features.Users.CreateUser
-{
-    public sealed record CreateClientCommand(
+namespace FitRos.Application.Features.Users.CreateUser;
+
+public sealed record CreateClientCommand(
     string Email,
     string FirstName,
     string LastName,
     string Password
-) : IRequest<CreateUserResponse>;
+) : IRequest<CreateUserResponse>, IAuthorizeRequest
+{
+    public UserRole[] AllowedRoles =>
+        new[] { UserRole.OwnerApp, UserRole.Admin, UserRole.Coach };
 }
- 

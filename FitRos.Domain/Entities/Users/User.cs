@@ -3,9 +3,8 @@ using FitRos.Domain.Enums;
 
 namespace FitRos.Domain.Entities.Users;
 
-public sealed class User
+public sealed class User : ITenantEntity
 {
-    //Entity properties
     public Guid Id { get; private set; }
 
     public string Email { get; private set; } = null!;
@@ -25,9 +24,16 @@ public sealed class User
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
-    private User() { } // EF
+    public Guid? GymId { get; private set; }
 
-    // Private constructor for factory method
+    Guid? ITenantEntity.GymId
+    {
+        get => GymId;
+        set => GymId = value;
+    }
+
+    private User() { }
+
     private User(
         Guid id,
         string email,
@@ -47,13 +53,12 @@ public sealed class User
 
         CreatedAt = DateTime.UtcNow;
     }
-    // Factory method to create a new user
-    public static User Create(
+
+    private static void ValidateCommon(
         string email,
         string firstName,
         string lastName,
-        string passwordHash,
-        UserRole role)
+        string passwordHash)
     {
         if (string.IsNullOrWhiteSpace(email))
             throw new DomainException("Email cannot be empty.");
@@ -66,6 +71,19 @@ public sealed class User
 
         if (string.IsNullOrWhiteSpace(passwordHash))
             throw new DomainException("PasswordHash cannot be empty.");
+    }
+
+    public static User Create(
+        string email,
+        string firstName,
+        string lastName,
+        string passwordHash,
+        UserRole role)
+    {
+        if (role == UserRole.OwnerApp)
+            throw new DomainException("OwnerApp cannot be created through this method.");
+
+        ValidateCommon(email, firstName, lastName, passwordHash);
 
         return new User(
             Guid.NewGuid(),
@@ -75,16 +93,70 @@ public sealed class User
             passwordHash.Trim(),
             role);
     }
-    // Methods to update user information
+
+    public static User CreateForGym(
+        Guid gymId,
+        string email,
+        string firstName,
+        string lastName,
+        string passwordHash,
+        UserRole role)
+    {
+        if (role == UserRole.OwnerApp)
+            throw new DomainException("OwnerApp cannot be assigned to a gym.");
+
+        ValidateCommon(email, firstName, lastName, passwordHash);
+
+        var user = new User(
+            Guid.NewGuid(),
+            email.Trim(),
+            firstName.Trim(),
+            lastName.Trim(),
+            passwordHash.Trim(),
+            role);
+
+        user.AssignToGym(gymId);
+
+        return user;
+    }
+
+    internal static User CreateOwnerApp(
+        Guid id,
+        string email,
+        string firstName,
+        string lastName,
+        string passwordHash)
+    {
+        ValidateCommon(email, firstName, lastName, passwordHash);
+
+        return new User(
+            id,
+            email.Trim(),
+            firstName.Trim(),
+            lastName.Trim(),
+            passwordHash.Trim(),
+            UserRole.OwnerApp);
+    }
+
     public void UpdateProfile(string firstName, string lastName)
     {
         EnsureActive();
-
         SetProfile(firstName, lastName);
         Touch();
     }
 
-    // Method to update basic info without checking active status (e.g., for admin updates)
+    public void AssignToGym(Guid gymId)
+    {
+        if (Role == UserRole.OwnerApp)
+            throw new InvalidOperationException("OwnerApp cannot be assigned to a gym.");
+
+        if (gymId == Guid.Empty)
+            throw new DomainException("GymId cannot be empty.");
+
+        GymId = gymId;
+        Touch();
+    }
+
     public void UpdateBasicInfo(string firstName, string lastName)
     {
         FirstName = firstName.Trim();
@@ -92,17 +164,19 @@ public sealed class User
         UpdatedAt = DateTime.UtcNow;
     }
 
-    // Method to change email without checking active status (e.g., for admin updates)
     public void ChangeEmail(string email)
     {
         Email = email.Trim();
         NormalizedEmail = email.Trim().ToUpperInvariant();
         UpdatedAt = DateTime.UtcNow;
     }
-    // Method to change role without checking active status (e.g., for admin updates)
+
     public void ChangeRole(UserRole newRole)
     {
         EnsureActive();
+
+        if (newRole == UserRole.OwnerApp)
+            throw new DomainException("Cannot assign OwnerApp role.");
 
         if (Role == newRole)
             return;
@@ -110,7 +184,7 @@ public sealed class User
         Role = newRole;
         Touch();
     }
-    // Methods to activate/deactivate user
+
     public void Deactivate()
     {
         if (Status == UserStatus.Inactive)
@@ -119,7 +193,7 @@ public sealed class User
         Status = UserStatus.Inactive;
         Touch();
     }
-    // Method to activate user without checking current status (e.g., for admin reactivation)
+
     public void Activate()
     {
         if (Status == UserStatus.Active)
@@ -129,24 +203,19 @@ public sealed class User
         Touch();
     }
 
-    // Method to change password hash without checking active status (e.g., for password reset)
     public void ChangePasswordHash(string newPasswordHash)
     {
         EnsureActive();
-
         SetPasswordHash(newPasswordHash);
         Touch();
     }
 
-
-    // Private helper methods to keep domain logic consistent and avoid code duplication
     private void EnsureActive()
     {
         if (Status != UserStatus.Active)
             throw new DomainException("User must be Active to perform this operation.");
     }
 
-    // Private setters to encapsulate validation logic
     private void SetEmail(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
@@ -155,7 +224,7 @@ public sealed class User
         Email = email.Trim();
         NormalizedEmail = Email.ToUpperInvariant();
     }
-    // Private method to set profile information with validation
+
     private void SetProfile(string firstName, string lastName)
     {
         if (string.IsNullOrWhiteSpace(firstName))
@@ -167,7 +236,7 @@ public sealed class User
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
     }
-    // Private method to set password hash with validation
+
     private void SetPasswordHash(string passwordHash)
     {
         if (string.IsNullOrWhiteSpace(passwordHash))
@@ -175,12 +244,12 @@ public sealed class User
 
         PasswordHash = passwordHash.Trim();
     }
-    // Private method to update the UpdatedAt timestamp
+
     private void Touch()
     {
         UpdatedAt = DateTime.UtcNow;
     }
-    // Methods related to password reset token management
+
     public void SetPasswordResetToken(string tokenHash, DateTime expiresAtUtc)
     {
         EnsureActive();
@@ -193,7 +262,7 @@ public sealed class User
 
         Touch();
     }
-    // Method to clear password reset token without checking active status (e.g., after successful password reset)
+
     public void ClearPasswordResetToken()
     {
         PasswordResetTokenHash = null;
@@ -201,7 +270,7 @@ public sealed class User
 
         Touch();
     }
-    // Method to validate a given password reset token against the stored hash and expiration
+
     public bool HasValidPasswordResetToken(string tokenHash, DateTime nowUtc)
     {
         if (PasswordResetTokenHash is null)
@@ -215,5 +284,4 @@ public sealed class User
 
         return PasswordResetTokenHash == tokenHash;
     }
-
 }

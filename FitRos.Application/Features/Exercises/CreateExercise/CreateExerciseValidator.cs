@@ -8,11 +8,9 @@ public class CreateExerciseValidator
     public CreateExerciseValidator()
     {
         RuleFor(x => x.Name)
-            .NotEmpty()
-            .WithMessage("Exercise name is required.");
+            .NotEmpty();
 
         RuleFor(x => x.Category)
-            .IsInEnum()
-            .WithMessage("Invalid muscle group category.");
+            .IsInEnum();
     }
 }

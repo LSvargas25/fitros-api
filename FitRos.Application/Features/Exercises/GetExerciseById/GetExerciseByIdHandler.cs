@@ -1,10 +1,11 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
 namespace FitRos.Application.Features.Exercises.GetExerciseById;
 
-public class GetExerciseByIdHandler
+public sealed class GetExerciseByIdHandler
+    : IRequestHandler<GetExerciseByIdQuery, ExerciseDto?>
 {
     private readonly IFitRosDbContext _context;
 
@@ -14,11 +15,11 @@ public class GetExerciseByIdHandler
     }
 
     public async Task<ExerciseDto?> Handle(
-        Guid id,
+        GetExerciseByIdQuery query,
         CancellationToken cancellationToken)
     {
         return await _context.Exercises
-            .Where(x => x.Id == id)
+            .Where(x => x.Id == query.Id)
             .Select(x => new ExerciseDto(
                 x.Id,
                 x.Name,

@@ -33,7 +33,8 @@ public sealed class ResetPasswordHandler
         var normalized = request.Email.Trim().ToUpperInvariant();
 
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.NormalizedEmail == normalized, ct);
+     .IgnoreQueryFilters()
+     .FirstOrDefaultAsync(u => u.NormalizedEmail == normalized, ct);
 
         if (user is null)
             throw new DomainException("Invalid reset token.");
@@ -45,7 +46,7 @@ public sealed class ResetPasswordHandler
         var providedHash = _tokenGenerator.Hash(cleanToken);
 
         if (!user.HasValidPasswordResetToken(providedHash, _utcNow()))
-            throw new DomainException("Invalid reset token.");
+            throw new DomainException("Invalid reset token."); ;
 
         var newHash = _hasher.Hash(request.NewPassword);
 

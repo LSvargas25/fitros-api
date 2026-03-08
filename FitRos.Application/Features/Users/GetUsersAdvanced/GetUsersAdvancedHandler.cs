@@ -1,5 +1,7 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
-using FitRos.Domain.Entities.Users;
+using FitRos.Application.Abstractions.Security;
+using FitRos.Application.Common.Security;
+using FitRos.Domain.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,10 +11,14 @@ public sealed class GetUsersAdvancedHandler
     : IRequestHandler<GetUsersAdvancedQuery, CursorPagedResponse<UserListItemResponse>>
 {
     private readonly IFitRosDbContext _context;
+    private readonly ICurrentUser _currentUser;
 
-    public GetUsersAdvancedHandler(IFitRosDbContext context)
+    public GetUsersAdvancedHandler(
+        IFitRosDbContext context,
+        ICurrentUser currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<CursorPagedResponse<UserListItemResponse>> Handle(
@@ -27,6 +33,8 @@ public sealed class GetUsersAdvancedHandler
 
         if (request.IncludeInactive)
             query = query.IgnoreQueryFilters();
+
+        query = query.ApplyUserVisibility(_currentUser);
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -44,8 +52,7 @@ public sealed class GetUsersAdvancedHandler
         if (request.Status.HasValue)
             query = query.Where(u => (int)u.Status == request.Status.Value);
 
-        query = ApplySorting(query, request.SortBy, request.SortDirection);
-
+        var desc = request.SortDirection?.ToLowerInvariant() != "asc";
 
         if (!string.IsNullOrWhiteSpace(request.Cursor))
         {
@@ -54,31 +61,40 @@ public sealed class GetUsersAdvancedHandler
             if (parts.Length != 2)
                 throw new ArgumentException("Invalid cursor format.");
 
-            var cursorDate = DateTime.Parse(parts[0]);
+            var cursorDate = DateTime.ParseExact(
+                parts[0],
+                "O",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.RoundtripKind);
+
             var cursorId = Guid.Parse(parts[1]);
 
-            var desc = request.SortDirection?.ToLowerInvariant() != "asc";
-
             query = desc
-     ? query.Where(u =>
-         u.CreatedAt < cursorDate ||
-         (u.CreatedAt == cursorDate && u.Id < cursorId))
-     : query.Where(u =>
-         u.CreatedAt > cursorDate ||
-         (u.CreatedAt == cursorDate && u.Id > cursorId));
+                ? query.Where(u =>
+                    u.CreatedAt < cursorDate ||
+                    (u.CreatedAt == cursorDate && u.Id < cursorId))
+                : query.Where(u =>
+                    u.CreatedAt > cursorDate ||
+                    (u.CreatedAt == cursorDate && u.Id > cursorId));
         }
 
+        query = desc
+            ? query.OrderByDescending(u => u.CreatedAt)
+                   .ThenByDescending(u => u.Id)
+            : query.OrderBy(u => u.CreatedAt)
+                   .ThenBy(u => u.Id);
+
         var items = await query
-       .Take(pageSize)
-       .Select(u => new UserListItemResponse(
-           u.Id,
-           u.Email,
-           u.FirstName,
-           u.LastName,
-           (int)u.Role,
-           (int)u.Status,
-           u.CreatedAt))
-       .ToListAsync(cancellationToken);
+            .Take(pageSize)
+            .Select(u => new UserListItemResponse(
+                u.Id,
+                u.Email,
+                u.FirstName,
+                u.LastName,
+                (int)u.Role,
+                (int)u.Status,
+                u.CreatedAt))
+            .ToListAsync(cancellationToken);
 
         string? nextCursor = null;
 
@@ -89,32 +105,5 @@ public sealed class GetUsersAdvancedHandler
         }
 
         return new CursorPagedResponse<UserListItemResponse>(items, nextCursor);
-    }
-
-    private static IQueryable<User> ApplySorting(
-        IQueryable<User> query,
-        string? sortBy,
-        string? sortDirection)
-    {
-        var desc = sortDirection?.ToLowerInvariant() != "asc";
-
-        return sortBy?.ToLowerInvariant() switch
-        {
-            "email" => desc
-                ? query.OrderByDescending(u => u.Email).ThenByDescending(u => u.Id)
-                : query.OrderBy(u => u.Email).ThenBy(u => u.Id),
-
-            "firstname" => desc
-                ? query.OrderByDescending(u => u.FirstName).ThenByDescending(u => u.Id)
-                : query.OrderBy(u => u.FirstName).ThenBy(u => u.Id),
-
-            "lastname" => desc
-                ? query.OrderByDescending(u => u.LastName).ThenByDescending(u => u.Id)
-                : query.OrderBy(u => u.LastName).ThenBy(u => u.Id),
-
-            _ => desc
-                ? query.OrderByDescending(u => u.CreatedAt).ThenByDescending(u => u.Id)
-                : query.OrderBy(u => u.CreatedAt).ThenBy(u => u.Id),
-        };
     }
 }

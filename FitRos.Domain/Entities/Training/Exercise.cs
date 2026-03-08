@@ -1,9 +1,9 @@
-﻿using FitRos.Domain.Entities.Enums;
-using FitRos.Domain.Enums;
+﻿using FitRos.Domain.Common;
+using FitRos.Domain.Entities.Enums;
 
 namespace FitRos.Domain.Entities.Training;
 
-public class Exercise
+public class Exercise : ITenantEntity
 {
     public Guid Id { get; private set; }
 
@@ -18,15 +18,22 @@ public class Exercise
     public bool IsArchived { get; private set; }
 
     public DateTime CreatedAt { get; private set; }
+    public Guid? GymId { get; private set; }
 
-    // Constructor for EF
+    Guid? ITenantEntity.GymId
+    {
+        get => GymId;
+        set => GymId = value;
+    }
+
     private Exercise() { }
 
     private Exercise(
         Guid id,
         string name,
         string description,
-        MuscleGroup category)
+        MuscleGroup category,
+        Guid? gymId)
     {
         Id = id;
         Name = name;
@@ -35,19 +42,14 @@ public class Exercise
         Category = category;
         IsArchived = false;
         CreatedAt = DateTime.UtcNow;
-    }
-
-    public Exercise(string name, string description, MuscleGroup category)
-    {
-        Name = name;
-        Description = description;
-        Category = category;
+        GymId = gymId;
     }
 
     public static Exercise Create(
-        string name,
-        string description,
-        MuscleGroup category)
+     string name,
+     string description,
+     MuscleGroup category,
+     Guid? gymId)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Exercise name cannot be empty.");
@@ -58,7 +60,8 @@ public class Exercise
             Guid.NewGuid(),
             name,
             description.Trim(),
-            category);
+            category,
+            gymId);
     }
 
     public void Update(
@@ -78,7 +81,7 @@ public class Exercise
         Description = description.Trim();
         Category = category;
     }
-
+    
     public void Archive()
     {
         if (IsArchived)

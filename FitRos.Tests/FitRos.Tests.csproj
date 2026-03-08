@@ -7,6 +7,9 @@
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+
+    <!-- NECESARIO para WebApplicationFactory -->
+    <PreserveCompilationContext>true</PreserveCompilationContext>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,18 +19,21 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="FluentAssertions" Version="8.8.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.10" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="System.Net.Http.Json" Version="10.0.3" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FitRos.API\FitRos.API.csproj" />
     <ProjectReference Include="..\FitRos.Application\FitRos.Application.csproj" />
     <ProjectReference Include="..\FitRos.Domain\FitRos.Domain.csproj" />
-	  <ProjectReference Include="..\FitRos.Infrastructure\FitRos.Infrastructure.csproj" />
+    <ProjectReference Include="..\FitRos.Infrastructure\FitRos.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,8 +41,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Infraestructure\" />
-    <Folder Include="Api\" />
+    <Folder Include="Application\ClientProfiles\ChangeStatus\" />
+    <Folder Include="Application\Exercise\" />
+    <Folder Include="Domain\Training\" />
   </ItemGroup>
 
 </Project>

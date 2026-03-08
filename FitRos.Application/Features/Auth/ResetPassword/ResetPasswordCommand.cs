@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using FitRos.Application.Common.Security;
+using MediatR;
 
 namespace FitRos.Application.Features.Auth.ResetPassword;
 
@@ -6,4 +7,4 @@ public sealed record ResetPasswordCommand(
     string Email,
     string Token,
     string NewPassword
-) : IRequest;
+) : IRequest, IAllowAnonymousRequest;

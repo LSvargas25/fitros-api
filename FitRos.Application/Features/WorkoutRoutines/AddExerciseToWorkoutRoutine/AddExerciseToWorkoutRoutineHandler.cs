@@ -14,10 +14,11 @@ public class AddExerciseToWorkoutRoutineHandler
     }
 
     public async Task<bool> Handle(
-        AddExerciseToWorkoutRoutineCommand command,
-        CancellationToken cancellationToken)
+      AddExerciseToWorkoutRoutineCommand command,
+      CancellationToken cancellationToken)
     {
         var routine = await _context.WorkoutRoutines
+            .IgnoreQueryFilters()
             .Include(r => r.Exercises)
             .FirstOrDefaultAsync(
                 r => r.Id == command.WorkoutRoutineId,
@@ -27,6 +28,7 @@ public class AddExerciseToWorkoutRoutineHandler
             throw new DomainException("Workout routine not found.");
 
         var exerciseExists = await _context.Exercises
+            .IgnoreQueryFilters()
             .AnyAsync(
                 e => e.Id == command.ExerciseId,
                 cancellationToken);

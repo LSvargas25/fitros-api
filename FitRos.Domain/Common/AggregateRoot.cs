@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using MediatR;
 namespace FitRos.Domain.Common
 {
-    public abstract class AggregateRoot
+    public abstract class AggregateRoot : AuditableEntity
     {
         private readonly List<INotification> _domainEvents = new();
 

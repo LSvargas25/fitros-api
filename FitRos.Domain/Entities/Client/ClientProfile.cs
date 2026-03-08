@@ -4,7 +4,7 @@ using FitRos.Domain.Events;
 
 namespace FitRos.Domain.Entities.Client
 {
-    public sealed class ClientProfile : AggregateRoot
+    public sealed class ClientProfile : AggregateRoot, ITenantEntity
     {
         private readonly List<PhysicalMeasure> _measures = new();
 
@@ -12,23 +12,34 @@ namespace FitRos.Domain.Entities.Client
         public Guid UserId { get; private set; }
         public Guid CoachId { get; private set; }
 
+        public ClientStatus Status { get; private set; }
+        public Guid? GymId { get; private set; }
+
+        Guid? ITenantEntity.GymId
+        {
+            get => GymId;
+            set => GymId = value;
+        }
+
         public IReadOnlyCollection<PhysicalMeasure> Measures => _measures.AsReadOnly();
 
-        public DateTime CreatedAt { get; private set; }
-
-        public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
+    
+        public DateTime? DeactivatedAt { get; private set; }
+        public DateTime? DeletedAt { get; private set; }
+ 
 
         private ClientProfile() { }
 
-        private ClientProfile(Guid id, Guid userId, Guid coachId)
+        private ClientProfile(Guid gymId, Guid id, Guid userId, Guid coachId)
         {
+            GymId = gymId;
+
             Id = id;
             UserId = userId;
             CoachId = coachId;
-            CreatedAt = DateTime.UtcNow;
+            Status = ClientStatus.Active;
         }
-
-        public static ClientProfile Create(Guid userId, Guid coachId)
+        public static ClientProfile Create(Guid gymId, Guid userId, Guid coachId)
         {
             if (userId == Guid.Empty)
                 throw new DomainException("UserId cannot be empty.");
@@ -36,17 +47,64 @@ namespace FitRos.Domain.Entities.Client
             if (coachId == Guid.Empty)
                 throw new DomainException("CoachId cannot be empty.");
 
-            return new ClientProfile(Guid.NewGuid(), userId, coachId);
+            return new ClientProfile(gymId, Guid.NewGuid(), userId, coachId);
+        }
+        public static ClientProfile Create(Guid userId, Guid coachId)
+    => Create(Guid.NewGuid(), userId, coachId);
+        // helper overloads for tests
+        public static ClientProfile Create(Guid coachId)
+        {
+            return Create(Guid.NewGuid(), Guid.NewGuid(), coachId);
+        }
+
+        public static ClientProfile Create()
+        {
+            return Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        }
+        public void Deactivate()
+        {
+            if (Status != ClientStatus.Active)
+                throw new DomainException("Only active clients can be deactivated.");
+
+            Status = ClientStatus.Inactive;
+            DeactivatedAt = DateTime.UtcNow;
+        }
+
+        public void SetModified(Guid userId)
+        {
+            ModifiedBy = userId;
+            ModifiedAt = DateTime.UtcNow;
+        }
+
+        public void Activate()
+        {
+            if (Status != ClientStatus.Inactive)
+                throw new DomainException("Only inactive clients can be activated.");
+
+            Status = ClientStatus.Active;
+            DeactivatedAt = null;
+        }
+
+        public void SoftDelete()
+        {
+            if (Status == ClientStatus.Deleted)
+                throw new DomainException("Client already deleted.");
+
+            Status = ClientStatus.Deleted;
+            DeletedAt = DateTime.UtcNow;
         }
 
         public void AddMeasure(
-    decimal weight,
-    decimal bodyFatPercentage,
-    decimal muscleMass,
-    decimal waist,
-    decimal chest,
-    decimal arms)
+            decimal weight,
+            decimal bodyFatPercentage,
+            decimal muscleMass,
+            decimal waist,
+            decimal chest,
+            decimal arms)
         {
+            if (Status != ClientStatus.Active)
+                throw new DomainException("Cannot add measures to inactive or deleted client.");
+
             var measure = PhysicalMeasure.Create(
                 Id,
                 weight,
@@ -60,6 +118,19 @@ namespace FitRos.Domain.Entities.Client
 
             AddDomainEvent(
                 new PhysicalMeasureAddedDomainEvent(Id, measure.Id));
+        }
+        public void ReassignCoach(Guid newCoachId)
+        {
+            if (newCoachId == Guid.Empty)
+                throw new DomainException("New coach id cannot be empty.");
+
+            if (Status == ClientStatus.Deleted)
+                throw new DomainException("Cannot reassign a deleted client.");
+
+            if (CoachId == newCoachId)
+                throw new DomainException("Client is already assigned to this coach.");
+
+            CoachId = newCoachId;
         }
     }
 }

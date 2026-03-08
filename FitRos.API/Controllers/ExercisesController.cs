@@ -5,6 +5,7 @@ using FitRos.Application.Features.Exercises.GetExercises;
 using FitRos.Application.Features.Exercises.UpdateExercise;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Enums;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -14,26 +15,11 @@ namespace FitRos.API.Controllers;
 [Route("api/[controller]")]
 public class ExercisesController : ControllerBase
 {
-    private readonly CreateExerciseHandler _createHandler;
-    private readonly GetExerciseByIdHandler _getByIdHandler;
-    private readonly GetExercisesHandler _getHandler;
-    private readonly UpdateExerciseHandler _updateHandler;
-    private readonly ArchiveExerciseHandler _archiveHandler;
+    private readonly IMediator _mediator;
 
-
-
-    public ExercisesController(
-        CreateExerciseHandler createHandler,
-        GetExerciseByIdHandler getByIdHandler,
-        GetExercisesHandler getHandler,
-        UpdateExerciseHandler updateHandler,
-        ArchiveExerciseHandler archiveExerciseHandler)
+    public ExercisesController(IMediator mediator)
     {
-        _createHandler = createHandler;
-        _getByIdHandler = getByIdHandler;
-        _getHandler = getHandler;
-        _updateHandler = updateHandler;
-        _archiveHandler = archiveExerciseHandler;
+        _mediator = mediator;
     }
 
     // POST
@@ -48,14 +34,14 @@ public class ExercisesController : ControllerBase
         [FromBody] CreateExerciseCommand command,
         CancellationToken cancellationToken)
     {
-        var response = await _createHandler.Handle(command, cancellationToken);
+        var response = await _mediator.Send(command, cancellationToken);
 
         return CreatedAtAction(
             nameof(GetById),
             new { id = response.Id },
-            response
-        );
+            response);
     }
+
     // GET BY ID
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ExerciseDto), StatusCodes.Status200OK)]
@@ -68,7 +54,9 @@ public class ExercisesController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
-        var result = await _getByIdHandler.Handle(id, cancellationToken);
+        var result = await _mediator.Send(
+            new GetExerciseByIdQuery(id),
+            cancellationToken);
 
         if (result is null)
             return NotFound();
@@ -76,25 +64,23 @@ public class ExercisesController : ControllerBase
         return Ok(result);
     }
 
-
     // GET ALL
     [HttpGet]
     [ProducesResponseType(typeof(List<ExerciseListItemDto>), StatusCodes.Status200OK)]
     [SwaggerOperation(
         Summary = "Get exercises",
-        Description = "Retrieves all active exercises. Optionally filters the results by muscle group category using the 'category' query parameter."
+        Description = "Retrieves all active exercises. Optionally filters by muscle group."
     )]
     public async Task<IActionResult> Get(
         [FromQuery] MuscleGroup? category,
         CancellationToken cancellationToken)
     {
-        var result = await _getHandler.Handle(
+        var result = await _mediator.Send(
             new GetExercisesQuery(category),
             cancellationToken);
 
         return Ok(result);
     }
-
 
     // UPDATE
     [HttpPut("{id:guid}")]
@@ -113,10 +99,11 @@ public class ExercisesController : ControllerBase
         if (id != command.Id)
             throw new DomainException("Route id does not match body id.");
 
-        await _updateHandler.Handle(command, cancellationToken);
+        await _mediator.Send(command, cancellationToken);
 
         return NoContent();
     }
+
     // ARCHIVE
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -130,12 +117,10 @@ public class ExercisesController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
-        await _archiveHandler.Handle(
+        await _mediator.Send(
             new ArchiveExerciseCommand(id),
             cancellationToken);
 
         return NoContent();
     }
-
-
 }

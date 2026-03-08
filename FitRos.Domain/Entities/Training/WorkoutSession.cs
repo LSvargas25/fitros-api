@@ -1,8 +1,9 @@
-﻿using FitRos.Domain.Enums;
+﻿using FitRos.Domain.Common;
+using FitRos.Domain.Enums;
 
 namespace FitRos.Domain.Entities.Training;
 
-public class WorkoutSession
+public class WorkoutSession : AggregateRoot, ITenantEntity
 {
     public Guid Id { get; private set; }
 
@@ -13,6 +14,14 @@ public class WorkoutSession
     public string RoutineNameSnapshot { get; private set; } = null!;
 
     public int RoutineVersion { get; private set; }
+
+    public Guid? GymId { get; private set; }
+
+    Guid? ITenantEntity.GymId
+    {
+        get => GymId;
+        set => GymId = value;
+    }
 
     public DateTime ScheduledDate { get; private set; }
 
@@ -26,12 +35,15 @@ public class WorkoutSession
     private WorkoutSession() { }
 
     private WorkoutSession(
-        Guid userId,
-        Guid routineId,
-        string routineName,
-        int routineVersion,
-        DateTime scheduledDate)
+       Guid gymId,
+       Guid userId,
+       Guid routineId,
+       string routineName,
+       int routineVersion,
+       DateTime scheduledDate)
     {
+        GymId = gymId;
+
         Id = Guid.NewGuid();
         UserId = userId;
         RoutineId = routineId;
@@ -43,13 +55,15 @@ public class WorkoutSession
     }
 
     public static WorkoutSession Create(
-        Guid userId,
-        Guid routineId,
-        string routineName,
-        int routineVersion,
-        DateTime scheduledDate)
+    Guid gymId,
+    Guid userId,
+    Guid routineId,
+    string routineName,
+    int routineVersion,
+    DateTime scheduledDate)
     {
         return new WorkoutSession(
+            gymId,
             userId,
             routineId,
             routineName,
@@ -100,4 +114,7 @@ public class WorkoutSession
 
         Status = WorkoutSessionStatus.Skipped;
     }
+
+    public static WorkoutSession Create(Guid gymId, Guid coachId, Guid clientId, string notes, int duration)
+    => Create(gymId, coachId, clientId, notes, duration, DateTime.UtcNow);
 }

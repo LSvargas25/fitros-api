@@ -1,6 +1,8 @@
-﻿namespace FitRos.Domain.Entities.Reports;
+﻿using FitRos.Domain.Common;
 
-public sealed class ClientProgressReportSnapshot
+namespace FitRos.Domain.Entities.Reports;
+
+public sealed class ClientProgressReportSnapshot : ITenantEntity
 {
     public Guid Id { get; private set; }
 
@@ -12,14 +14,25 @@ public sealed class ClientProgressReportSnapshot
 
     public DateTime CreatedAtUtc { get; private set; }
 
+    public Guid? GymId { get; private set; }
+
+    Guid? ITenantEntity.GymId
+    {
+        get => GymId;
+        set => GymId = value;
+    }
+
     private ClientProgressReportSnapshot() { }
 
     private ClientProgressReportSnapshot(
-        Guid id,
-        Guid clientProfileId,
-        Guid physicalMeasureId,
-        string reportJson)
+       Guid gymId,
+       Guid id,
+       Guid clientProfileId,
+       Guid physicalMeasureId,
+       string reportJson)
     {
+        GymId = gymId;
+
         Id = id;
         ClientProfileId = clientProfileId;
         PhysicalMeasureId = physicalMeasureId;
@@ -28,8 +41,9 @@ public sealed class ClientProgressReportSnapshot
     }
 
     public static ClientProgressReportSnapshot Create(
-        Guid clientProfileId,
-        Guid physicalMeasureId,
-        string reportJson)
-        => new(Guid.NewGuid(), clientProfileId, physicalMeasureId, reportJson);
+     Guid gymId,
+     Guid clientProfileId,
+     Guid physicalMeasureId,
+     string reportJson)
+     => new(gymId, Guid.NewGuid(), clientProfileId, physicalMeasureId, reportJson);
 }

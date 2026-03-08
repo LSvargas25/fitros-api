@@ -19,6 +19,9 @@ using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using FitRos.Application.Common.Behaviors;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,7 +54,7 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<AssemblyReference>();
 
 // =============================
-// MediatR + Validation Pipeline
+// MediatR + Pipeline Behaviors
 // =============================
 
 builder.Services.AddMediatR(cfg =>
@@ -59,7 +62,19 @@ builder.Services.AddMediatR(cfg =>
 
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),
+    typeof(AuthenticationBehavior<,>));
+
+builder.Services.AddTransient(
+    typeof(IPipelineBehavior<,>),
+    typeof(AuthorizationBehavior<,>));
+
+builder.Services.AddTransient(
+    typeof(IPipelineBehavior<,>),
     typeof(ValidationBehavior<,>));
+
+builder.Services.AddTransient(
+    typeof(IPipelineBehavior<,>),
+    typeof(TenantGuardBehavior<,>));
 
 // =============================
 // Swagger
@@ -152,14 +167,10 @@ builder.Services.AddScoped<IPasswordResetTokenGenerator, PasswordResetTokenGener
 builder.Services.Configure<FrontendSettings>(
     builder.Configuration.GetSection("Frontend"));
 
-
-//Email reset token generator could be added here as well if needed in the future
 builder.Services.Configure<SmtpSettings>(
     builder.Configuration.GetSection("Smtp"));
 
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
-
-
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -194,8 +205,26 @@ builder.Services.AddAuthorization();
 // Current User (JWT-based)
 // =============================
 
+ 
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+
+// =============================
+// WorkoutRoutine Handlers (direct, no MediatR)
+// =============================
+
+var applicationAssembly = typeof(AssemblyReference).Assembly;
+
+var handlerTypes = applicationAssembly
+    .GetTypes()
+    .Where(t => t.IsClass && !t.IsAbstract && t.Name.EndsWith("Handler")
+             && !typeof(IPipelineBehavior<,>).IsAssignableFrom(t));
+
+foreach (var handlerType in handlerTypes)
+{
+    builder.Services.AddScoped(handlerType);
+}
 
 // =============================
 // Build App
@@ -225,3 +254,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

@@ -1,29 +1,42 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
+using FitRos.Application.Abstractions.Security;
+using FitRos.Domain.Common;
+using FitRos.Domain.Entities.Analytics;
+using FitRos.Domain.Entities.Auditing;
 using FitRos.Domain.Entities.Client;
 using FitRos.Domain.Entities.Enums;
-using FitRos.Domain.Entities.Training;
-using FitRos.Domain.Entities.Users;
-using Microsoft.EntityFrameworkCore; 
-using FitRos.Domain.Entities.Auditing;
-using FitRos.Domain.Entities.Analytics;
+using FitRos.Domain.Entities.Gym;
+using FitRos.Domain.Entities.Notifications;
 using FitRos.Domain.Entities.Outbox;
 using FitRos.Domain.Entities.Reports;
+using FitRos.Domain.Entities.Training;
+using FitRos.Domain.Entities.Users;
+using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Infrastructure.Persistence;
 
 public class FitRosDbContext : DbContext, IFitRosDbContext
 {
-    public FitRosDbContext(DbContextOptions<FitRosDbContext> options)
-        : base(options)
+    private readonly ICurrentUser _currentUser;
+
+    public FitRosDbContext(
+       DbContextOptions<FitRosDbContext> options,
+       ICurrentUser currentUser)
+       : base(options)
     {
+        _currentUser = currentUser;
     }
 
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<WorkoutRoutine> WorkoutRoutines { get; set; } = null!;
     public DbSet<WorkoutSession> WorkoutSessions { get; set; } = null!;
+    public DbSet<Gym> Gyms { get; set; } = null!;
     public DbSet<Exercise> Exercises { get; set; } = null!;
     public DbSet<WorkoutRoutineExercise> WorkoutRoutineExercises { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+
+    public Guid? CurrentGymId => _currentUser.GymId;
+
     public DbSet<ClientProfile> ClientProfiles { get; set; } = null!;
     public DbSet<PhysicalMeasure> PhysicalMeasures { get; set; } = null!;
     public DbSet<AuditLogEntry> AuditLogEntries { get; set; } = null!;
@@ -31,25 +44,99 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
     public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
     public DbSet<ClientProgressReportSnapshot> ClientProgressReportSnapshots { get; set; } = null!;
 
-    DbSet<AuditLogEntry> IFitRosDbContext.AuditLogEntries => throw new NotImplementedException();
+    public DbSet<Notification> Notifications { get; set; } = null!;
 
-    DbSet<ClientKpiSnapshot> IFitRosDbContext.ClientKpiSnapshots => throw new NotImplementedException();
+    DbSet<AuditLogEntry> IFitRosDbContext.AuditLogEntries => AuditLogEntries;
+    DbSet<ClientKpiSnapshot> IFitRosDbContext.ClientKpiSnapshots => ClientKpiSnapshots;
+    DbSet<OutboxMessage> IFitRosDbContext.OutboxMessages => OutboxMessages;
+    DbSet<ClientProgressReportSnapshot> IFitRosDbContext.ClientProgressReportSnapshots => ClientProgressReportSnapshots;
 
-    DbSet<OutboxMessage> IFitRosDbContext.OutboxMessages => throw new NotImplementedException();
+    public override async Task<int> SaveChangesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUser?.UserId;
+        var gymId = _currentUser?.GymId;
 
-    DbSet<ClientProgressReportSnapshot> IFitRosDbContext.ClientProgressReportSnapshots => throw new NotImplementedException();
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            // =========================
+            // AUDIT
+            // =========================
 
-    public Task<int> SaveChangesAsync(CancellationToken cancellationToken)
-        => base.SaveChangesAsync(cancellationToken);
+            if (entry.Entity is IAuditableEntity auditable)
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    entry.Property(nameof(IAuditableEntity.CreatedAt))
+                         .CurrentValue = DateTime.UtcNow;
+
+                    if (userId.HasValue)
+                        entry.Property(nameof(IAuditableEntity.CreatedBy))
+                             .CurrentValue = userId.Value;
+                }
+
+                if (entry.State == EntityState.Modified)
+                {
+                    if (userId.HasValue)
+                        auditable.SetModified(userId.Value);
+                }
+            }
+
+            // =========================
+            // TENANT AUTO ASSIGN
+            // =========================
+
+            if (entry.Entity is ITenantEntity tenantEntity)
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    if (tenantEntity.GymId == null && gymId.HasValue)
+                    {
+                        tenantEntity.GymId = gymId.Value;
+                    }
+                }
+            }
+        }
+
+        return await base.SaveChangesAsync(cancellationToken);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(FitRosDbContext).Assembly);
+
+        modelBuilder.Entity<ClientProfile>()
+            .HasQueryFilter(c => c.Status != ClientStatus.Deleted);
+
+        if (Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL")
+        {
+            modelBuilder.Entity<ClientProfile>()
+                .UseXminAsConcurrencyToken();
+        }
+
+        modelBuilder.ApplyTenantQueryFilters(this);
+
+        SeedOwner(modelBuilder);
+
         base.OnModelCreating(modelBuilder);
     }
 
     public void Remove<TEntity>(TEntity entity) where TEntity : class
     {
         Set<TEntity>().Remove(entity);
+    }
+    private static void SeedOwner(ModelBuilder modelBuilder)
+    {
+        var ownerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        var owner = User.CreateOwnerApp(
+            ownerId,
+            "owner@fitros.com",
+            "FitRos",
+            "Owner",
+            "AQAAAAIAAYagAAAAELe0J5jOZGpfuPmwQO01ca1V7Q7UBF6m/sJkq/Z8GrxFQYv6RxjKnlqfGpwRwMjWAQ=="
+        );
+
+        modelBuilder.Entity<User>().HasData(owner);
     }
 }
