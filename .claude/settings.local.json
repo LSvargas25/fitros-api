@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(dotnet ef:*)",
+      "Bash(where gh:*)",
+      "Bash(winget install:*)",
+      "Bash(refreshenv:*)",
+      "Bash(export:*)",
+      "Bash(printf:*)",
+      "Bash(curl:*)",
+      "Bash(__NEW_LINE_8c44979629966451__ curl:*)",
+      "Read(//c/Users/Steven/AppData/Roaming/**)",
+      "Read(//c/Users/Steven/.config/**)",
+      "Bash(cmd.exe:*)",
+      "Bash(git credential fill)",
+      "Bash(xargs -I{} sh -c 'export PATH=\"\"$PATH:/c/Program Files/GitHub CLI\"\" && GH_TOKEN={} gh pr merge 2 --merge --repo LSvargas25/FitRos 2>&1')"
+    ]
+  }
+}

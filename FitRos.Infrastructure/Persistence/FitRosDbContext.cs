@@ -11,6 +11,7 @@ using FitRos.Domain.Entities.Outbox;
 using FitRos.Domain.Entities.Reports;
 using FitRos.Domain.Entities.Training;
 using FitRos.Domain.Entities.Users;
+using FitRos.Domain.Entities.WeeklyTraining;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Infrastructure.Persistence;
@@ -45,6 +46,9 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
     public DbSet<ClientProgressReportSnapshot> ClientProgressReportSnapshots { get; set; } = null!;
 
     public DbSet<Notification> Notifications { get; set; } = null!;
+
+    public DbSet<WeeklyTrainingPlan> WeeklyTrainingPlans { get; set; } = null!;
+    public DbSet<TrainingPlanDay> TrainingPlanDays { get; set; } = null!;
 
     DbSet<AuditLogEntry> IFitRosDbContext.AuditLogEntries => AuditLogEntries;
     DbSet<ClientKpiSnapshot> IFitRosDbContext.ClientKpiSnapshots => ClientKpiSnapshots;
