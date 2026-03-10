@@ -1,9 +1,10 @@
 ﻿using FitRos.Domain.Common;
 using FitRos.Domain.Enums;
+using FitRos.Domain.Events;
 
 namespace FitRos.Domain.Entities.Users;
 
-public sealed class User : ITenantEntity
+public sealed class User : AggregateRoot, ITenantEntity
 {
     public Guid Id { get; private set; }
 
@@ -74,24 +75,28 @@ public sealed class User : ITenantEntity
     }
 
     public static User Create(
-        string email,
-        string firstName,
-        string lastName,
-        string passwordHash,
-        UserRole role)
+     string email,
+     string firstName,
+     string lastName,
+     string passwordHash,
+     UserRole role)
     {
         if (role == UserRole.OwnerApp)
             throw new DomainException("OwnerApp cannot be created through this method.");
 
         ValidateCommon(email, firstName, lastName, passwordHash);
 
-        return new User(
+        var user = new User(
             Guid.NewGuid(),
             email.Trim(),
             firstName.Trim(),
             lastName.Trim(),
             passwordHash.Trim(),
             role);
+
+        user.AddDomainEvent(new UserRegisteredDomainEvent(user.Id, email)); 
+
+        return user;
     }
 
     public static User CreateForGym(
@@ -116,6 +121,8 @@ public sealed class User : ITenantEntity
             role);
 
         user.AssignToGym(gymId);
+
+        user.AddDomainEvent(new UserRegisteredDomainEvent(user.Id, email));
 
         return user;
     }

@@ -178,14 +178,26 @@ namespace FitRos.Infrastructure.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -534,6 +546,9 @@ namespace FitRos.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -551,6 +566,12 @@ namespace FitRos.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("NormalizedEmail")
                         .IsRequired()
@@ -591,7 +612,8 @@ namespace FitRos.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
-                            CreatedAt = new DateTime(2026, 3, 8, 23, 35, 31, 42, DateTimeKind.Utc).AddTicks(7173),
+                            CreatedAt = new DateTime(2026, 3, 10, 20, 2, 31, 462, DateTimeKind.Utc).AddTicks(292),
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
                             Email = "owner@fitros.com",
                             FirstName = "FitRos",
                             LastName = "Owner",
@@ -600,6 +622,75 @@ namespace FitRos.Infrastructure.Migrations
                             Role = 0,
                             Status = 1
                         });
+                });
+
+            modelBuilder.Entity("FitRos.Domain.Entities.WeeklyTraining.TrainingPlanDay", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("WeeklyTrainingPlanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("WorkoutRoutineId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WeeklyTrainingPlanId", "Day")
+                        .IsUnique();
+
+                    b.ToTable("TrainingPlanDays", (string)null);
+                });
+
+            modelBuilder.Entity("FitRos.Domain.Entities.WeeklyTraining.WeeklyTrainingPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClientProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CoachId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("GymId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientProfileId");
+
+                    b.HasIndex("ClientProfileId", "Status");
+
+                    b.ToTable("WeeklyTrainingPlans", (string)null);
                 });
 
             modelBuilder.Entity("FitRos.Domain.Entities.Enums.PhysicalMeasure", b =>
@@ -639,6 +730,15 @@ namespace FitRos.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("FitRos.Domain.Entities.WeeklyTraining.TrainingPlanDay", b =>
+                {
+                    b.HasOne("FitRos.Domain.Entities.WeeklyTraining.WeeklyTrainingPlan", null)
+                        .WithMany("Days")
+                        .HasForeignKey("WeeklyTrainingPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("FitRos.Domain.Entities.Client.ClientProfile", b =>
                 {
                     b.Navigation("Measures");
@@ -652,6 +752,11 @@ namespace FitRos.Infrastructure.Migrations
             modelBuilder.Entity("FitRos.Domain.Entities.Training.WorkoutSession", b =>
                 {
                     b.Navigation("_sets");
+                });
+
+            modelBuilder.Entity("FitRos.Domain.Entities.WeeklyTraining.WeeklyTrainingPlan", b =>
+                {
+                    b.Navigation("Days");
                 });
 #pragma warning restore 612, 618
         }

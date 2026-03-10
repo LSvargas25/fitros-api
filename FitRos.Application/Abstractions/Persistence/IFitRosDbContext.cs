@@ -8,6 +8,7 @@ using FitRos.Domain.Entities.Outbox;
 using FitRos.Domain.Entities.Reports;
 using FitRos.Domain.Entities.Training;
 using FitRos.Domain.Entities.Users;
+using FitRos.Domain.Entities.WeeklyTraining;
 using Microsoft.EntityFrameworkCore;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,6 +34,8 @@ public interface IFitRosDbContext
     DbSet<ClientProgressReportSnapshot> ClientProgressReportSnapshots { get; }
 
     DbSet<Notification> Notifications { get; }
+
+    DbSet<WeeklyTrainingPlan> WeeklyTrainingPlans { get; }
 
     void Remove<TEntity>(TEntity entity) where TEntity : class;
 

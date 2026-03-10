@@ -9,6 +9,7 @@ using FitRos.Domain.Entities.Outbox;
 using FitRos.Domain.Entities.Reports;
 using FitRos.Domain.Entities.Training;
 using FitRos.Domain.Entities.Users;
+using FitRos.Domain.Entities.WeeklyTraining;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Tests.Application.ClientProfiles
@@ -31,6 +32,8 @@ namespace FitRos.Tests.Application.ClientProfiles
             public DbSet<ClientProgressReportSnapshot> ClientProgressReportSnapshots { get; set; } = null!;
 
             public DbSet<Notification> Notifications => Set<Notification>();
+
+            public DbSet<WeeklyTrainingPlan> WeeklyTrainingPlans => Set<WeeklyTrainingPlan>();
 
             public DbSet<WorkoutRoutine> WorkoutRoutines => Set<WorkoutRoutine>();
             public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();

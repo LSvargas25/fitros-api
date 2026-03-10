@@ -47,7 +47,10 @@ namespace FitRos.Domain.Entities.Client
             if (coachId == Guid.Empty)
                 throw new DomainException("CoachId cannot be empty.");
 
-            return new ClientProfile(gymId, Guid.NewGuid(), userId, coachId);
+            var client =  new ClientProfile(gymId, Guid.NewGuid(), userId, coachId);
+
+            client.AddDomainEvent(new ClientProfileCreatedDomainEvent(client.Id, gymId));
+            return client;
         }
         public static ClientProfile Create(Guid userId, Guid coachId)
     => Create(Guid.NewGuid(), userId, coachId);
@@ -132,5 +135,7 @@ namespace FitRos.Domain.Entities.Client
 
             CoachId = newCoachId;
         }
+
+
     }
 }
