@@ -5,6 +5,9 @@ using FitRos.Application.Abstractions.Messaging;
 using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Common.Behaviors;
+using FitRos.Application.Common.Behaviors;
+using FitRos.Infrastructure.Common.BackgroundJobs;
+using FitRos.Infrastructure.Common.Interceptors;
 using FitRos.Infrastructure.Messaging;
 using FitRos.Infrastructure.Persistence;
 using FitRos.Infrastructure.Security;
@@ -19,7 +22,6 @@ using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using FitRos.Application.Common.Behaviors;
 
 
 
@@ -140,8 +142,11 @@ builder.Services.AddFluentValidationRulesToSwagger();
 // Database (PostgreSQL)
 // =============================
 
-builder.Services.AddDbContext<FitRosDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddSingleton<OutboxInterceptor>();
+
+builder.Services.AddDbContext<FitRosDbContext>((sp, options) =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+           .AddInterceptors(sp.GetRequiredService<OutboxInterceptor>()));
 
 builder.Services.AddScoped<IFitRosDbContext, FitRosDbContext>();
 
@@ -226,9 +231,7 @@ foreach (var handlerType in handlerTypes)
     builder.Services.AddScoped(handlerType);
 }
 
-// =============================
-// Build App
-// =============================
+builder.Services.AddHostedService<OutboxProcessor>();
 
 var app = builder.Build();
 

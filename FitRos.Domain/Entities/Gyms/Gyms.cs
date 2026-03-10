@@ -1,8 +1,9 @@
 ﻿using FitRos.Domain.Common;
+using FitRos.Domain.Events;
 
 namespace FitRos.Domain.Entities.Gym;
 
-public sealed class Gym
+public sealed class Gym : AggregateRoot
 {
     public Guid Id { get; private set; }
 
@@ -32,7 +33,7 @@ public sealed class Gym
         if (string.IsNullOrWhiteSpace(phoneNumber))
             throw new DomainException("Gym phone number cannot be empty.");
 
-        return new Gym
+        var gym = new Gym
         {
             Id = Guid.NewGuid(),
             Name = name.Trim(),
@@ -42,6 +43,9 @@ public sealed class Gym
             IsDeleted = false,
             CreatedAtUtc = DateTime.UtcNow
         };
+        gym.AddDomainEvent(new GymCreatedDomainEvent(gym.Id, name)); 
+
+        return gym;
     }
 
     public void ChangeName(string name)

@@ -1,28 +1,35 @@
 ﻿using FitRos.Domain.Entities.Client;
+using FitRos.Domain.Events;
 using Xunit;
 
-namespace FitRos.Tests.Domain
+namespace FitRos.Tests.Domain;
+
+public class ClientProfileTests
 {
-    public class ClientProfileTests
+    [Fact]
+    public void AddMeasure_Should_Add_New_PhysicalMeasure()
     {
-        [Fact]
-        public void AddMeasure_Should_Add_New_PhysicalMeasure()
-        {
-            var profile = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
+        var profile = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
+        profile.AddMeasure(80, 20, 35, 85, 95, 35);
+        Assert.Single(profile.Measures);
+    }
 
-            profile.AddMeasure(80, 20, 35, 85, 95, 35);
+    [Fact]
+    public void Create_Should_Raise_ClientProfileCreatedDomainEvent()
+    {
+        var profile = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
 
-            Assert.Single(profile.Measures);
-        }
+        Assert.Single(profile.DomainEvents);
+        Assert.IsType<ClientProfileCreatedDomainEvent>(profile.DomainEvents.First());
+    }
 
-        [Fact]
-        public void AddMeasure_Should_Raise_DomainEvent()
-        {
-            var profile = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
+    [Fact]
+    public void AddMeasure_Should_Raise_PhysicalMeasureAddedDomainEvent()
+    {
+        var profile = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
+        profile.AddMeasure(80, 20, 35, 85, 95, 35);
 
-            profile.AddMeasure(80, 20, 35, 85, 95, 35);
-
-            Assert.Single(profile.DomainEvents);
-        }
+        Assert.Equal(2, profile.DomainEvents.Count);
+        Assert.Contains(profile.DomainEvents, e => e is PhysicalMeasureAddedDomainEvent);
     }
 }

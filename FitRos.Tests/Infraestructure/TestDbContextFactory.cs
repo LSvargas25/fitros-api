@@ -1,9 +1,11 @@
 ﻿using FitRos.Application.Abstractions.Security;
 using FitRos.Domain.Enums;
+using FitRos.Infrastructure.Common.Interceptors;
 using FitRos.Infrastructure.Persistence;
 using FitRos.Tests.TestDoubles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+
 namespace FitRos.Tests.Infrastructure;
 
 public sealed class TestDbContextContainer
@@ -23,7 +25,6 @@ public static class TestDbContextFactory
     public static TestDbContextContainer CreateContainer(UserRole role = UserRole.Admin)
     {
         var gymId = Guid.NewGuid();
-
         var currentUser = new FakeCurrentUser(gymId)
         {
             UserId = Guid.NewGuid(),
@@ -38,7 +39,6 @@ public static class TestDbContextFactory
             .Options;
 
         var context = new FitRosDbContext(options, currentUser);
-
         return new TestDbContextContainer(context, currentUser);
     }
 
@@ -62,10 +62,10 @@ public static class TestDbContextFactory
         };
 
         var options = new DbContextOptionsBuilder<FitRosDbContext>()
-     .UseInMemoryDatabase(Guid.NewGuid().ToString())
-     .ConfigureWarnings(w =>
-         w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
-     .Options;
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .ConfigureWarnings(w =>
+                w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
+            .Options;
 
         return new FitRosDbContext(options, currentUser);
     }
@@ -74,6 +74,23 @@ public static class TestDbContextFactory
     {
         var options = new DbContextOptionsBuilder<FitRosDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .ConfigureWarnings(w =>
+                w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
+            .Options;
+
+        return new FitRosDbContext(options, currentUser);
+    }
+
+    
+    public static FitRosDbContext CreateWithInterceptor(ICurrentUser currentUser)
+    {
+        var interceptor = new OutboxInterceptor();
+
+        var options = new DbContextOptionsBuilder<FitRosDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .ConfigureWarnings(w =>
+                w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
+            .AddInterceptors(interceptor)
             .Options;
 
         return new FitRosDbContext(options, currentUser);
