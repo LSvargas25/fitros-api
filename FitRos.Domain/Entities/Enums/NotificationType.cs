@@ -7,5 +7,9 @@ public enum NotificationType
     RoutinePublished = 3,
     RoutineAssigned = 4,
     ClientAssigned = 5,
-    WorkoutScheduled = 6
+    WorkoutScheduled = 6,
+    AdminCreated = 7,
+    AdminAssignedToGym = 8,
+    ClientCreated = 9,
+    CoachCreated = 10
 }

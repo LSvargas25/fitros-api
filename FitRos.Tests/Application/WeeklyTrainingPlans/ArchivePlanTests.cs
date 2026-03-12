@@ -64,7 +64,7 @@ public class ArchivePlanTests
 
         var context = TestDbContextFactory.Create(fakeUser);
 
-        var plan = WeeklyTrainingPlan.Create(Guid.NewGuid(), coachId, gymId, "Plan");
+        var plan = WeeklyTrainingPlan.Create(Guid.NewGuid(), gymId, "Plan");
         context.WeeklyTrainingPlans.Add(plan);
         await context.SaveChangesAsync(CancellationToken.None);
 

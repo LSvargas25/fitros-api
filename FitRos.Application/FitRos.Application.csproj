@@ -22,4 +22,9 @@
     <ProjectReference Include="..\FitRos.Domain\FitRos.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\Users\Admin\ActivateAdmin\" />
+    <Folder Include="Features\Users\Admin\DeleteAdmin\" />
+  </ItemGroup>
+
 </Project>

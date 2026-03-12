@@ -18,10 +18,5 @@ public sealed class CreateGymCommandValidator : AbstractValidator<CreateGymComma
             .NotEmpty()
             .MaximumLength(50);
 
-        RuleFor(x => x)
-            .Must(x => x.ExistingAdminUserId.HasValue ||
-                       (!string.IsNullOrWhiteSpace(x.AdminEmail)
-                       && !string.IsNullOrWhiteSpace(x.AdminPassword)))
-            .WithMessage("Either ExistingAdminUserId or Admin credentials must be provided.");
     }
 }

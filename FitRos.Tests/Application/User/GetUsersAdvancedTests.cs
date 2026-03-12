@@ -1,4 +1,4 @@
-﻿using FitRos.Application.Features.Users.GetUsersAdvanced;
+﻿using FitRos.Application.Features.Users.UserManagement.GetUsersAdvanced;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
 using FitRos.Tests.Infrastructure;

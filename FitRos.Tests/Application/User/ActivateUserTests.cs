@@ -1,5 +1,5 @@
 ﻿ 
-using FitRos.Application.Features.Users.ActivateUser;
+using FitRos.Application.Features.Users.UserManagement.ActivateUser;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;

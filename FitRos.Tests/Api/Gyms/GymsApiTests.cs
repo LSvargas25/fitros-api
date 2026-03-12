@@ -73,10 +73,10 @@ public class GymsApiTests : IClassFixture<WebApplicationFactory<Program>>
     // =============================
 
     [Fact]
-    public async Task CreateGym_Should_Only_Allow_Post()
+    public async Task GetGyms_Should_Return_401_When_Not_Authenticated()
     {
         var response = await _client.GetAsync("/api/gyms");
 
-        response.StatusCode.Should().Be(HttpStatusCode.MethodNotAllowed);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

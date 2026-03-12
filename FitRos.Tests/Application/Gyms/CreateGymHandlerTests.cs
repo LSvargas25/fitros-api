@@ -1,10 +1,9 @@
-﻿using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Features.Gyms.CreateGym;
 using FitRos.Domain.Enums;
 using FitRos.Tests.Infrastructure;
 using FitRos.Tests.TestDoubles;
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using Moq;
 using Xunit;
 
 namespace FitRos.Tests.Application.Gyms;
@@ -12,7 +11,7 @@ namespace FitRos.Tests.Application.Gyms;
 public class CreateGymHandlerTests
 {
     [Fact]
-    public async Task Should_Create_Gym_And_Admin()
+    public async Task OwnerApp_Creates_Gym_Without_Admin()
     {
         var fakeUser = new FakeCurrentUser(null)
         {
@@ -22,52 +21,44 @@ public class CreateGymHandlerTests
         };
 
         var context = TestDbContextFactory.Create(fakeUser);
+        var handler = new CreateGymHandler(context, fakeUser);
 
-        var passwordHasher = new Mock<IPasswordHasher>();
+        var command = new CreateGymCommand("FitRos Gym", "San Jose", "8888-8888");
 
-        passwordHasher
-            .Setup(x => x.Hash(It.IsAny<string>()))
-            .Returns("hashed-password");
+        var gymId = await handler.Handle(command, CancellationToken.None);
 
-        var handler = new CreateGymHandler(
-            context,
-            passwordHasher.Object,
-            fakeUser);
+        gymId.Should().NotBeEmpty();
 
-        var command = new CreateGymCommand(
-            "FitRos Gym",
-            "San Jose",
-            "8888-8888",
-            null,
-            "admin@gym.com",
-            "Admin",
-            "Gym",
-            "Password123");
+        var gym = await context.Gyms.IgnoreQueryFilters().FirstAsync(g => g.Id == gymId);
+        gym.Name.Should().Be("FitRos Gym");
 
-        var result = await handler.Handle(command, CancellationToken.None);
+        var audit = await context.AuditLogEntries.IgnoreQueryFilters().FirstAsync();
+        audit.EventType.Should().Be("GymCreated");
 
-        var gym = context.Gyms
-            .IgnoreQueryFilters()
-            .First();
+        var outbox = await context.OutboxMessages.IgnoreQueryFilters().FirstAsync();
+        outbox.Type.Should().Be("GymCreated");
+    }
 
-        Assert.Equal("FitRos Gym", gym.Name);
+    [Fact]
+    public async Task Creates_Gym_With_No_Users_In_Db()
+    {
+        var fakeUser = new FakeCurrentUser(null)
+        {
+            UserId = Guid.NewGuid(),
+            Role = UserRole.OwnerApp,
+            IsAuthenticated = true
+        };
 
-        var admin = context.Users
-            .IgnoreQueryFilters()
-            .First(x => x.Role == UserRole.Admin);
+        var context = TestDbContextFactory.Create(fakeUser);
+        var handler = new CreateGymHandler(context, fakeUser);
 
-        Assert.Equal(gym.Id, admin.GymId);
+        var command = new CreateGymCommand("Solo Gym", "Heredia", "7777-7777");
 
-        var audit = context.AuditLogEntries
-            .IgnoreQueryFilters()
-            .First();
+        var gymId = await handler.Handle(command, CancellationToken.None);
 
-        Assert.Equal("GymCreated", audit.EventType);
+        var admins = context.Users.IgnoreQueryFilters()
+            .Where(u => u.Role == UserRole.Admin).ToList();
 
-        var outbox = context.OutboxMessages
-            .IgnoreQueryFilters()
-            .First();
-
-        Assert.Equal("GymCreated", outbox.Type);
+        admins.Should().BeEmpty();
     }
 }

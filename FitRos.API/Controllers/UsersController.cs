@@ -1,10 +1,9 @@
-﻿using FitRos.Application.Features.Users.ActivateUser;
-using FitRos.Application.Features.Users.CreateUser;
-using FitRos.Application.Features.Users.DeactivateUser;
-using FitRos.Application.Features.Users.DeleteUser;
-using FitRos.Application.Features.Users.GetUserById;
-using FitRos.Application.Features.Users.GetUsersAdvanced;
-using FitRos.Application.Features.Users.UpdateUser;
+using FitRos.Application.Features.Users.UserManagement.ActivateUser;
+using FitRos.Application.Features.Users.UserManagement.DeactivateUser;
+using FitRos.Application.Features.Users.UserManagement.DeleteUser;
+using FitRos.Application.Features.Users.UserManagement.UserList;
+using FitRos.Application.Features.Users.UserManagement.GetUsersAdvanced;
+using FitRos.Application.Features.Users.UserManagement.UpdateUser;
 using FitRos.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -24,48 +23,6 @@ public sealed class UsersController : ControllerBase
     {
         _sender = sender;
     }
-
-    // =============================
-    // Create Client
-    // =============================
-
-    [HttpPost("clients")]
-    [ProducesResponseType(typeof(CreateUserResponse), StatusCodes.Status201Created)]
-    [SwaggerOperation(
-        Summary = "Create client",
-        Description = "Creates a new Client user.",
-        Tags = new[] { TagCore })]
-    public async Task<ActionResult<CreateUserResponse>> CreateClient(
-    [FromBody] CreateClientCommand command,
-    CancellationToken ct)
-    {
-        var result = await _sender.Send(command, ct);
-
-        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-    }
-
-    // =============================
-    // Create Coach
-    // =============================
-
-    [HttpPost("coaches")]
-    [ProducesResponseType(typeof(CreateUserResponse), StatusCodes.Status201Created)]
-    [SwaggerOperation(
-        Summary = "Create coach",
-        Description = "Creates a new Coach user.",
-        Tags = new[] { TagCore })]
-    public async Task<ActionResult<CreateUserResponse>> CreateCoach(
-        [FromBody] CreateCoachCommand command,
-        CancellationToken ct)
-    {
-        var result = await _sender.Send(command, ct);
-
-        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-    }
-
-    // =============================
-    // Update
-    // =============================
 
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -91,10 +48,6 @@ public sealed class UsersController : ControllerBase
         return Ok(result);
     }
 
-    // =============================
-    // Get by Id
-    // =============================
-
     [HttpGet("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -112,10 +65,6 @@ public sealed class UsersController : ControllerBase
         return Ok(result);
     }
 
-    // =============================
-    // Soft Delete
-    // =============================
-
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [SwaggerOperation(
@@ -127,10 +76,6 @@ public sealed class UsersController : ControllerBase
         await _sender.Send(new DeactivateUserCommand(id), ct);
         return NoContent();
     }
-
-    // =============================
-    // Activate
-    // =============================
 
     [HttpPatch("{id:guid}/activate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -144,10 +89,6 @@ public sealed class UsersController : ControllerBase
         return NoContent();
     }
 
-    // =============================
-    // Hard Delete
-    // =============================
-
     [HttpDelete("{id:guid}/permanent")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [SwaggerOperation(
@@ -159,10 +100,6 @@ public sealed class UsersController : ControllerBase
         await _sender.Send(new DeleteUserCommand(id), ct);
         return NoContent();
     }
-
-    // =============================
-    // Advanced Query
-    // =============================
 
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]

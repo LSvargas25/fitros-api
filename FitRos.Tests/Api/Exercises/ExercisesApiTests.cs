@@ -1,5 +1,5 @@
 ﻿using FitRos.Application.Features.Exercises.CreateExercise;
-using FitRos.Application.Features.Users.GetUserById;
+using FitRos.Application.Features.Users.UserManagement.UserList;
 using FitRos.Domain.Entities.Enums;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;

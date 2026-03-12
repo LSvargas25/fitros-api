@@ -18,7 +18,7 @@ public class ClientProfileConfiguration : IEntityTypeConfiguration<ClientProfile
             .IsRequired();
 
         builder.Property(x => x.CoachId)
-            .IsRequired();
+            .IsRequired(false);
 
         builder.Property(x => x.Status)
             .IsRequired()

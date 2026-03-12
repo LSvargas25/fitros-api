@@ -43,7 +43,6 @@ public sealed class CreateWeeklyTrainingPlanHandler
 
         var plan = WeeklyTrainingPlan.Create(
             clientProfile.Id,
-            clientProfile.CoachId,
             _currentUser.GymId,
             command.Name);
 

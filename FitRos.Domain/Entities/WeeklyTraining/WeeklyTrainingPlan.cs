@@ -32,16 +32,15 @@ public sealed class WeeklyTrainingPlan : AggregateRoot, ITenantEntity
     private WeeklyTrainingPlan() { }
 
     public static WeeklyTrainingPlan Create(
-        Guid clientProfileId,
-        Guid coachId,
+        Guid clientProfileId, 
         Guid? gymId,
+        Guid guid,
         string name)
     {
         if (clientProfileId == Guid.Empty)
             throw new DomainException("ClientProfileId cannot be empty.");
 
-        if (coachId == Guid.Empty)
-            throw new DomainException("CoachId cannot be empty.");
+   
 
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("Training plan name cannot be empty.");
@@ -50,7 +49,6 @@ public sealed class WeeklyTrainingPlan : AggregateRoot, ITenantEntity
         {
             Id = Guid.NewGuid(),
             ClientProfileId = clientProfileId,
-            CoachId = coachId,
             GymId = gymId,
             Name = name.Trim(),
             Status = TrainingPlanStatus.Draft,
@@ -129,5 +127,10 @@ public sealed class WeeklyTrainingPlan : AggregateRoot, ITenantEntity
     {
         if (Status == TrainingPlanStatus.Archived)
             throw new DomainException("Cannot modify an archived training plan.");
+    }
+
+    public static WeeklyTrainingPlan Create(Guid id, Guid? gymId, string name)
+    {
+        throw new NotImplementedException();
     }
 }

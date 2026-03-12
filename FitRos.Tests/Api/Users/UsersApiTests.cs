@@ -1,4 +1,6 @@
-﻿using FitRos.Application.Features.Users.CreateUser;
+﻿using FitRos.Application.Features.Users.UserManagement.CreateUser;
+using FitRos.Application.Features.Users.Client.CreateClient;
+using FitRos.Application.Features.Users.Coach.CreateCoach;
 using FitRos.Tests.Infrastructure;
 using FluentAssertions;
 using System.Net;
@@ -28,7 +30,7 @@ public UsersApiTests(TestApiFactory factory)
         );
 
         var response = await _client.PostAsJsonAsync(
-            "/api/users/clients",
+            "/api/clients",
             request);
 
         var body = await response.Content.ReadAsStringAsync();
@@ -47,7 +49,7 @@ public UsersApiTests(TestApiFactory factory)
         );
 
         var response = await _client.PostAsJsonAsync(
-            "/api/users/coaches",
+            "/api/coaches",
             request);
 
         var body = await response.Content.ReadAsStringAsync();
@@ -65,7 +67,7 @@ public UsersApiTests(TestApiFactory factory)
         );
 
         var createResponse = await _client.PostAsJsonAsync(
-            "/api/users/clients",
+            "/api/clients",
             createRequest);
 
         // deserialize FIRST, then check status
@@ -92,7 +94,7 @@ public UsersApiTests(TestApiFactory factory)
         );
 
         var createResponse = await _client.PostAsJsonAsync(
-            "/api/users/clients",
+            "/api/clients",
             createRequest);
 
         var created = await createResponse.Content
@@ -118,7 +120,7 @@ public UsersApiTests(TestApiFactory factory)
         );
 
         var createResponse = await _client.PostAsJsonAsync(
-            "/api/users/clients",
+            "/api/clients",
             createRequest);
 
         var created = await createResponse.Content

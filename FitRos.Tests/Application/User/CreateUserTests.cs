@@ -1,4 +1,4 @@
-﻿using FitRos.Application.Features.Users.CreateUser;
+﻿using FitRos.Application.Features.Users.UserManagement.CreateUser;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;

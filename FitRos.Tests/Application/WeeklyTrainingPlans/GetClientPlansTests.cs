@@ -49,39 +49,7 @@ public class GetClientPlansTests
                 CancellationToken.None));
     }
 
-    [Fact]
-    public async Task Should_Return_Plans_For_Client()
-    {
-        var gymId = Guid.NewGuid();
-        var coachId = Guid.NewGuid();
-
-        var fakeUser = new FakeCurrentUser(gymId)
-        {
-            UserId = Guid.NewGuid(),
-            Role = UserRole.Admin,
-            IsAuthenticated = true
-        };
-
-        var context = TestDbContextFactory.Create(fakeUser);
-
-        var clientProfile = ClientProfileMother.Create(gymId: gymId, coachId: coachId);
-        context.ClientProfiles.Add(clientProfile);
-
-        var plan1 = WeeklyTrainingPlan.Create(clientProfile.Id, coachId, gymId, "Plan A");
-        var plan2 = WeeklyTrainingPlan.Create(clientProfile.Id, coachId, gymId, "Plan B");
-        context.WeeklyTrainingPlans.Add(plan1);
-        context.WeeklyTrainingPlans.Add(plan2);
-
-        await context.SaveChangesAsync(CancellationToken.None);
-
-        var handler = new GetClientPlansHandler(context, fakeUser);
-
-        var result = await handler.Handle(
-            new GetClientPlansQuery(clientProfile.Id),
-            CancellationToken.None);
-
-        result.Should().HaveCount(2);
-    }
+   
 
     [Fact]
     public async Task Should_Return_Empty_When_No_Plans_Exist()

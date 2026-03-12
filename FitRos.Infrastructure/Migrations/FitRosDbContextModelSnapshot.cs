@@ -80,7 +80,7 @@ namespace FitRos.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CoachId")
+                    b.Property<Guid?>("CoachId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -612,7 +612,7 @@ namespace FitRos.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
-                            CreatedAt = new DateTime(2026, 3, 10, 20, 2, 31, 462, DateTimeKind.Utc).AddTicks(292),
+                            CreatedAt = new DateTime(2026, 3, 12, 1, 32, 28, 515, DateTimeKind.Utc).AddTicks(8188),
                             CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
                             Email = "owner@fitros.com",
                             FirstName = "FitRos",

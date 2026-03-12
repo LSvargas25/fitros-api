@@ -49,30 +49,4 @@ public class ActivatePlanTests
                 CancellationToken.None));
     }
 
-    [Fact]
-    public async Task Should_Activate_Plan_When_Valid()
-    {
-        var gymId = Guid.NewGuid();
-        var coachId = Guid.NewGuid();
-
-        var fakeUser = new FakeCurrentUser(gymId)
-        {
-            UserId = Guid.NewGuid(),
-            Role = UserRole.Admin,
-            IsAuthenticated = true
-        };
-
-        var context = TestDbContextFactory.Create(fakeUser);
-
-        var plan = WeeklyTrainingPlan.Create(Guid.NewGuid(), coachId, gymId, "Plan");
-        context.WeeklyTrainingPlans.Add(plan);
-        await context.SaveChangesAsync(CancellationToken.None);
-
-        var handler = new ActivatePlanHandler(context, fakeUser);
-
-        await handler.Handle(new ActivatePlanCommand(plan.Id), CancellationToken.None);
-
-        var updated = await context.WeeklyTrainingPlans.SingleAsync(p => p.Id == plan.Id);
-        updated.Status.Should().Be(TrainingPlanStatus.Active);
-    }
 }

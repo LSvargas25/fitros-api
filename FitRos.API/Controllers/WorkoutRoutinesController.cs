@@ -276,7 +276,7 @@ public class WorkoutRoutinesController : ControllerBase
     public async Task<IActionResult> MoveExercise(
         Guid routineId,
         Guid exerciseId,
-        MoveExerciseRequest request,
+        [FromBody] MoveExerciseRequest request,
         [FromServices] MoveExerciseInWorkoutRoutineHandler handler,
         CancellationToken cancellationToken)
     {

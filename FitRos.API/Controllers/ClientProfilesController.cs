@@ -1,4 +1,5 @@
 ﻿using FitRos.API.Contracts.ClientProfiles;
+using FitRos.Application.Features.ClientProfiles.ActivateClientInGym;
 using FitRos.Application.Features.ClientProfiles.AddPhysicalMeasure;
 using FitRos.Application.Features.ClientProfiles.ChangeClientStatus;
 using FitRos.Application.Features.ClientProfiles.GetByCoach;
@@ -111,7 +112,7 @@ public sealed class ClientProfilesController : ControllerBase
         Tags = new[] { TagClientProfiles })]
     public async Task<IActionResult> AddPhysicalMeasure(
         Guid id,
-        AddPhysicalMeasureCommand request,
+        [FromBody] AddPhysicalMeasureCommand request,
         CancellationToken cancellationToken)
     {
         await _mediator.Send(
@@ -139,7 +140,7 @@ public sealed class ClientProfilesController : ControllerBase
         Tags = new[] { TagClientProfiles })]
     public async Task<IActionResult> ChangeStatus(
         Guid id,
-        ChangeClientStatusRequest request,
+        [FromBody] ChangeClientStatusRequest request,
         CancellationToken cancellationToken)
     {
         await _mediator.Send(
@@ -161,7 +162,7 @@ public sealed class ClientProfilesController : ControllerBase
         Tags = new[] { TagClientProfiles })]
     public async Task<IActionResult> ReassignCoach(
         Guid id,
-        ReassignClientCoachRequest request,
+        [FromBody] ReassignClientCoachRequest request,
         CancellationToken cancellationToken)
     {
         await _mediator.Send(
@@ -186,6 +187,28 @@ public sealed class ClientProfilesController : ControllerBase
         CancellationToken cancellationToken)
     {
         await _mediator.Send(new SoftDeleteClientCommand(id), cancellationToken);
+        return NoContent();
+    }
+
+    // ===============================
+    // PATCH - Activate in Gym (transfer)
+    // ===============================
+
+    [HttpPatch("{id:guid}/activate-in-gym")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [SwaggerOperation(
+        Summary = "Activate client in gym",
+        Description = "Transfers an inactive client to a gym and activates them. OwnerApp or Admin.",
+        Tags = new[] { TagClientProfiles })]
+    public async Task<IActionResult> ActivateInGym(
+        Guid id,
+        [FromBody] ActivateClientInGymRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new ActivateClientInGymCommand(id, request.GymId),
+            cancellationToken);
+
         return NoContent();
     }
 

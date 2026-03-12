@@ -1,4 +1,4 @@
-﻿using FitRos.Application.Features.Users.DeleteUser;
+﻿using FitRos.Application.Features.Users.UserManagement.DeleteUser;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Training;
 using FitRos.Domain.Entities.Users;

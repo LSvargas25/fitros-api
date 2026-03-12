@@ -45,7 +45,6 @@ public sealed class GetClientByIdQueryHandler
         {
             Id = client.Id,
             UserId = client.UserId,
-            CoachId = client.CoachId,
             Status = client.Status,
             CreatedAt = client.CreatedAt,
             Measures = client.Measures
