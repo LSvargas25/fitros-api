@@ -4,6 +4,8 @@ using FitRos.Application.Features.Users.Admin.DeleteAdmin;
 using FitRos.Application.Features.Users.Admin.DesactivateAdmin;
 using FitRos.Application.Features.Users.Admin.GetAdminById;
 using FitRos.Application.Features.Users.Admin.GetAdmins;
+using FitRos.Application.Features.Users.Admin.GetAdminsCount;
+using FitRos.Application.Features.Users.Admin.UpdateAdmin;
 using FitRos.Application.Features.Users.UserManagement.CreateUser;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -104,6 +106,31 @@ public sealed class AdminsController : ControllerBase
     {
         await _sender.Send(new DeleteAdminCommand(id), ct);
         return NoContent();
+    }
+
+    [HttpGet("total")]
+    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+    [SwaggerOperation(
+        Summary = "Get admins count",
+        Description = "Returns total admin count. OwnerApp only.",
+        Tags = new[] { TagAdmins })]
+    public async Task<IActionResult> GetAdminsTotal(CancellationToken ct)
+    {
+        var count = await _sender.Send(new GetAdminsCountQuery(), ct);
+        return Ok(count);
+    }
+
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(AdminDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Update admin",
+        Description = "Updates admin name/email. OwnerApp only.",
+        Tags = new[] { TagAdmins })]
+    public async Task<IActionResult> UpdateAdmin(Guid id, [FromBody] UpdateAdminCommand command, CancellationToken ct)
+    {
+        var result = await _sender.Send(command with { AdminId = id }, ct);
+        return Ok(result);
     }
 
     [HttpDelete("{id:guid}/permanent")]

@@ -2,9 +2,9 @@ using FitRos.Application.Common.Security;
 using FitRos.Domain.Enums;
 using MediatR;
 
-namespace FitRos.Application.Features.Users.Coach.GetCoachById;
+namespace FitRos.Application.Features.Users.Coach.GetCoachesCount;
 
-public sealed record GetCoachByIdQuery(Guid CoachId) : IRequest<CoachDetailDto?>, IAuthorizeRequest
+public sealed record GetCoachesCountQuery : IRequest<int>, IAuthorizeRequest
 {
     public UserRole[] AllowedRoles => new[] { UserRole.OwnerApp, UserRole.Admin };
 }

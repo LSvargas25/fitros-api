@@ -38,8 +38,9 @@ public sealed class AssignAdminToGymHandler : IRequestHandler<AssignAdminToGymCo
             throw new DomainException("Admin is already assigned to a gym.");
 
         var adminCount = await _context.Users
-       .CountAsync(u => u.GymId == request.GymId
-                  && u.Role == UserRole.Admin, cancellationToken);
+            .IgnoreQueryFilters()
+            .CountAsync(u => u.GymId == request.GymId
+                       && u.Role == UserRole.Admin, cancellationToken);
 
         if (adminCount >= 3)
             throw new DomainException("A gym cannot have more than 3 administrators.");

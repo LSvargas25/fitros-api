@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using FitRos.Application.Common.Security;
+using FitRos.Domain.Enums;
+using MediatR;
 
-namespace FitRos.Application.Features.Users.Coach.DeactivateCoach
+namespace FitRos.Application.Features.Users.Coach.DeactivateCoach;
+
+public sealed record DeactivateCoachCommand(Guid CoachId) : IRequest, IAuthorizeRequest
 {
-    internal class DeactivateCoachCommand
-    {
-    }
+    public UserRole[] AllowedRoles => new[] { UserRole.OwnerApp, UserRole.Admin };
 }

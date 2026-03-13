@@ -98,6 +98,40 @@ public class AssignAdminToGymHandlerTests
     }
 
     [Fact]
+    public async Task Throws_DomainException_When_Gym_Already_Has_Three_Admins()
+    {
+        var fakeUser = new FakeCurrentUser(null)
+        {
+            UserId = Guid.NewGuid(),
+            Role = UserRole.OwnerApp,
+            IsAuthenticated = true
+        };
+
+        var context = TestDbContextFactory.Create(fakeUser);
+
+        var gym = Gym.Create("Full Gym", "San Jose", "8888-9999");
+        context.Gyms.Add(gym);
+
+        var admin1 = User.CreateForGym(gym.Id, "a1@test.com", "A", "One", "hash", UserRole.Admin);
+        var admin2 = User.CreateForGym(gym.Id, "a2@test.com", "B", "Two", "hash", UserRole.Admin);
+        var admin3 = User.CreateForGym(gym.Id, "a3@test.com", "C", "Three", "hash", UserRole.Admin);
+        context.Users.AddRange(admin1, admin2, admin3);
+
+        var admin4 = User.Create("a4@test.com", "D", "Four", "hash", UserRole.Admin);
+        context.Users.Add(admin4);
+
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        var handler = new AssignAdminToGymHandler(context);
+
+        var act = async () => await handler.Handle(
+            new AssignAdminToGymCommand(gym.Id, admin4.Id), CancellationToken.None);
+
+        await act.Should().ThrowAsync<DomainException>()
+            .WithMessage("A gym cannot have more than 3 administrators.");
+    }
+
+    [Fact]
     public async Task Notifies_OwnerApp_After_Assignment()
     {
         var ownerAppId = Guid.NewGuid();

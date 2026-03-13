@@ -1,7 +1,9 @@
 using FitRos.Application.Features.Users.Client.CreateClient;
+using FitRos.Application.Features.Users.Client.DeleteClient;
 using FitRos.Application.Features.Users.Client.GetClientById;
 using FitRos.Application.Features.Users.Client.GetClients;
 using FitRos.Application.Features.Users.Client.GetClientsCount;
+using FitRos.Application.Features.Users.Client.UpdateClient;
 using FitRos.Application.Features.Users.UserManagement.CreateUser;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -75,5 +77,31 @@ public sealed class ClientsController : ControllerBase
             return NotFound();
 
         return Ok(result);
+    }
+
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(ClientUserDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Update client",
+        Description = "Updates client name/email. OwnerApp=any, Admin=own gym, Coach=own clients.",
+        Tags = new[] { TagClients })]
+    public async Task<IActionResult> UpdateClient(Guid id, [FromBody] UpdateClientCommand command, CancellationToken ct)
+    {
+        var result = await _sender.Send(command with { ClientId = id }, ct);
+        return Ok(result);
+    }
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Hard delete client",
+        Description = "Permanently deletes an inactive client. OwnerApp=any, Admin=own gym, Coach=own clients.",
+        Tags = new[] { TagClients })]
+    public async Task<IActionResult> DeleteClient(Guid id, CancellationToken ct)
+    {
+        await _sender.Send(new DeleteClientCommand(id), ct);
+        return NoContent();
     }
 }

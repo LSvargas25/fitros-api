@@ -15,6 +15,9 @@ public sealed class GetDashboardStatsHandler
         GetDashboardStatsQuery request, CancellationToken ct)
     {
         var totalGyms = await _context.Gyms.CountAsync(ct);
+        var totalAdmins = await _context.Users
+            .IgnoreQueryFilters()
+            .CountAsync(u => u.Role == UserRole.Admin, ct);
         var totalClients = await _context.ClientProfiles.CountAsync(ct);
         var totalCoaches = await _context.Users
             .CountAsync(u => u.Role == UserRole.Coach, ct);
@@ -35,6 +38,6 @@ public sealed class GetDashboardStatsHandler
             .ToListAsync(ct);
 
         return new DashboardStatsResponse(
-            totalGyms, totalClients, totalCoaches, totalRoutines, gyms);
+            totalGyms, totalAdmins, totalClients, totalCoaches, totalRoutines, gyms);
     }
 }

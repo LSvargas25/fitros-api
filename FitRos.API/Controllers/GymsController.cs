@@ -1,5 +1,7 @@
 using FitRos.Application.Features.Gyms.ActivateGym;
 using FitRos.Application.Features.Gyms.AssignAdminToGym;
+using FitRos.Application.Features.Gyms.AssignClientToGym;
+using FitRos.Application.Features.Gyms.AssignCoachToGym;
 using FitRos.Application.Features.Gyms.CreateGym;
 using FitRos.Application.Features.Gyms.DeactivateGym;
 using FitRos.Application.Features.Gyms.GetAllGyms;
@@ -147,6 +149,36 @@ public sealed class GymsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPatch("{gymId:guid}/assign-coach")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [SwaggerOperation(
+        Summary = "Assign coach to gym",
+        Description = "Assigns an unassigned active coach to the specified gym. OwnerApp only.",
+        Tags = new[] { TagGyms })]
+    public async Task<IActionResult> AssignCoach(
+        [FromRoute] Guid gymId,
+        [FromBody] AssignCoachRequest body,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new AssignCoachToGymCommand(gymId, body.CoachId), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPatch("{gymId:guid}/assign-client")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [SwaggerOperation(
+        Summary = "Assign client to gym",
+        Description = "Assigns an unassigned active client to the specified gym. OwnerApp or Admin (own gym).",
+        Tags = new[] { TagGyms })]
+    public async Task<IActionResult> AssignClient(
+        [FromRoute] Guid gymId,
+        [FromBody] AssignClientRequest body,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new AssignClientToGymCommand(gymId, body.ClientId), cancellationToken);
+        return NoContent();
+    }
+
     [HttpDelete("{gymId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [SwaggerOperation(
@@ -163,3 +195,5 @@ public sealed class GymsController : ControllerBase
 }
 
 public sealed record AssignAdminRequest(Guid AdminId);
+public sealed record AssignCoachRequest(Guid CoachId);
+public sealed record AssignClientRequest(Guid ClientId);

@@ -9,6 +9,7 @@ namespace FitRos.Application.Features.Dashboard.Queries
 {
     public record DashboardStatsResponse(
       int TotalGyms,
+      int TotalAdmins,
       int TotalClients,
       int TotalCoaches,
       int TotalRoutines,
