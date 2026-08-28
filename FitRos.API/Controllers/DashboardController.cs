@@ -8,7 +8,7 @@ namespace FitRos.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "OwnerApp")]
 public sealed class DashboardController : ControllerBase
 {
     private readonly ISender _sender;
