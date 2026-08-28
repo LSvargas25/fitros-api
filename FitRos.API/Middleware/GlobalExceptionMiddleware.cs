@@ -52,6 +52,10 @@ public sealed class GlobalExceptionMiddleware
             KeyNotFoundException => HttpStatusCode.NotFound,           // 404
             DomainException => HttpStatusCode.BadRequest,              // 400
             ValidationException => HttpStatusCode.BadRequest,          // 400
+            // Bad caller input that slipped past validation (e.g. a domain
+            // ArgumentException.ThrowIfNullOrWhiteSpace). 400, but the message
+            // can name internal parameters, so it is NOT treated as client-safe.
+            ArgumentException => HttpStatusCode.BadRequest,            // 400
             DbUpdateConcurrencyException => HttpStatusCode.Conflict,   // 409
             _ => HttpStatusCode.InternalServerError                    // 500
         };

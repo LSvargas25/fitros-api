@@ -117,7 +117,7 @@ public sealed class UsersController : ControllerBase
     {
         var result = await _sender.Send(query, ct);
 
-        Response.Headers.Add("X-Next-Cursor", result.NextCursor ?? string.Empty);
+        Response.Headers["X-Next-Cursor"] = result.NextCursor ?? string.Empty;
 
         return Ok(result);
     }

@@ -132,6 +132,19 @@ public class WorkoutRoutinesApiTests : IClassFixture<TestApiFactory>
     }
 
     [Fact]
+    public async Task Update_With_Blank_Name_Is_A_400_Not_A_500()
+    {
+        var routineId = await CreateRoutineAsync($"Routine {Guid.NewGuid()}");
+
+        var response = await _client.PutAsJsonAsync(
+            $"/api/workoutroutines/{routineId}",
+            new UpdateWorkoutRoutineCommand("", "still has a description"));
+
+        var body = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, body);
+    }
+
+    [Fact]
     public async Task GetLatest_Should_Return_200()
     {
         var routineId = await CreateRoutineAsync($"Routine {Guid.NewGuid()}");
