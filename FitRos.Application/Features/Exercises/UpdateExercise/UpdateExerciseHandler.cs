@@ -23,7 +23,7 @@ public sealed class UpdateExerciseHandler
             .FirstOrDefaultAsync(x => x.Id == command.Id, cancellationToken);
 
         if (exercise is null)
-            throw new DomainException("Exercise not found.");
+            throw new NotFoundException("Exercise not found.");
 
         exercise.Update(
             command.Name,
