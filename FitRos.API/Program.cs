@@ -19,6 +19,7 @@ using MediatR;
 using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -33,6 +34,37 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Don't advertise the server implementation in the Server response header.
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+
+// =============================
+// Forwarded headers (running behind a reverse proxy / load balancer, e.g. Render)
+// =============================
+// Render (and most PaaS) terminate TLS at their edge and forward the real
+// client IP in X-Forwarded-For and the original scheme in X-Forwarded-Proto.
+// Without this the app sees the proxy IP (rate limiting would bucket everyone
+// together) and thinks every request is plain HTTP (HSTS / redirect logic).
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    // Only trust the single hop added by the platform proxy.
+    options.ForwardLimit = 1;
+
+    // The platform proxy is not in a private range we can enumerate. If
+    // ForwardedHeaders:KnownProxies is configured, trust exactly those;
+    // otherwise trust the immediate peer (correct when the proxy is the only
+    // route to the app, which is how Render works).
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+
+    foreach (var proxy in builder.Configuration
+                 .GetSection("ForwardedHeaders:KnownProxies")
+                 .Get<string[]>() ?? Array.Empty<string>())
+    {
+        if (System.Net.IPAddress.TryParse(proxy, out var ip))
+            options.KnownProxies.Add(ip);
+    }
+});
 
 // =============================
 // Controllers
@@ -340,6 +372,10 @@ if (app.Configuration.GetValue<bool>("Seed:Demo"))
 // =============================
 // Middleware Pipeline
 // =============================
+
+// Must run before anything that reads the client IP or scheme (rate limiter,
+// HTTPS redirect, HSTS).
+app.UseForwardedHeaders();
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();

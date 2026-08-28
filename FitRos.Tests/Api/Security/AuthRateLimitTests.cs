@@ -97,4 +97,29 @@ public class AuthRateLimitTests : IDisposable
 
         last!.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
     }
+
+    [Fact]
+    public async Task Throttle_is_keyed_on_the_X_Forwarded_For_client_ip_not_the_proxy()
+    {
+        static HttpRequestMessage Login(string clientIp)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
+            {
+                Content = JsonContent.Create(new { email = "nobody@fitros.com", password = "x" })
+            };
+            request.Headers.Add("X-Forwarded-For", clientIp);
+            return request;
+        }
+
+        // Exhaust the window for client 203.0.113.10.
+        for (var i = 0; i < RateLimitedApiFactory.PermitLimit + 1; i++)
+            await _client.SendAsync(Login("203.0.113.10"));
+
+        var throttledA = await _client.SendAsync(Login("203.0.113.10"));
+        throttledA.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+
+        // A different client IP behind the same proxy still has its own budget.
+        var otherClient = await _client.SendAsync(Login("198.51.100.20"));
+        otherClient.StatusCode.Should().NotBe(HttpStatusCode.TooManyRequests);
+    }
 }
