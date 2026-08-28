@@ -6,7 +6,6 @@ using FitRos.Application.Abstractions.Messaging;
 using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Common.Behaviors;
-using FitRos.Application.Common.Behaviors;
 using FitRos.Infrastructure.Common.BackgroundJobs;
 using FitRos.Infrastructure.Common.Interceptors;
 using FitRos.Infrastructure.Messaging;
@@ -32,11 +31,24 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Don't advertise the server implementation in the Server response header.
+builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+
 // =============================
 // Controllers
 // =============================
 
 builder.Services.AddControllers();
+
+// =============================
+// HSTS (emitted only over HTTPS, and only outside Development)
+// =============================
+
+builder.Services.AddHsts(options =>
+{
+    options.MaxAge = TimeSpan.FromDays(365);
+    options.IncludeSubDomains = true;
+});
 
 // =============================
 // CORS
@@ -322,12 +334,18 @@ if (app.Configuration.GetValue<bool>("Seed:Demo"))
 // =============================
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 
 // Outside Development, Swagger is opt-in via Swagger__Enabled=true.
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
 }
 
 app.UseHttpsRedirection();
