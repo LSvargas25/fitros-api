@@ -47,8 +47,16 @@ public sealed class SoftDeleteClientCommandHandler
 
     private void ValidatePermissions(Domain.Entities.Client.ClientProfile client)
     {
-        if (_currentUser.IsOwner() || _currentUser.IsAdmin())
+        if (_currentUser.IsOwner())
             return;
+
+        if (_currentUser.IsAdmin())
+        {
+            if (client.GymId != _currentUser.GymId)
+                throw new ForbiddenException("Client does not belong to your gym.");
+
+            return;
+        }
 
         if (_currentUser.IsCoach())
         {

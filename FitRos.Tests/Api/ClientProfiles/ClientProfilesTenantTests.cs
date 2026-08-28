@@ -12,9 +12,9 @@ using Xunit;
 namespace FitRos.Tests.Api.ClientProfiles;
 
 // Authenticated (Admin, gym 11111111-…). The existing ClientProfilesApiTests
-// only assert 401. This covers a happy path plus the cross-gym rules that ARE
-// enforced today (measures / KPI snapshots). GetById / status / soft-delete
-// cross-gym behaviour is tracked separately in BACKEND_AUDIT 11.10.
+// only assert 401. This covers a happy path plus every cross-gym rule
+// (measures / KPI snapshots / get-by-id / status / soft-delete) — all now
+// gym-scoped for Admin after BACKEND_AUDIT 11.10 was resolved.
 public class ClientProfilesTenantTests : IClassFixture<TestApiFactory>
 {
     private static readonly Guid TestGymId = Guid.Parse("11111111-1111-1111-1111-111111111111");
@@ -94,6 +94,37 @@ public class ClientProfilesTenantTests : IClassFixture<TestApiFactory>
         var id = await PlantProfileAsync(OtherGymId);
 
         var response = await _client.PostAsync($"/api/client-profiles/{id}/kpi-snapshot", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Reading_a_client_profile_in_another_gym_is_forbidden()
+    {
+        var id = await PlantProfileAsync(OtherGymId);
+
+        var response = await _client.GetAsync($"/api/client-profiles/{id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Changing_status_of_a_client_in_another_gym_is_forbidden()
+    {
+        var id = await PlantProfileAsync(OtherGymId);
+
+        var response = await _client.PatchAsJsonAsync(
+            $"/api/client-profiles/{id}/status", new { activate = false });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Soft_deleting_a_client_in_another_gym_is_forbidden()
+    {
+        var id = await PlantProfileAsync(OtherGymId);
+
+        var response = await _client.DeleteAsync($"/api/client-profiles/{id}");
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }

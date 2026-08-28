@@ -31,12 +31,13 @@ namespace FitRos.Tests.Application.ClientProfiles
             return context;
         }
 
-        private static ICurrentUser MockUser(Guid? id, UserRole role)
+        private static ICurrentUser MockUser(Guid? id, UserRole role, Guid? gymId = null)
         {
             var mock = new Mock<ICurrentUser>();
             mock.Setup(x => x.UserId).Returns(id);
             mock.Setup(x => x.Role).Returns(role);
             mock.Setup(x => x.IsAuthenticated).Returns(true);
+            mock.Setup(x => x.GymId).Returns(gymId ?? Guid.NewGuid());
             return mock.Object;
         }
 
@@ -60,12 +61,13 @@ namespace FitRos.Tests.Application.ClientProfiles
         }
 
         [Fact]
-        public async Task Admin_should_soft_delete_any_client()
+        public async Task Admin_can_soft_delete_a_client_in_their_own_gym()
         {
-            var client = ClientProfileMother.Create(); 
+            var gymId = Guid.NewGuid();
+            var client = ClientProfileMother.Create(gymId: gymId);
 
             using var context = CreateContext(client);
-            var user = MockUser(Guid.NewGuid(), UserRole.Admin);
+            var user = MockUser(Guid.NewGuid(), UserRole.Admin, gymId);
 
             var handler = new SoftDeleteClientCommandHandler(context, user);
 
@@ -74,6 +76,22 @@ namespace FitRos.Tests.Application.ClientProfiles
                 CancellationToken.None);
 
             client.Status.Should().Be(ClientStatus.Deleted);
+        }
+
+        [Fact]
+        public async Task Admin_cannot_soft_delete_a_client_in_another_gym()
+        {
+            var client = ClientProfileMother.Create(gymId: Guid.NewGuid());
+
+            using var context = CreateContext(client);
+            var user = MockUser(Guid.NewGuid(), UserRole.Admin, Guid.NewGuid());
+
+            var handler = new SoftDeleteClientCommandHandler(context, user);
+
+            await Assert.ThrowsAsync<ForbiddenException>(() =>
+                handler.Handle(
+                    new SoftDeleteClientCommand(client.Id),
+                    CancellationToken.None));
         }
 
         [Fact]
