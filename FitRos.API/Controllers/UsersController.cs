@@ -9,10 +9,13 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace FitRos.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public sealed class UsersController : ControllerBase
 {
     private const string TagCore = "Users - Core";

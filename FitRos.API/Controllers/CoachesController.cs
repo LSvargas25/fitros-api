@@ -11,10 +11,13 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace FitRos.API.Controllers;
 
 [ApiController]
 [Route("api/coaches")]
+[Authorize]
 public sealed class CoachesController : ControllerBase
 {
     private const string TagCoaches = "Coaches";

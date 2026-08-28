@@ -10,6 +10,7 @@ using FitRos.Tests.Infrastructure;
 using FitRos.Tests.TestDoubles;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -42,6 +43,11 @@ public class OwnerAppTestApiFactory : WebApplicationFactory<Program>
                     Role = UserRole.OwnerApp,
                     IsAuthenticated = true
                 });
+
+            services.AddAuthentication(TestAuthHandler.SchemeName)
+
+                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
+
 
             services.RemoveAll<DbContextOptions<FitRosDbContext>>();
             services.RemoveAll<IFitRosDbContext>();
