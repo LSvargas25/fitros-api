@@ -1,8 +1,11 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
+using FitRos.Application.Common.Security;
 using FitRos.Domain.Common;
+using FitRos.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using DomainUser = FitRos.Domain.Entities.Users.User;
 
 namespace FitRos.Application.Features.Users.UserManagement.UserList;
 
@@ -35,6 +38,8 @@ public sealed class GetUserByIdHandler
         if (user is null)
             throw new NotFoundException("User not found.");
 
+        ValidatePermissions(user);
+
         return new UserDetailsDto(
             user.Id,
             user.Email,
@@ -44,5 +49,33 @@ public sealed class GetUserByIdHandler
             (int)user.Status,
             user.CreatedAt,
             user.UpdatedAt);
+    }
+
+    // Mirrors ApplyUserVisibility / GetClientByIdHandler: Owner sees anyone,
+    // Admin only non-Owner users in their own gym, Coach only Clients in their
+    // gym, everyone else only themselves.
+    private void ValidatePermissions(DomainUser target)
+    {
+        if (_currentUser.IsOwner())
+            return;
+
+        if (_currentUser.IsAdmin())
+        {
+            if (target.Role == UserRole.OwnerApp || target.GymId != _currentUser.GymId)
+                throw new ForbiddenException("You are not authorized to view this user.");
+
+            return;
+        }
+
+        if (_currentUser.IsCoach())
+        {
+            if (target.Role != UserRole.Client || target.GymId != _currentUser.GymId)
+                throw new ForbiddenException("You are not authorized to view this user.");
+
+            return;
+        }
+
+        if (target.Id != _currentUser.UserId)
+            throw new ForbiddenException("You are not authorized to view this user.");
     }
 }

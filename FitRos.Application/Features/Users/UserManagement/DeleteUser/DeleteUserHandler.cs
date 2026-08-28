@@ -59,13 +59,16 @@ public sealed class DeleteUserHandler
             if (target.Role == UserRole.OwnerApp)
                 throw new ForbiddenException("Admin cannot delete OwnerApp.");
 
+            if (target.GymId != _currentUser.GymId)
+                throw new ForbiddenException("Admins can only delete users in their own gym.");
+
             return;
         }
 
         if (_currentUser.IsCoach())
         {
-            if (target.Role != UserRole.Client)
-                throw new ForbiddenException("Coach can only delete Client users.");
+            if (target.Role != UserRole.Client || target.GymId != _currentUser.GymId)
+                throw new ForbiddenException("Coach can only delete Client users in their gym.");
 
             return;
         }

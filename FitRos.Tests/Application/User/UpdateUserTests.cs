@@ -25,6 +25,7 @@ public class UpdateUserTests
             "User",
             "hashed",
             UserRole.Client);
+        user.AssignToGym(gymId);
 
         context.Add(user);
         await context.SaveChangesAsync();
@@ -67,6 +68,7 @@ public class UpdateUserTests
             "User",
             "hashed",
             UserRole.Client);
+        user.AssignToGym(gymId);
 
         context.Add(user);
         await context.SaveChangesAsync();
@@ -108,6 +110,7 @@ public class UpdateUserTests
             "User",
             "hashed",
             UserRole.Admin);
+        admin.AssignToGym(gymId);
 
         context.Add(admin);
         await context.SaveChangesAsync();

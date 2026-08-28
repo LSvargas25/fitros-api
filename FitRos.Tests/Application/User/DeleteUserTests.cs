@@ -58,6 +58,7 @@ public class DeleteUserTests
             "User",
             "hashed",
             UserRole.Client);
+        client.AssignToGym(gymId);
 
         client.Deactivate();
 
@@ -95,6 +96,7 @@ public class DeleteUserTests
             "User",
             "hashed",
             UserRole.Admin);
+        admin.AssignToGym(gymId);
 
         admin.Deactivate();
 
@@ -130,6 +132,7 @@ public class DeleteUserTests
             "User",
             "hashed",
             UserRole.Coach);
+        coach.AssignToGym(gymId);
 
         coach.Deactivate();
 
@@ -212,6 +215,7 @@ public class DeleteUserTests
             "User",
             "hashed",
             UserRole.Coach);
+        coach.AssignToGym(gymId);
 
         coach.Deactivate();
 
@@ -232,7 +236,7 @@ public class DeleteUserTests
 
         await act.Should()
             .ThrowAsync<ForbiddenException>()
-            .WithMessage("Coach can only delete Client users.");
+            .WithMessage("Coach can only delete Client users in their gym.");
     }
 
     [Fact]

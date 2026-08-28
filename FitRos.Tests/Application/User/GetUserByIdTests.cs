@@ -25,6 +25,7 @@ public class GetUserByIdTests
             "Vargas",
             "hash",
             UserRole.Client);
+        user.AssignToGym(gymId); // same gym as the admin below
 
         context.Users.Add(user);
         await context.SaveChangesAsync(CancellationToken.None);

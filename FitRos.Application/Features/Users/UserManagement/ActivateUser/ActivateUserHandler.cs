@@ -43,6 +43,9 @@ public sealed class ActivateUserHandler
         {
             if (user.Role == UserRole.OwnerApp)
                 throw new ForbiddenException("Admin cannot activate OwnerApp.");
+
+            if (user.GymId != _currentUser.GymId)
+                throw new ForbiddenException("Admins can only activate users in their own gym.");
         }
         else
         {

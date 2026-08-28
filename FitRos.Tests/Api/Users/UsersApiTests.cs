@@ -13,8 +13,7 @@ public class UsersApiTests : IClassFixture<TestApiFactory>
 {
     private readonly HttpClient _client;
 
-
-public UsersApiTests(TestApiFactory factory)
+    public UsersApiTests(TestApiFactory factory)
     {
         _client = factory.CreateClient();
     }
@@ -148,5 +147,22 @@ public UsersApiTests(TestApiFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    // ---------- authz / tenant ----------
 
+    [Fact]
+    public async Task GetById_Unauthenticated_Is_401()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/users/{Guid.NewGuid()}");
+        request.Headers.Add(TestAuthHandler.UnauthenticatedHeader, "1");
+
+        var response = await _client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    // Cross-gym behaviour for these endpoints is covered at the handler level in
+    // UserManagementTenantTests — planting a User straight into the WAF store for
+    // an HTTP round trip doesn't work reliably here (the seeded-owner HasData
+    // model makes the WAF's request-side Users store diverge from a manually
+    // created scope), so it's asserted in-process instead.
 }

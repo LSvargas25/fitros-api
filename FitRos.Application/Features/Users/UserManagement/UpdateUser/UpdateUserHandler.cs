@@ -106,13 +106,16 @@ public sealed class UpdateUserHandler
             if (target.Role == UserRole.OwnerApp)
                 throw new ForbiddenException("Admin cannot modify OwnerApp.");
 
+            if (target.GymId != _currentUser.GymId)
+                throw new ForbiddenException("Admins can only modify users in their own gym.");
+
             return;
         }
 
         if (_currentUser.IsCoach())
         {
-            if (target.Role != UserRole.Client)
-                throw new ForbiddenException("Coach can only modify Client users.");
+            if (target.Role != UserRole.Client || target.GymId != _currentUser.GymId)
+                throw new ForbiddenException("Coach can only modify Client users in their gym.");
 
             return;
         }
