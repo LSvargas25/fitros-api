@@ -30,20 +30,17 @@ public class GymsAdminScopeTests : IClassFixture<TestApiFactory>
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    [Fact]
-    public async Task Admin_cannot_activate_another_gym()
+    [Theory]
+    [InlineData("activate")]
+    [InlineData("deactivate")]
+    public async Task Admin_cannot_activate_or_deactivate_any_gym_including_their_own(string action)
     {
-        var response = await _client.PatchAsync($"/api/gyms/{OtherGymId}/activate", null);
+        // Gym activate/deactivate is an OwnerApp-only lifecycle operation.
+        var other = await _client.PatchAsync($"/api/gyms/{OtherGymId}/{action}", null);
+        other.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task Admin_cannot_deactivate_another_gym()
-    {
-        var response = await _client.PatchAsync($"/api/gyms/{OtherGymId}/deactivate", null);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        var own = await _client.PatchAsync($"/api/gyms/{OwnGymId}/{action}", null);
+        own.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]

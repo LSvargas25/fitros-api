@@ -27,11 +27,10 @@ public sealed class DeactivateGymHandler : IRequestHandler<DeactivateGymCommand>
         DeactivateGymCommand command,
         CancellationToken cancellationToken)
     {
-        if (_currentUser.Role != UserRole.OwnerApp && _currentUser.Role != UserRole.Admin)
-            throw new ForbiddenException("You are not allowed to deactivate gyms.");
-
-        if (_currentUser.Role == UserRole.Admin && command.GymId != _currentUser.GymId)
-            throw new ForbiddenException("Admins can only deactivate their own gym.");
+        // Activating/deactivating a gym affects the whole tenant, so it is an
+        // OwnerApp-only lifecycle operation (Steven's call, 2026-08-28).
+        if (_currentUser.Role != UserRole.OwnerApp)
+            throw new ForbiddenException("Only OwnerApp can deactivate gyms.");
 
         var gym = await _context.Gyms
             .FirstOrDefaultAsync(x => x.Id == command.GymId, cancellationToken);
