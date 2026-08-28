@@ -14,9 +14,14 @@ namespace FitRos.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "OwnerApp,Admin,Coach")]
+// Foods are a per-gym reference catalog with no individual owner: any
+// authenticated user (Client included) may read it, tenant-scoped by the
+// global query filter. Authoring stays staff-only (see the write actions).
+[Authorize]
 public class FoodsController : ControllerBase
 {
+    private const string StaffOnly = "OwnerApp,Admin,Coach";
+
     private readonly IMediator _mediator;
 
     public FoodsController(IMediator mediator)
@@ -25,6 +30,7 @@ public class FoodsController : ControllerBase
     }
 
     // POST /api/foods
+    [Authorize(Roles = StaffOnly)]
     [HttpPost]
     [ProducesResponseType(typeof(CreateFoodResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -81,6 +87,7 @@ public class FoodsController : ControllerBase
     }
 
     // PUT /api/foods/{id}
+    [Authorize(Roles = StaffOnly)]
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -102,6 +109,7 @@ public class FoodsController : ControllerBase
     }
 
     // DELETE /api/foods/{id}
+    [Authorize(Roles = StaffOnly)]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

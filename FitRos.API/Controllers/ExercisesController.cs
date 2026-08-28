@@ -15,9 +15,14 @@ namespace FitRos.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "OwnerApp,Admin,Coach")]
+// Exercises are a per-gym reference catalog with no individual owner: any
+// authenticated user (Client included) may read it, tenant-scoped by the
+// global query filter. Authoring stays staff-only (see the write actions).
+[Authorize]
 public class ExercisesController : ControllerBase
 {
+    private const string StaffOnly = "OwnerApp,Admin,Coach";
+
     private readonly IMediator _mediator;
 
     public ExercisesController(IMediator mediator)
@@ -26,6 +31,7 @@ public class ExercisesController : ControllerBase
     }
 
     // POST
+    [Authorize(Roles = StaffOnly)]
     [HttpPost]
     [ProducesResponseType(typeof(CreateExerciseResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -86,6 +92,7 @@ public class ExercisesController : ControllerBase
     }
 
     // UPDATE
+    [Authorize(Roles = StaffOnly)]
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -108,6 +115,7 @@ public class ExercisesController : ControllerBase
     }
 
     // ARCHIVE
+    [Authorize(Roles = StaffOnly)]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

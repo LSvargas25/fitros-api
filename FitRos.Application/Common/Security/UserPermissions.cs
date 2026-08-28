@@ -22,5 +22,8 @@ namespace FitRos.Application.Common.Security
 
         public static bool IsCoach(this ICurrentUser user)
             => user.Role == UserRole.Coach;
+
+        public static bool IsClient(this ICurrentUser user)
+            => user.Role == UserRole.Client;
     }
 }

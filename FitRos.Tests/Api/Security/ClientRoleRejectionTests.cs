@@ -20,10 +20,13 @@ public class ClientRoleRejectionTests : IClassFixture<TestApiFactory>
 
     public static IEnumerable<object[]> StaffOnlyEndpoints => new[]
     {
-        new object[] { "GET",  "/api/exercises" },
+        // Exercises / Foods GET is now open to Client (catalog); only writes stay staff-only.
         new object[] { "POST", "/api/exercises" },
-        new object[] { "GET",  "/api/foods" },
         new object[] { "POST", "/api/foods" },
+        new object[] { "PUT",  "/api/exercises/" + Guid.Empty },
+        new object[] { "PUT",  "/api/foods/" + Guid.Empty },
+        new object[] { "DELETE", "/api/exercises/" + Guid.Empty },
+        new object[] { "DELETE", "/api/foods/" + Guid.Empty },
         new object[] { "POST", "/api/meal-plans" },
         new object[] { "GET",  "/api/meal-plans/" + Guid.Empty },
         new object[] { "POST", "/api/training-plans" },
