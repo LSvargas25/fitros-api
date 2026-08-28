@@ -17,7 +17,7 @@ namespace FitRos.API.Controllers;
 
 [ApiController]
 [Route("api/training-plans")]
-[Authorize]
+[Authorize(Roles = "OwnerApp,Admin,Coach")]
 public sealed class WeeklyTrainingPlansController : ControllerBase
 {
     private const string Tag = "WeeklyTrainingPlans";

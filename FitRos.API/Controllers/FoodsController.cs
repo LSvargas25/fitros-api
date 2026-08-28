@@ -14,7 +14,7 @@ namespace FitRos.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "OwnerApp,Admin,Coach")]
 public class FoodsController : ControllerBase
 {
     private readonly IMediator _mediator;

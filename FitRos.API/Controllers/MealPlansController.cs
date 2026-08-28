@@ -19,7 +19,7 @@ namespace FitRos.API.Controllers;
 
 [ApiController]
 [Route("api/meal-plans")]
-[Authorize]
+[Authorize(Roles = "OwnerApp,Admin,Coach")]
 public sealed class MealPlansController : ControllerBase
 {
     private const string Tag = "MealPlans";
