@@ -62,6 +62,11 @@ var corsOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>() ?? Array.Empty<string>();
 
+// The policy sends credentials, so a wildcard origin is never acceptable.
+if (corsOrigins.Any(o => o.Contains('*')))
+    throw new InvalidOperationException(
+        "Cors:AllowedOrigins must list explicit origins; a wildcard cannot be combined with AllowCredentials.");
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularDev", policy =>
