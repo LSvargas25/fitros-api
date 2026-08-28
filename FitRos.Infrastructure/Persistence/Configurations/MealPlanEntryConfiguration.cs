@@ -33,8 +33,17 @@ public class MealPlanEntryConfiguration : IEntityTypeConfiguration<MealPlanEntry
             .HasPrecision(10, 2)
             .IsRequired();
 
+        builder.Property(x => x.Order)
+            .IsRequired();
+
         builder.HasIndex(x => new { x.MealPlanId, x.Day, x.Meal, x.FoodId })
             .IsUnique();
+
+        // Not unique: MoveEntry renumbers a whole slot in memory and saves once,
+        // so a unique constraint on Order would force the temp-value + explicit
+        // transaction dance that WorkoutRoutineExercise needs (and that the
+        // InMemory test provider can't honour). Kept as a plain lookup index.
+        builder.HasIndex(x => new { x.MealPlanId, x.Day, x.Meal, x.Order });
 
         builder.HasIndex(x => x.FoodId);
     }

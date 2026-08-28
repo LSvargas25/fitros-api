@@ -17,6 +17,13 @@ public sealed class MealPlanEntry
 
     public decimal QuantityGrams { get; private set; }
 
+    /// <summary>
+    /// 1-based position of this entry within its own (Day, Meal) slot. Not
+    /// unique across the plan — only meaningful relative to its siblings in the
+    /// same slot. The <see cref="MealPlan"/> aggregate is the only writer.
+    /// </summary>
+    public int Order { get; private set; }
+
     private MealPlanEntry() { }
 
     internal static MealPlanEntry Create(
@@ -24,7 +31,8 @@ public sealed class MealPlanEntry
         DayOfWeek day,
         MealType meal,
         Guid foodId,
-        decimal quantityGrams)
+        decimal quantityGrams,
+        int order)
     {
         ValidateQuantity(quantityGrams);
 
@@ -36,6 +44,7 @@ public sealed class MealPlanEntry
             Meal = meal,
             FoodId = foodId,
             QuantityGrams = quantityGrams,
+            Order = order,
         };
     }
 
@@ -44,6 +53,8 @@ public sealed class MealPlanEntry
         ValidateQuantity(quantityGrams);
         QuantityGrams = quantityGrams;
     }
+
+    internal void SetOrder(int order) => Order = order;
 
     private static void ValidateQuantity(decimal quantityGrams)
     {

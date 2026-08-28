@@ -375,6 +375,9 @@ namespace FitRos.Infrastructure.Migrations
                     b.Property<Guid>("MealPlanId")
                         .HasColumnType("uuid");
 
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
                     b.Property<decimal>("QuantityGrams")
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
@@ -385,6 +388,8 @@ namespace FitRos.Infrastructure.Migrations
 
                     b.HasIndex("MealPlanId", "Day", "Meal", "FoodId")
                         .IsUnique();
+
+                    b.HasIndex("MealPlanId", "Day", "Meal", "Order");
 
                     b.ToTable("MealPlanEntries", (string)null);
                 });

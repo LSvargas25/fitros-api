@@ -78,7 +78,43 @@ public sealed class MealPlan : AggregateRoot, ITenantEntity
             return;
         }
 
-        _entries.Add(MealPlanEntry.Create(Id, day, meal, foodId, quantityGrams));
+        var nextOrder = _entries
+            .Where(e => e.Day == day && e.Meal == meal)
+            .Select(e => e.Order)
+            .DefaultIfEmpty(0)
+            .Max() + 1;
+
+        _entries.Add(MealPlanEntry.Create(Id, day, meal, foodId, quantityGrams, nextOrder));
+    }
+
+    /// <summary>
+    /// Reorders an entry within its own (Day, Meal) slot. <paramref name="newOrder"/>
+    /// is 1-based and must fall within the slot's current size. Siblings in the
+    /// slot are renumbered 1..N; entries in other slots are untouched.
+    /// </summary>
+    public void MoveEntry(Guid entryId, int newOrder)
+    {
+        EnsureNotArchived();
+
+        var entry = _entries.FirstOrDefault(e => e.Id == entryId)
+            ?? throw new NotFoundException("Meal plan entry not found.");
+
+        var slot = _entries
+            .Where(e => e.Day == entry.Day && e.Meal == entry.Meal)
+            .OrderBy(e => e.Order)
+            .ToList();
+
+        if (newOrder < 1 || newOrder > slot.Count)
+            throw new DomainException("New order is outside the slot's range.");
+
+        if (newOrder == entry.Order)
+            return;
+
+        slot.Remove(entry);
+        slot.Insert(newOrder - 1, entry);
+
+        for (var i = 0; i < slot.Count; i++)
+            slot[i].SetOrder(i + 1);
     }
 
     public void UpdateEntry(Guid entryId, decimal quantityGrams)
