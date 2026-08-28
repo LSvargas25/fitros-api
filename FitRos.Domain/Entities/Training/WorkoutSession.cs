@@ -72,7 +72,7 @@ public class WorkoutSession : AggregateRoot, ITenantEntity
     public void Start()
     {
         if (Status != WorkoutSessionStatus.Scheduled)
-            throw new InvalidOperationException("Session must be scheduled to start.");
+            throw new DomainException("Session must be scheduled to start.");
 
         Status = WorkoutSessionStatus.InProgress;
     }
@@ -84,7 +84,7 @@ public class WorkoutSession : AggregateRoot, ITenantEntity
         decimal weightUsed)
     {
         if (Status != WorkoutSessionStatus.InProgress)
-            throw new InvalidOperationException("Cannot add sets unless session is in progress.");
+            throw new DomainException("Cannot add sets unless session is in progress.");
 
         _sets.Add(new ExerciseSet(
             exerciseId,
@@ -100,10 +100,10 @@ public class WorkoutSession : AggregateRoot, ITenantEntity
         decimal weightUsed)
     {
         if (Status != WorkoutSessionStatus.InProgress)
-            throw new InvalidOperationException("Cannot edit sets unless session is in progress.");
+            throw new DomainException("Cannot edit sets unless session is in progress.");
 
         var set = _sets.FirstOrDefault(s => s.Id == setId)
-            ?? throw new InvalidOperationException("Set not found in this session.");
+            ?? throw new DomainException("Set not found in this session.");
 
         set.Update(setNumber, repsAchieved, weightUsed);
     }
@@ -111,10 +111,10 @@ public class WorkoutSession : AggregateRoot, ITenantEntity
     public void RemoveSet(Guid setId)
     {
         if (Status != WorkoutSessionStatus.InProgress)
-            throw new InvalidOperationException("Cannot remove sets unless session is in progress.");
+            throw new DomainException("Cannot remove sets unless session is in progress.");
 
         var set = _sets.FirstOrDefault(s => s.Id == setId)
-            ?? throw new InvalidOperationException("Set not found in this session.");
+            ?? throw new DomainException("Set not found in this session.");
 
         _sets.Remove(set);
     }
@@ -122,10 +122,10 @@ public class WorkoutSession : AggregateRoot, ITenantEntity
     public void Complete()
     {
         if (Status != WorkoutSessionStatus.InProgress)
-            throw new InvalidOperationException("Only in-progress sessions can be completed.");
+            throw new DomainException("Only in-progress sessions can be completed.");
 
         if (!_sets.Any())
-            throw new InvalidOperationException("Cannot complete a session without sets.");
+            throw new DomainException("Cannot complete a session without sets.");
 
         Status = WorkoutSessionStatus.Completed;
     }
@@ -134,7 +134,7 @@ public class WorkoutSession : AggregateRoot, ITenantEntity
     public void Skip()
     {
         if (Status == WorkoutSessionStatus.Completed)
-            throw new InvalidOperationException("Cannot skip a completed session.");
+            throw new DomainException("Cannot skip a completed session.");
 
         Status = WorkoutSessionStatus.Skipped;
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Training;
 using FitRos.Domain.Enums;
 using Xunit;
@@ -53,7 +54,7 @@ public class WorkoutSessionTests
         var session = WorkoutSession.Create(
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Piernas", 1, DateTime.UtcNow.Date);
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<DomainException>(() =>
             session.AddSet(Guid.NewGuid(), 1, 10, 40));
     }
 
@@ -78,6 +79,6 @@ public class WorkoutSessionTests
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Piernas", 1, DateTime.UtcNow.Date);
         session.Start();
 
-        Assert.Throws<InvalidOperationException>(() => session.RemoveSet(Guid.NewGuid()));
+        Assert.Throws<DomainException>(() => session.RemoveSet(Guid.NewGuid()));
     }
 }

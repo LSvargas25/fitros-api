@@ -97,7 +97,7 @@ public class RemoveSetFromWorkoutSessionTests
 
         var handler = new RemoveSetFromWorkoutSessionHandler(context, currentUser.Object);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<DomainException>(() =>
             handler.Handle(
                 new RemoveSetFromWorkoutSessionCommand(session.Id, Guid.NewGuid()),
                 CancellationToken.None));

@@ -91,7 +91,7 @@ public class UpdateFoodTests
 
         var handler = new UpdateFoodHandler(context, user);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<DomainException>(() =>
             handler.Handle(
                 new UpdateFoodCommand(food.Id, "Rice", FoodCategory.Carbohydrate, 130m, 2.7m, 28m, 0.3m, null),
                 CancellationToken.None));

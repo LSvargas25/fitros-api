@@ -99,7 +99,7 @@ public class UpdateSetInWorkoutSessionTests
 
         var handler = new UpdateSetInWorkoutSessionHandler(context, currentUser.Object);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<DomainException>(() =>
             handler.Handle(
                 new UpdateSetInWorkoutSessionCommand(session.Id, Guid.NewGuid(), 1, 10, 40),
                 CancellationToken.None));

@@ -191,7 +191,7 @@ public sealed class User : AggregateRoot, ITenantEntity
     public void AssignToGym(Guid gymId)
     {
         if (Role == UserRole.OwnerApp)
-            throw new InvalidOperationException("OwnerApp cannot be assigned to a gym.");
+            throw new DomainException("OwnerApp cannot be assigned to a gym.");
 
         if (gymId == Guid.Empty)
             throw new DomainException("GymId cannot be empty.");

@@ -85,7 +85,7 @@ public class Exercise : ITenantEntity
     public void Archive()
     {
         if (IsArchived)
-            throw new InvalidOperationException("Exercise is already archived.");
+            throw new DomainException("Exercise is already archived.");
 
         IsArchived = true;
     }
@@ -93,7 +93,7 @@ public class Exercise : ITenantEntity
     public void Restore()
     {
         if (!IsArchived)
-            throw new InvalidOperationException("Exercise is not archived.");
+            throw new DomainException("Exercise is not archived.");
 
         IsArchived = false;
     }
@@ -101,6 +101,6 @@ public class Exercise : ITenantEntity
     private void EnsureNotArchived()
     {
         if (IsArchived)
-            throw new InvalidOperationException("Archived exercises cannot be modified.");
+            throw new DomainException("Archived exercises cannot be modified.");
     }
 }

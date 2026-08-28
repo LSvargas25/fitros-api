@@ -123,7 +123,7 @@ public class Food : ITenantEntity
     public void Archive()
     {
         if (IsArchived)
-            throw new InvalidOperationException("Food is already archived.");
+            throw new DomainException("Food is already archived.");
 
         IsArchived = true;
     }
@@ -131,7 +131,7 @@ public class Food : ITenantEntity
     public void Restore()
     {
         if (!IsArchived)
-            throw new InvalidOperationException("Food is not archived.");
+            throw new DomainException("Food is not archived.");
 
         IsArchived = false;
     }
@@ -139,7 +139,7 @@ public class Food : ITenantEntity
     private void EnsureNotArchived()
     {
         if (IsArchived)
-            throw new InvalidOperationException("Archived foods cannot be modified.");
+            throw new DomainException("Archived foods cannot be modified.");
     }
 
     private static void ValidateName(string name)
