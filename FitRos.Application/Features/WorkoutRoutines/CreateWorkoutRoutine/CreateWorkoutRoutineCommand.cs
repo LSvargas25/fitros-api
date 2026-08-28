@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using MediatR;
 
-using FitRos.Domain.Enums;
 namespace FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutine;
 
-public record CreateWorkoutRoutineCommand
+public record CreateWorkoutRoutineCommand : IRequest<CreateWorkoutRoutineResponse>
 {
     public string Name { get; init; } = null!;
 

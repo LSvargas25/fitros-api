@@ -2,11 +2,13 @@
 using FitRos.Application.Abstractions.Security;
 using FitRos.Domain.Entities.Training;
 using FitRos.Domain.Common;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutine;
 
 public class CreateWorkoutRoutineHandler
+    : IRequestHandler<CreateWorkoutRoutineCommand, CreateWorkoutRoutineResponse>
 {
     private readonly IFitRosDbContext _context;
     private readonly ICurrentUser _currentUser;

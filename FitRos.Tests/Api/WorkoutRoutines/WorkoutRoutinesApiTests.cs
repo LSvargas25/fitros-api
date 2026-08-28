@@ -212,9 +212,10 @@ public class WorkoutRoutinesApiTests : IClassFixture<TestApiFactory>
     }
 
     [Fact]
-    public async Task MoveExercise_Should_Return_BadRequest_When_Routine_Not_Found()
+    public async Task MoveExercise_Should_Return_NotFound_When_Routine_Not_Found()
     {
-        // InMemory doesn't support transactions so we test the not-found path
+        // A routine that doesn't exist is now rejected by TenantGuardBehavior
+        // before the handler runs -> 404 (was a handler-level 400 DomainException).
         var routineId = Guid.NewGuid();
         var exerciseId = Guid.NewGuid();
 
@@ -225,7 +226,7 @@ public class WorkoutRoutinesApiTests : IClassFixture<TestApiFactory>
             request);
 
         var body = await response.Content.ReadAsStringAsync();
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, body);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound, body);
     }
 
     [Fact]

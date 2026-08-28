@@ -1,10 +1,12 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Common.Models;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutines;
 
 public class GetWorkoutRoutinesHandler
+    : IRequestHandler<GetWorkoutRoutinesQuery, PagedResult<WorkoutRoutineListItem>>
 {
     private readonly IFitRosDbContext _context;
 

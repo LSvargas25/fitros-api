@@ -1,9 +1,11 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutineVersions;
 
 public sealed class GetWorkoutRoutineVersionsHandler
+    : IRequestHandler<GetWorkoutRoutineVersionsQuery, List<WorkoutRoutineVersionListItem>>
 {
     private readonly IFitRosDbContext _context;
 

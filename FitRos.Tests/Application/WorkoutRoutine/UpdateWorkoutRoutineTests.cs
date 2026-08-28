@@ -27,10 +27,7 @@ public class UpdateWorkoutRoutineTests
             "Chest and shoulders"
         );
 
-        var result = await handler.Handle(
-            routine.Id,
-            command,
-            CancellationToken.None);
+        var result = await handler.Handle(command with { Id = routine.Id }, CancellationToken.None);
 
         result.Should().BeTrue();
         routine.Name.Should().Be("Upper Push");
@@ -48,10 +45,7 @@ public class UpdateWorkoutRoutineTests
             "New Desc"
         );
 
-        var result = await handler.Handle(
-            Guid.NewGuid(),
-            command,
-            CancellationToken.None);
+        var result = await handler.Handle(command with { Id = Guid.NewGuid() }, CancellationToken.None);
 
         result.Should().BeFalse();
     }
@@ -76,6 +70,6 @@ public class UpdateWorkoutRoutineTests
         );
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            handler.Handle(routine.Id, command, CancellationToken.None));
+            handler.Handle(command with { Id = routine.Id }, CancellationToken.None));
     }
 }

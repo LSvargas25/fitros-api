@@ -1,10 +1,12 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Features.WorkoutRoutines.GetWorkoutRoutineById;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.GetLatestWorkoutRoutine;
 
 public sealed class GetLatestWorkoutRoutineHandler
+    : IRequestHandler<GetLatestWorkoutRoutineQuery, WorkoutRoutineDetailsDto?>
 {
     private readonly IFitRosDbContext _context;
 

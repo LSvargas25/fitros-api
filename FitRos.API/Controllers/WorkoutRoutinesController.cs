@@ -1,4 +1,4 @@
-﻿using FitRos.API.Contracts.WorkoutRoutines;
+using FitRos.API.Contracts.WorkoutRoutines;
 using FitRos.Application.Common.Models;
 using FitRos.Application.Features.WorkoutRoutines.AddExerciseToWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.ArchiveWorkoutRoutine;
@@ -14,6 +14,7 @@ using FitRos.Application.Features.WorkoutRoutines.RemoveExerciseFromWorkoutRouti
 using FitRos.Application.Features.WorkoutRoutines.UpdateExerciseInWorkoutRoutine;
 using FitRos.Application.Features.WorkoutRoutines.UpdateWorkoutRoutine;
 using FitRos.Domain.Enums;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -22,10 +23,9 @@ namespace FitRos.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-// These actions call their handlers directly (not via MediatR), so the MediatR
-// Authentication/Authorization pipeline behaviors never run for them. Enforce
-// auth at the controller: a valid JWT is required and Clients are excluded
-// (routine authoring is gym-staff only).
+// Routine authoring is gym-staff only. Every action goes through MediatR, so the
+// Authentication / Authorization / Validation / TenantGuard pipeline behaviors
+// all run; [Authorize] here is the MVC-edge backstop and excludes Clients.
 [Authorize(Roles = "OwnerApp,Admin,Coach")]
 public class WorkoutRoutinesController : ControllerBase
 {
@@ -33,6 +33,13 @@ public class WorkoutRoutinesController : ControllerBase
     private const string TagVersioning = "WorkoutRoutines - Versioning";
     private const string TagLifecycle = "WorkoutRoutines - Lifecycle";
     private const string TagExercises = "WorkoutRoutines - Exercises";
+
+    private readonly ISender _sender;
+
+    public WorkoutRoutinesController(ISender sender)
+    {
+        _sender = sender;
+    }
 
     // =========================================================
     // Core CRUD (GET → POST → PUT)
@@ -51,16 +58,15 @@ public class WorkoutRoutinesController : ControllerBase
         [FromQuery] RoutineStatus? status,
         [FromQuery] int page,
         [FromQuery] int pageSize,
-        [FromServices] GetWorkoutRoutinesHandler handler,
         CancellationToken cancellationToken)
     {
-        var query = new GetWorkoutRoutinesQuery(
-            status,
-            page == 0 ? 1 : page,
-            pageSize == 0 ? 10 : pageSize
-        );
+        var result = await _sender.Send(
+            new GetWorkoutRoutinesQuery(
+                status,
+                page == 0 ? 1 : page,
+                pageSize == 0 ? 10 : pageSize),
+            cancellationToken);
 
-        var result = await handler.Handle(query, cancellationToken);
         return Ok(result);
     }
 
@@ -75,12 +81,9 @@ public class WorkoutRoutinesController : ControllerBase
     )]
     public async Task<IActionResult> GetById(
         Guid id,
-        [FromServices] GetWorkoutRoutineByIdHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(
-            new GetWorkoutRoutineByIdQuery(id),
-            cancellationToken);
+        var result = await _sender.Send(new GetWorkoutRoutineByIdQuery(id), cancellationToken);
 
         if (result is null)
             return NotFound();
@@ -99,10 +102,9 @@ public class WorkoutRoutinesController : ControllerBase
     )]
     public async Task<ActionResult<CreateWorkoutRoutineResponse>> Create(
         [FromBody] CreateWorkoutRoutineCommand command,
-        [FromServices] CreateWorkoutRoutineHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(command, cancellationToken);
+        var result = await _sender.Send(command, cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
@@ -119,10 +121,9 @@ public class WorkoutRoutinesController : ControllerBase
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdateWorkoutRoutineCommand command,
-        [FromServices] UpdateWorkoutRoutineHandler handler,
         CancellationToken cancellationToken)
     {
-        var updated = await handler.Handle(id, command, cancellationToken);
+        var updated = await _sender.Send(command with { Id = id }, cancellationToken);
 
         if (!updated)
             return NotFound();
@@ -145,12 +146,9 @@ public class WorkoutRoutinesController : ControllerBase
     )]
     public async Task<IActionResult> GetLatest(
         Guid id,
-        [FromServices] GetLatestWorkoutRoutineHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(
-            new GetLatestWorkoutRoutineQuery(id),
-            cancellationToken);
+        var result = await _sender.Send(new GetLatestWorkoutRoutineQuery(id), cancellationToken);
 
         if (result is null)
             return NotFound();
@@ -168,12 +166,9 @@ public class WorkoutRoutinesController : ControllerBase
     )]
     public async Task<ActionResult<List<WorkoutRoutineVersionListItem>>> GetVersions(
         Guid id,
-        [FromServices] GetWorkoutRoutineVersionsHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(
-            new GetWorkoutRoutineVersionsQuery(id),
-            cancellationToken);
+        var result = await _sender.Send(new GetWorkoutRoutineVersionsQuery(id), cancellationToken);
 
         return Ok(result);
     }
@@ -188,12 +183,9 @@ public class WorkoutRoutinesController : ControllerBase
     )]
     public async Task<ActionResult<CreateWorkoutRoutineVersionResponse>> CreateVersion(
         Guid id,
-        [FromServices] CreateWorkoutRoutineVersionHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(
-            new CreateWorkoutRoutineVersionCommand(id),
-            cancellationToken);
+        var result = await _sender.Send(new CreateWorkoutRoutineVersionCommand(id), cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
@@ -212,12 +204,9 @@ public class WorkoutRoutinesController : ControllerBase
     )]
     public async Task<IActionResult> Publish(
         Guid id,
-        [FromServices] PublishWorkoutRoutineHandler handler,
         CancellationToken cancellationToken)
     {
-        await handler.Handle(
-            new PublishWorkoutRoutineCommand(id),
-            cancellationToken);
+        await _sender.Send(new PublishWorkoutRoutineCommand(id), cancellationToken);
 
         return NoContent();
     }
@@ -232,12 +221,9 @@ public class WorkoutRoutinesController : ControllerBase
     )]
     public async Task<IActionResult> Delete(
         Guid id,
-        [FromServices] ArchiveWorkoutRoutineHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(
-            new ArchiveWorkoutRoutineCommand(id),
-            cancellationToken);
+        var result = await _sender.Send(new ArchiveWorkoutRoutineCommand(id), cancellationToken);
 
         if (!result)
             return NotFound();
@@ -260,13 +246,12 @@ public class WorkoutRoutinesController : ControllerBase
     public async Task<IActionResult> AddExercise(
         Guid id,
         [FromBody] AddExerciseToWorkoutRoutineCommand command,
-        [FromServices] AddExerciseToWorkoutRoutineHandler handler,
         CancellationToken cancellationToken)
     {
         if (id != command.WorkoutRoutineId)
             return BadRequest();
 
-        var result = await handler.Handle(command, cancellationToken);
+        var result = await _sender.Send(command, cancellationToken);
 
         if (!result)
             return NotFound();
@@ -289,7 +274,6 @@ public class WorkoutRoutinesController : ControllerBase
         Guid routineId,
         Guid exerciseId,
         [FromBody] UpdateRoutineExerciseRequest request,
-        [FromServices] UpdateExerciseInWorkoutRoutineHandler handler,
         CancellationToken cancellationToken)
     {
         var command = new UpdateExerciseInWorkoutRoutineCommand(
@@ -299,7 +283,7 @@ public class WorkoutRoutinesController : ControllerBase
             request.SuggestedReps,
             request.SuggestedRestSeconds);
 
-        await handler.Handle(command, cancellationToken);
+        await _sender.Send(command, cancellationToken);
 
         return NoContent();
     }
@@ -316,7 +300,6 @@ public class WorkoutRoutinesController : ControllerBase
         Guid routineId,
         Guid exerciseId,
         [FromBody] MoveExerciseRequest request,
-        [FromServices] MoveExerciseInWorkoutRoutineHandler handler,
         CancellationToken cancellationToken)
     {
         var command = new MoveExerciseInWorkoutRoutineCommand(
@@ -324,7 +307,7 @@ public class WorkoutRoutinesController : ControllerBase
             exerciseId,
             request.NewOrder);
 
-        await handler.Handle(command, cancellationToken);
+        await _sender.Send(command, cancellationToken);
 
         return NoContent();
     }
@@ -340,14 +323,13 @@ public class WorkoutRoutinesController : ControllerBase
     public async Task<IActionResult> RemoveExercise(
         Guid routineId,
         Guid exerciseId,
-        [FromServices] RemoveExerciseFromWorkoutRoutineHandler handler,
         CancellationToken cancellationToken)
     {
         var command = new RemoveExerciseFromWorkoutRoutineCommand(
             routineId,
             exerciseId);
 
-        await handler.Handle(command, cancellationToken);
+        await _sender.Send(command, cancellationToken);
 
         return NoContent();
     }

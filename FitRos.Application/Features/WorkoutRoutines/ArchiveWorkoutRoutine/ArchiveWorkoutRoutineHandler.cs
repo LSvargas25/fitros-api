@@ -1,11 +1,13 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using Microsoft.EntityFrameworkCore;
 using FitRos.Domain.Common;
+using MediatR;
 
 
 namespace FitRos.Application.Features.WorkoutRoutines.ArchiveWorkoutRoutine;
 
 public class ArchiveWorkoutRoutineHandler
+    : IRequestHandler<ArchiveWorkoutRoutineCommand, bool>
 {
     private readonly IFitRosDbContext _context;
 

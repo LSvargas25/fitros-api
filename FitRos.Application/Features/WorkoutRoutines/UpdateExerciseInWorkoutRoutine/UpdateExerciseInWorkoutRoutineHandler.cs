@@ -1,5 +1,6 @@
 using FitRos.Application.Abstractions.Persistence;
 using FitRos.Domain.Common;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.UpdateExerciseInWorkoutRoutine;
@@ -10,6 +11,7 @@ namespace FitRos.Application.Features.WorkoutRoutines.UpdateExerciseInWorkoutRou
 /// The aggregate enforces Draft-only.
 /// </summary>
 public class UpdateExerciseInWorkoutRoutineHandler
+    : IRequestHandler<UpdateExerciseInWorkoutRoutineCommand, bool>
 {
     private readonly IFitRosDbContext _context;
 

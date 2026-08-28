@@ -1,10 +1,12 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Domain.Common;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.PublishWorkoutRoutine;
 
 public sealed class PublishWorkoutRoutineHandler
+    : IRequestHandler<PublishWorkoutRoutineCommand>
 {
     private readonly IFitRosDbContext _context;
 

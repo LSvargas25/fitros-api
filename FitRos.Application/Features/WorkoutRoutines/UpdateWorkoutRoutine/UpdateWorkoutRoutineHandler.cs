@@ -1,9 +1,11 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.UpdateWorkoutRoutine;
 
 public class UpdateWorkoutRoutineHandler
+    : IRequestHandler<UpdateWorkoutRoutineCommand, bool>
 {
     private readonly IFitRosDbContext _context;
 
@@ -13,12 +15,11 @@ public class UpdateWorkoutRoutineHandler
     }
 
     public async Task<bool> Handle(
-        Guid id,
         UpdateWorkoutRoutineCommand command,
         CancellationToken cancellationToken)
     {
         var routine = await _context.WorkoutRoutines
-            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(r => r.Id == command.Id, cancellationToken);
 
         if (routine is null)
             return false;

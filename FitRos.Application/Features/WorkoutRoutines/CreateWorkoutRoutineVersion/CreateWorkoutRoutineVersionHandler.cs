@@ -1,11 +1,13 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Domain.Common;
 using FitRos.Domain.Enums;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.CreateWorkoutRoutineVersion;
 
 public sealed class CreateWorkoutRoutineVersionHandler
+    : IRequestHandler<CreateWorkoutRoutineVersionCommand, CreateWorkoutRoutineVersionResponse>
 {
     private readonly IFitRosDbContext _context;
 

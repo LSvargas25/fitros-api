@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using FitRos.Application.Common.Security;
+using FitRos.Domain.Entities.Training;
+using MediatR;
+using System.Text.Json.Serialization;
 
 namespace FitRos.Application.Features.WorkoutRoutines.AddExerciseToWorkoutRoutine;
 
@@ -13,4 +12,10 @@ public record AddExerciseToWorkoutRoutineCommand(
     int SuggestedSets,
     int SuggestedReps,
     int SuggestedRestSeconds
-);
+) : IRequest<bool>, ITenantGuardedRequest
+{
+    [JsonIgnore]
+    public Guid ResourceId => WorkoutRoutineId;
+    [JsonIgnore]
+    public Type EntityType => typeof(WorkoutRoutine);
+}

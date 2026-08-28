@@ -1,11 +1,13 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Training;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FitRos.Application.Features.WorkoutRoutines.MoveExerciseInWorkoutRoutine;
 
 public class MoveExerciseInWorkoutRoutineHandler
+    : IRequestHandler<MoveExerciseInWorkoutRoutineCommand, bool>
 {
     private readonly IFitRosDbContext _context;
 
