@@ -30,6 +30,9 @@ public sealed class DeactivateGymHandler : IRequestHandler<DeactivateGymCommand>
         if (_currentUser.Role != UserRole.OwnerApp && _currentUser.Role != UserRole.Admin)
             throw new ForbiddenException("You are not allowed to deactivate gyms.");
 
+        if (_currentUser.Role == UserRole.Admin && command.GymId != _currentUser.GymId)
+            throw new ForbiddenException("Admins can only deactivate their own gym.");
+
         var gym = await _context.Gyms
             .FirstOrDefaultAsync(x => x.Id == command.GymId, cancellationToken);
 

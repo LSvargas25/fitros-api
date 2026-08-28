@@ -6,9 +6,9 @@ public sealed class UpdateGymCommandValidator : AbstractValidator<UpdateGymComma
 {
     public UpdateGymCommandValidator()
     {
-        RuleFor(x => x.GymId)
-            .NotEmpty();
-
+        // GymId comes from the route ({gymId:guid}) and is folded in by the
+        // controller (command with { GymId = gymId }); it is never in the body,
+        // so validating it here would 400 every real request.
         RuleFor(x => x.Name)
             .NotEmpty()
             .MaximumLength(200);
