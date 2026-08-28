@@ -42,6 +42,9 @@ public sealed class ReassignClientCoachCommandHandler
         if (client is null)
             throw new NotFoundException("Client not found.");
 
+        if (_currentUser.IsAdmin() && client.GymId != _currentUser.GymId)
+            throw new ForbiddenException("Admins can only reassign clients within their gym.");
+
         var newCoach = await _context.Users
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(
@@ -53,6 +56,10 @@ public sealed class ReassignClientCoachCommandHandler
 
         if (newCoach.Role != UserRole.Coach)
             throw new DomainException("Assigned user must have Coach role.");
+
+        // A client can only be assigned to a coach in the client's own gym.
+        if (newCoach.GymId != client.GymId)
+            throw new DomainException("The coach must belong to the client's gym.");
 
         client.ReassignCoach(request.NewCoachId);
 

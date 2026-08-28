@@ -32,16 +32,15 @@ public class ActivateClientInGymHandlerTests
         context.Gyms.Add(gym);
         await context.SaveChangesAsync(CancellationToken.None);
 
-        var clientUserId = Guid.NewGuid();
-        var coachId = Guid.NewGuid();
+        // The admin activates a client into their OWN gym.
+        var targetGymId = context.Gyms.First().Id;
+        fakeUser.GymId = targetGymId;
 
-        var oldGymId = Guid.NewGuid();
-        var profile = ClientProfile.Create(oldGymId, clientUserId, coachId);
+        var profile = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
         profile.Deactivate();
         context.ClientProfiles.Add(profile);
         await context.SaveChangesAsync(CancellationToken.None);
 
-        var targetGymId = context.Gyms.First().Id;
         var handler = new ActivateClientInGymHandler(context, fakeUser);
 
         await handler.Handle(new ActivateClientInGymCommand(profile.Id, targetGymId), CancellationToken.None);
@@ -52,6 +51,37 @@ public class ActivateClientInGymHandlerTests
 
         updatedProfile.Status.Should().Be(ClientStatus.Active);
         ((ITenantEntity)updatedProfile).GymId.Should().Be(targetGymId);
+    }
+
+    [Fact]
+    public async Task Admin_cannot_activate_a_client_into_a_gym_that_isnt_theirs()
+    {
+        var fakeUser = new FakeCurrentUser(Guid.NewGuid())
+        {
+            UserId = Guid.NewGuid(),
+            Role = UserRole.Admin,
+            IsAuthenticated = true
+        };
+
+        var context = TestDbContextFactory.Create(fakeUser);
+
+        var gym = Gym.Create("Other Gym", "Limon", "9999-9999");
+        context.Gyms.Add(gym);
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        var otherGymId = context.Gyms.First().Id; // NOT fakeUser.GymId
+
+        var profile = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        profile.Deactivate();
+        context.ClientProfiles.Add(profile);
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        var handler = new ActivateClientInGymHandler(context, fakeUser);
+
+        var act = async () => await handler.Handle(
+            new ActivateClientInGymCommand(profile.Id, otherGymId), CancellationToken.None);
+
+        await act.Should().ThrowAsync<ForbiddenException>();
     }
 
     [Fact]
@@ -98,6 +128,7 @@ public class ActivateClientInGymHandlerTests
         await context.SaveChangesAsync(CancellationToken.None);
 
         var gymActualId = context.Gyms.First().Id;
+        fakeUser.GymId = gymActualId;
 
         var clientUserId = Guid.NewGuid();
         var coachId = Guid.NewGuid();

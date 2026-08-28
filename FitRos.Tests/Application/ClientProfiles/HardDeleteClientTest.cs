@@ -33,22 +33,24 @@ namespace FitRos.Tests.Application.ClientProfiles.HardDelete
             return context;
         }
 
-        private static Mock<ICurrentUser> MockUser(Guid? id, UserRole role)
+        private static Mock<ICurrentUser> MockUser(Guid? id, UserRole role, Guid? gymId = null)
         {
             var mock = new Mock<ICurrentUser>();
             mock.Setup(x => x.UserId).Returns(id);
             mock.Setup(x => x.Role).Returns(role);
             mock.Setup(x => x.IsAuthenticated).Returns(true);
+            mock.Setup(x => x.GymId).Returns(gymId);
             return mock;
         }
 
         [Fact]
         public async Task Admin_should_hard_delete_soft_deleted_client()
         {
-            var client = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
+            var gymId = Guid.NewGuid();
+            var client = ClientProfile.Create(gymId, Guid.NewGuid());
             client.SoftDelete();
 
-            var user = MockUser(Guid.NewGuid(), UserRole.Admin);
+            var user = MockUser(Guid.NewGuid(), UserRole.Admin, gymId);
 
             using var context = CreateContext(user.Object, client);
 
@@ -68,9 +70,10 @@ namespace FitRos.Tests.Application.ClientProfiles.HardDelete
         [Fact]
         public async Task Should_throw_if_not_soft_deleted()
         {
-            var client = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
+            var gymId = Guid.NewGuid();
+            var client = ClientProfile.Create(gymId, Guid.NewGuid());
 
-            var user = MockUser(Guid.NewGuid(), UserRole.Admin);
+            var user = MockUser(Guid.NewGuid(), UserRole.Admin, gymId);
 
             using var context = CreateContext(user.Object, client);
 
@@ -89,6 +92,24 @@ namespace FitRos.Tests.Application.ClientProfiles.HardDelete
             client.SoftDelete();
 
             var user = MockUser(Guid.NewGuid(), UserRole.Coach);
+
+            using var context = CreateContext(user.Object, client);
+
+            var handler = new HardDeleteClientCommandHandler(context, user.Object);
+
+            await Assert.ThrowsAsync<ForbiddenException>(() =>
+                handler.Handle(
+                    new HardDeleteClientCommand(client.Id),
+                    CancellationToken.None));
+        }
+
+        [Fact]
+        public async Task Admin_cannot_hard_delete_a_client_in_another_gym()
+        {
+            var client = ClientProfile.Create(Guid.NewGuid(), Guid.NewGuid());
+            client.SoftDelete();
+
+            var user = MockUser(Guid.NewGuid(), UserRole.Admin, Guid.NewGuid());
 
             using var context = CreateContext(user.Object, client);
 

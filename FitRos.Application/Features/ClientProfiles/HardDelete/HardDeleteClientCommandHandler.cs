@@ -42,6 +42,9 @@ public sealed class HardDeleteClientCommandHandler
         if (client is null)
             throw new NotFoundException("Client not found.");
 
+        if (_currentUser.IsAdmin() && client.GymId != _currentUser.GymId)
+            throw new ForbiddenException("Admins can only delete clients within their gym.");
+
         if (client.Status != ClientStatus.Deleted)
             throw new DomainException("Client must be soft deleted before hard delete.");
 
