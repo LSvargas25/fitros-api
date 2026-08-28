@@ -273,7 +273,12 @@ builder.Services.AddRateLimiter(options =>
     // fires far more than 20 requests at these endpoints per run from the
     // same loopback connection, so it gets an effectively unlimited window
     // instead of disabling the policy outright.
-    var authPermitLimit = builder.Environment.IsEnvironment("Testing") ? int.MaxValue : 20;
+    // Defaults (20 per 5 minutes per IP) can be tuned via RateLimiting:Auth:*.
+    var authPermitLimit = builder.Environment.IsEnvironment("Testing")
+        ? int.MaxValue
+        : builder.Configuration.GetValue("RateLimiting:Auth:PermitLimit", 20);
+    var authWindow = TimeSpan.FromSeconds(
+        builder.Configuration.GetValue("RateLimiting:Auth:WindowSeconds", 300));
 
     // One window per client IP (Render forwards it via X-Forwarded-For, which
     // ASPNETCORE_FORWARDEDHEADERS_ENABLED applies). A single global window let
@@ -285,9 +290,23 @@ builder.Services.AddRateLimiter(options =>
             _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = authPermitLimit,
-                Window = TimeSpan.FromMinutes(5),
+                Window = authWindow,
                 QueueLimit = 0
             }));
+
+    options.OnRejected = async (context, token) =>
+    {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter =
+                ((int)retryAfter.TotalSeconds).ToString();
+
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            title = "TooManyRequests",
+            detail = "Too many attempts. Please wait and try again.",
+            status = StatusCodes.Status429TooManyRequests
+        }, token);
+    };
 });
 
 var app = builder.Build();

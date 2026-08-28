@@ -26,6 +26,9 @@ public class TestApiFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Don't let the auth rate limiter throttle test runs.
+        builder.UseSetting("RateLimiting:Auth:PermitLimit", "100000");
+
         builder.ConfigureTestServices(services =>
         {
             // Replace ICurrentUser with fake
