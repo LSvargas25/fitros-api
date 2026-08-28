@@ -165,6 +165,19 @@ public class CoachesApiTests_OwnerApp : IClassFixture<CoachOwnerAppTestApiFactor
         response.StatusCode.Should().Be(HttpStatusCode.NoContent, await response.Content.ReadAsStringAsync());
     }
 
+    [Fact]
+    public async Task UpdateCoach_uses_the_route_id_and_does_not_need_it_in_the_body()
+    {
+        var coach = await CreateCoachAsync($"{Guid.NewGuid()}@update.com");
+
+        // Body carries only the editable fields — no coachId.
+        var response = await _client.PutAsJsonAsync(
+            $"/api/coaches/{coach.Id}",
+            new { firstName = "Renamed", lastName = "Coach" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+    }
+
     // ─── 404 tests ─────────────────────────────────────────────
 
     [Fact]

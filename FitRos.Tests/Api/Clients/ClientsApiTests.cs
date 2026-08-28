@@ -74,6 +74,20 @@ public class ClientsApiTests : IClassFixture<TestApiFactory>
     }
 
     [Fact]
+    public async Task Update_uses_the_route_id_and_does_not_need_it_in_the_body()
+    {
+        var create = await _client.PostAsJsonAsync("/api/clients", NewClient());
+        var created = await create.Content.ReadFromJsonAsync<CreateUserResponse>();
+
+        // Body carries only the editable fields — no clientId.
+        var update = await _client.PutAsJsonAsync(
+            $"/api/clients/{created!.Id}",
+            new { firstName = "Renamed", lastName = "Client" });
+
+        update.StatusCode.Should().Be(HttpStatusCode.OK, await update.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task Create_with_a_bad_email_is_400()
     {
         var response = await _client.PostAsJsonAsync("/api/clients", NewClient(email: "not-an-email"));
