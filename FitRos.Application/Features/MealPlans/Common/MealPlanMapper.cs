@@ -19,6 +19,7 @@ internal static class MealPlanMapper
         var entries = plan.Entries
             .OrderBy(e => e.Day)
             .ThenBy(e => e.Meal)
+            .ThenBy(e => e.Order)
             .Select(e =>
             {
                 var macros = foods.TryGetValue(e.FoodId, out var m) ? m : default;
@@ -28,6 +29,7 @@ internal static class MealPlanMapper
                     e.Id,
                     e.Day,
                     e.Meal,
+                    e.Order,
                     e.FoodId,
                     macros.Name ?? string.Empty,
                     e.QuantityGrams,

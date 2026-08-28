@@ -1,5 +1,6 @@
 using FitRos.Application.Features.MealPlans.AddMealPlanEntry;
 using FitRos.Application.Features.MealPlans.GetMealPlanById;
+using FitRos.Application.Features.MealPlans.MoveMealPlanEntry;
 using FitRos.Application.Features.MealPlans.RemoveMealPlanEntry;
 using FitRos.Application.Features.MealPlans.UpdateMealPlanEntry;
 using FitRos.Domain.Common;
@@ -126,6 +127,51 @@ public class MealPlanEntryTests
 
         (await context.MealPlans.Include(p => p.Entries).SingleAsync(p => p.Id == plan.Id))
             .Entries.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Move_Reorders_The_Slot_And_Persists()
+    {
+        var gymId = Guid.NewGuid();
+        var user = Admin(gymId);
+        var context = TestDbContextFactory.Create(user);
+        var (plan, _) = await SeedPlanAndFood(context, gymId);
+
+        var add = new AddMealPlanEntryHandler(context, user);
+
+        for (var i = 0; i < 3; i++)
+        {
+            var f = Food.Create($"F{i}-{Guid.NewGuid()}", FoodCategory.Protein, 100m, 20m, 0m, 5m, null, gymId);
+            context.Foods.Add(f);
+            await context.SaveChangesAsync(CancellationToken.None);
+            await add.Handle(
+                new AddMealPlanEntryCommand(plan.Id, DayOfWeek.Monday, MealType.Lunch, f.Id, 100m),
+                CancellationToken.None);
+        }
+
+        var ordered = (await context.MealPlans.Include(p => p.Entries).SingleAsync(p => p.Id == plan.Id))
+            .Entries.OrderBy(e => e.Order).Select(e => e.Id).ToList();
+
+        var move = new MoveMealPlanEntryHandler(context, user);
+        await move.Handle(new MoveMealPlanEntryCommand(plan.Id, ordered[2], 1), CancellationToken.None);
+
+        var after = (await context.MealPlans.Include(p => p.Entries).SingleAsync(p => p.Id == plan.Id))
+            .Entries.OrderBy(e => e.Order).Select(e => e.Id).ToList();
+
+        after.Should().ContainInOrder(ordered[2], ordered[0], ordered[1]);
+    }
+
+    [Fact]
+    public async Task Move_Throws_When_Plan_Not_Found()
+    {
+        var user = Admin(Guid.NewGuid());
+        var context = TestDbContextFactory.Create(user);
+        var handler = new MoveMealPlanEntryHandler(context, user);
+
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            handler.Handle(
+                new MoveMealPlanEntryCommand(Guid.NewGuid(), Guid.NewGuid(), 1),
+                CancellationToken.None));
     }
 
     [Fact]

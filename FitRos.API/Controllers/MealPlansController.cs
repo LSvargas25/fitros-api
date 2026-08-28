@@ -6,6 +6,7 @@ using FitRos.Application.Features.MealPlans.CreateMealPlan;
 using FitRos.Application.Features.MealPlans.GetActiveMealPlan;
 using FitRos.Application.Features.MealPlans.GetClientMealPlans;
 using FitRos.Application.Features.MealPlans.GetMealPlanById;
+using FitRos.Application.Features.MealPlans.MoveMealPlanEntry;
 using FitRos.Application.Features.MealPlans.RemoveMealPlanEntry;
 using FitRos.Application.Features.MealPlans.RenameMealPlan;
 using FitRos.Application.Features.MealPlans.UpdateMealPlanEntry;
@@ -168,6 +169,28 @@ public sealed class MealPlansController : ControllerBase
     {
         await _mediator.Send(
             new UpdateMealPlanEntryCommand(id, entryId, request.QuantityGrams),
+            cancellationToken);
+        return NoContent();
+    }
+
+    // PUT /api/meal-plans/{id}/entries/{entryId}/move
+    [HttpPut("{id:guid}/entries/{entryId:guid}/move")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Reorder a meal plan entry within its (day, meal) slot",
+        Description = "Moves the entry to a new 1-based position among the other foods in the same " +
+                      "day + meal. Siblings in that slot are renumbered; other slots are untouched.",
+        Tags = new[] { Tag })]
+    public async Task<IActionResult> MoveEntry(
+        Guid id,
+        Guid entryId,
+        [FromBody] MoveMealPlanEntryRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new MoveMealPlanEntryCommand(id, entryId, request.NewOrder),
             cancellationToken);
         return NoContent();
     }

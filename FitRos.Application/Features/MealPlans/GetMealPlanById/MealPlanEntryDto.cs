@@ -6,6 +6,7 @@ public record MealPlanEntryDto(
     Guid Id,
     DayOfWeek Day,
     MealType Meal,
+    int Order,
     Guid FoodId,
     string FoodName,
     decimal QuantityGrams,
