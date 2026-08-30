@@ -1,5 +1,6 @@
-﻿using FitRos.Application.Abstractions.Persistence;
+using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
+using FitRos.Application.Common.Security;
 using FitRos.Domain.Entities.Enums;
 using FitRos.Domain.Enums;
 using MediatR;
@@ -22,51 +23,74 @@ public sealed class GetDashboardStatsHandler
     public async Task<DashboardStatsResponse> Handle(
         GetDashboardStatsQuery request, CancellationToken ct)
     {
-        // The tenant query filter scopes rows to the caller's GymId. The
-        // platform owner has none, so through the filter every per-gym count
-        // came back 0; the owner gets platform-wide counts instead, with the
-        // non-tenant parts of the filters (active users, non-deleted clients)
-        // applied by hand.
-        var platformWide = _currentUser.Role == UserRole.OwnerApp;
+        var isOwner = _currentUser.IsOwner();
 
-        var users = platformWide
-            ? _context.Users.IgnoreQueryFilters().Where(u => u.Status == UserStatus.Active)
-            : _context.Users;
+        // Admin / Coach with no gym assigned: an empty dashboard, not an error.
+        if (!isOwner && _currentUser.GymId is null)
+            return new DashboardStatsResponse(0, 0, 0, 0, 0, Array.Empty<GymSummaryDto>());
 
-        var clients = platformWide
-            ? _context.ClientProfiles.IgnoreQueryFilters().Where(c => c.Status != ClientStatus.Deleted)
-            : _context.ClientProfiles;
+        var scopeGymId = _currentUser.GymId;
 
-        var routines = platformWide
-            ? _context.WorkoutRoutines.IgnoreQueryFilters()
-            : _context.WorkoutRoutines;
+        // Bypass the ambient tenant query filter and scope explicitly. For the
+        // OwnerApp (GymId == null) the filter would otherwise collapse every
+        // tenant-scoped count to "GymId IS NULL" (~0). Only active users are
+        // counted (a removed coach is deactivated, not deleted) and soft-deleted
+        // clients are excluded, matching the entities' own query filters.
+        var users = _context.Users.IgnoreQueryFilters()
+            .Where(u => u.Status == UserStatus.Active);
+        var clients = _context.ClientProfiles.IgnoreQueryFilters()
+            .Where(c => c.Status != ClientStatus.Deleted);
+        var routines = _context.WorkoutRoutines.IgnoreQueryFilters();
+        var gyms = _context.Gyms.Where(g => !g.IsDeleted);
 
-        var totalGyms = await _context.Gyms.CountAsync(ct);
+        if (!isOwner)
+        {
+            users = users.Where(u => u.GymId == scopeGymId);
+            clients = clients.Where(c => c.GymId == scopeGymId);
+            routines = routines.Where(r => r.GymId == scopeGymId);
+            gyms = gyms.Where(g => g.Id == scopeGymId);
+        }
 
-        var totalAdmins = await (platformWide ? users : _context.Users.IgnoreQueryFilters())
-            .CountAsync(u => u.Role == UserRole.Admin, ct);
-
+        var totalGyms = await gyms.CountAsync(ct);
+        var totalAdmins = await users.CountAsync(u => u.Role == UserRole.Admin, ct);
+        var totalCoaches = await users.CountAsync(u => u.Role == UserRole.Coach, ct);
         var totalClients = await clients.CountAsync(ct);
-
-        var totalCoaches = await users
-            .CountAsync(u => u.Role == UserRole.Coach, ct);
-
         var totalRoutines = await routines.CountAsync(ct);
 
-        var gyms = await _context.Gyms
-            .Where(g => !g.IsDeleted)
+        var clientCounts = await clients
+            .Where(c => c.GymId != null)
+            .GroupBy(c => c.GymId!.Value)
+            .Select(g => new { GymId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.GymId, x => x.Count, ct);
+
+        var coachCounts = await users
+            .Where(u => u.Role == UserRole.Coach && u.GymId != null)
+            .GroupBy(u => u.GymId!.Value)
+            .Select(g => new { GymId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.GymId, x => x.Count, ct);
+
+        var adminCounts = await users
+            .Where(u => u.Role == UserRole.Admin && u.GymId != null)
+            .GroupBy(u => u.GymId!.Value)
+            .Select(g => new { GymId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.GymId, x => x.Count, ct);
+
+        var gymRows = await gyms
+            .Select(g => new { g.Id, g.Name, g.PhoneNumber, g.IsActive })
+            .ToListAsync(ct);
+
+        var gymDtos = gymRows
             .Select(g => new GymSummaryDto(
                 g.Id,
                 g.Name,
                 g.PhoneNumber,
                 g.IsActive,
-                clients.Count(c => c.GymId == g.Id),
-                users.Count(u => u.GymId == g.Id && u.Role == UserRole.Coach),
-                users.Count(u => u.GymId == g.Id && u.Role == UserRole.Admin)
-            ))
-            .ToListAsync(ct);
+                clientCounts.GetValueOrDefault(g.Id),
+                coachCounts.GetValueOrDefault(g.Id),
+                adminCounts.GetValueOrDefault(g.Id)))
+            .ToList();
 
         return new DashboardStatsResponse(
-            totalGyms, totalAdmins, totalClients, totalCoaches, totalRoutines, gyms);
+            totalGyms, totalAdmins, totalClients, totalCoaches, totalRoutines, gymDtos);
     }
 }

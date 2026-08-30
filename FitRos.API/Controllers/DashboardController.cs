@@ -8,7 +8,9 @@ namespace FitRos.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "OwnerApp")]
+// OwnerApp sees platform-wide stats; Admin/Coach see the same shape scoped to
+// their own gym (enforced in GetDashboardStatsHandler). Client stays 403.
+[Authorize(Roles = "OwnerApp,Admin,Coach")]
 public sealed class DashboardController : ControllerBase
 {
     private readonly ISender _sender;
