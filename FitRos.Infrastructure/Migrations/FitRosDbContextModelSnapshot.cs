@@ -98,6 +98,9 @@ namespace FitRos.Infrastructure.Migrations
                     b.Property<Guid?>("GymId")
                         .HasColumnType("uuid");
 
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("timestamp with time zone");
 

@@ -32,7 +32,10 @@ public sealed class GetMyClientsQueryHandler
         if (_currentUser.Role == Domain.Enums.UserRole.Client)
             throw new ForbiddenException("You are not authorized.");
 
-        var baseQuery = _context.ClientProfiles.AsNoTracking();
+        // Managed gym clients only — a coach's own personal ClientProfile
+        // (Kind = CoachSelf) is not part of anyone's client roster.
+        var baseQuery = _context.ClientProfiles.AsNoTracking()
+            .Where(cp => cp.Kind == Domain.Entities.Enums.ClientProfileKind.GymClient);
 
         if (_currentUser.IsCoach())
         {

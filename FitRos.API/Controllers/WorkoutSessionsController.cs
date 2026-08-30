@@ -31,13 +31,14 @@ public sealed class WorkoutSessionsController : ControllerBase
 
     // POST /api/workout-sessions/start-today
     [HttpPost("start-today")]
+    [Authorize(Roles = "Client,Coach")]
     [ProducesResponseType(typeof(WorkoutSessionDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [SwaggerOperation(
         Summary = "Start (or resume) today's workout session",
-        Description = "Starts a workout session for today based on the client's active weekly plan, " +
+        Description = "Starts a workout session for today based on the caller's active weekly plan, " +
                       "or the given routine id if provided. Returns the existing session if one " +
-                      "already exists for today.",
+                      "already exists for today. Client or Coach (own personal training); Admin/Owner 403.",
         Tags = new[] { Tag })]
     public async Task<ActionResult<WorkoutSessionDetailsDto>> StartToday(
         [FromBody] StartWorkoutSessionRequest request,
@@ -52,11 +53,12 @@ public sealed class WorkoutSessionsController : ControllerBase
 
     // GET /api/workout-sessions/history
     [HttpGet("history")]
+    [Authorize(Roles = "Client,Coach")]
     [ProducesResponseType(typeof(List<WorkoutSessionListItemDto>), StatusCodes.Status200OK)]
     [SwaggerOperation(
         Summary = "Get my workout session history",
-        Description = "Returns the authenticated client's past workout sessions, most recent first. " +
-                      "Defaults to the last month.",
+        Description = "Returns the authenticated user's own past workout sessions, most recent first. " +
+                      "Defaults to the last month. Client or Coach; Admin/Owner 403.",
         Tags = new[] { Tag })]
     public async Task<ActionResult<List<WorkoutSessionListItemDto>>> GetHistory(
         [FromQuery] DateTime? from,

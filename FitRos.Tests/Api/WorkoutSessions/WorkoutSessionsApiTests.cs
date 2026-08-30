@@ -67,11 +67,23 @@ public class WorkoutSessionsApiTests : IClassFixture<TestApiFactory>
     }
 
     [Fact]
-    public async Task History_returns_200()
+    public async Task History_returns_200_for_a_client()
     {
-        var response = await _client.GetAsync("/api/workout-sessions/history");
+        // /history and /start-today are now Client,Coach only (Admin/Owner 403).
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, "Client");
+
+        var response = await client.GetAsync("/api/workout-sessions/history");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task History_is_403_for_staff()
+    {
+        var response = await _client.GetAsync("/api/workout-sessions/history"); // default: Admin
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]

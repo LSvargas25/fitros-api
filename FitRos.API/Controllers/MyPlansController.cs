@@ -14,15 +14,16 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace FitRos.API.Controllers;
 
 /// <summary>
-/// Read-only, client-facing views of the authenticated client's own plans.
+/// Read-only, self-facing views of the authenticated user's own plans.
 /// Everything is scoped to the caller's ClientProfile (resolved from the JWT),
-/// never to an id supplied by the caller — so a Client can't see another
-/// client's plans. Staff use the /api/meal-plans and /api/training-plans
-/// controllers.
+/// never to an id supplied by the caller. Available to Client and to Coach (a
+/// coach has a personal ClientProfile of their own — see §19 in BACKEND_AUDIT);
+/// Admin/Owner get 403. Staff manage other people's plans through the
+/// /api/meal-plans and /api/training-plans controllers.
 /// </summary>
 [ApiController]
 [Route("api/my")]
-[Authorize(Roles = "Client")]
+[Authorize(Roles = "Client,Coach")]
 public sealed class MyPlansController : ControllerBase
 {
     private const string Tag = "My Plans";

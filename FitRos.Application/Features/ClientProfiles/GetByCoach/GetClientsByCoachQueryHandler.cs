@@ -32,7 +32,8 @@ public sealed class GetClientsByCoachQueryHandler
 
         var query = _context.ClientProfiles
             .IgnoreQueryFilters()
-            .Where(x => x.CoachId == request.CoachId);
+            .Where(x => x.CoachId == request.CoachId
+                     && x.Kind == Domain.Entities.Enums.ClientProfileKind.GymClient);
 
         if (!_currentUser.IsOwner())
             query = query.Where(x => x.GymId == _currentUser.GymId);

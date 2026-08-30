@@ -4,6 +4,7 @@ using FitRos.Application.Common;
 using FitRos.Application.Common.Security;
 using FitRos.Application.Features.Users.UserManagement.CreateUser;
 using FitRos.Domain.Common;
+using FitRos.Domain.Entities.Client;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
 using MediatR;
@@ -55,6 +56,19 @@ public sealed class CreateCoachHandler
             : User.Create(request.Email, request.FirstName, request.LastName, passwordHash, UserRole.Coach);
 
         _context.Users.Add(user);
+
+        // A coach also trains: give them their own personal ClientProfile (Kind =
+        // CoachSelf, CoachId = null) in the same transaction, so the "My Area"
+        // endpoints (/api/my/*, /me, start-today) resolve for them exactly like
+        // for a Client. It is separate from — and never mixed with — the roster
+        // of clients this coach manages. A gym-less coach gets one when they are
+        // later assigned to a gym (see ClientProfileBackfill / §19).
+        if (gymId.HasValue)
+        {
+            var coachSelfProfile = ClientProfile.CreateForCoachSelf(gymId.Value, user.Id);
+            _context.ClientProfiles.Add(coachSelfProfile);
+        }
+
         await _context.SaveChangesAsync(ct);
 
         var coachFullName = $"{user.FirstName} {user.LastName}";

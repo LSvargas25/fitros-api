@@ -12,6 +12,13 @@ namespace FitRos.Domain.Entities.Client
         public Guid UserId { get; private set; }
         public Guid? CoachId { get; private set; }
         public ClientStatus Status { get; private set; }
+
+        /// <summary>
+        /// Whether this is a managed gym client (default) or a coach's own
+        /// personal training record. See <see cref="ClientProfileKind"/>.
+        /// </summary>
+        public ClientProfileKind Kind { get; private set; }
+
         public Guid? GymId { get; private set; }
 
         Guid? ITenantEntity.GymId
@@ -27,12 +34,14 @@ namespace FitRos.Domain.Entities.Client
 
         private ClientProfile() { }
 
-        private ClientProfile(Guid? gymId, Guid id, Guid userId, Guid? coachId)
+        private ClientProfile(Guid? gymId, Guid id, Guid userId, Guid? coachId,
+            ClientProfileKind kind = ClientProfileKind.GymClient)
         {
             GymId = gymId;
             Id = id;
             UserId = userId;
             CoachId = coachId;
+            Kind = kind;
             Status = ClientStatus.Active;
         }
 
@@ -44,6 +53,29 @@ namespace FitRos.Domain.Entities.Client
             var client = new ClientProfile(gymId, Guid.NewGuid(), userId, coachId);
             client.AddDomainEvent(new ClientProfileCreatedDomainEvent(client.Id, gymId));
             return client;
+        }
+
+        /// <summary>
+        /// A coach's own personal training record — a separate profile from the
+        /// clients that coach manages. <c>CoachId</c> is deliberately null so it
+        /// never shows up in that coach's roster; <c>Kind</c> keeps it out of
+        /// every client list / count. Reachable only via the "/api/my/*" + "/me"
+        /// + "start-today" endpoints, resolved by <c>UserId</c> from the JWT.
+        /// </summary>
+        public static ClientProfile CreateForCoachSelf(Guid gymId, Guid coachUserId)
+        {
+            if (gymId == Guid.Empty)
+                throw new DomainException("GymId cannot be empty.");
+
+            if (coachUserId == Guid.Empty)
+                throw new DomainException("CoachUserId cannot be empty.");
+
+            var profile = new ClientProfile(
+                gymId, Guid.NewGuid(), coachUserId, coachId: null,
+                kind: ClientProfileKind.CoachSelf);
+
+            profile.AddDomainEvent(new ClientProfileCreatedDomainEvent(profile.Id, gymId));
+            return profile;
         }
 
         public static ClientProfile Create(Guid userId, Guid? coachId = null)

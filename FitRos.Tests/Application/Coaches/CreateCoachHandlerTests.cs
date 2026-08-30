@@ -1,5 +1,6 @@
 using FitRos.Application.Features.Users.Coach.CreateCoach;
 using FitRos.Domain.Common;
+using FitRos.Domain.Entities.Enums;
 using FitRos.Domain.Entities.Users;
 using FitRos.Domain.Enums;
 using FitRos.Tests.Infrastructure;
@@ -89,6 +90,55 @@ public class CreateCoachHandlerTests
             .FirstAsync(u => u.Id == result.Id);
         userInDb.GymId.Should().Be(gymId);
         userInDb.Role.Should().Be(UserRole.Coach);
+    }
+
+    [Fact]
+    public async Task Coach_Created_With_Gym_Also_Gets_A_Personal_CoachSelf_Profile()
+    {
+        var gymId = Guid.NewGuid();
+        var fakeAdmin = new FakeCurrentUser(gymId)
+        {
+            UserId = Guid.NewGuid(),
+            Role = UserRole.Admin,
+            IsAuthenticated = true
+        };
+
+        var context = TestDbContextFactory.Create(fakeAdmin);
+        var handler = new CreateCoachHandler(context, new FakePasswordHasher(), fakeAdmin);
+
+        var result = await handler.Handle(
+            new CreateCoachCommand("coach.self@test.com", "Self", "Coach", "Password123"),
+            CancellationToken.None);
+
+        var profile = await context.ClientProfiles.IgnoreQueryFilters()
+            .SingleAsync(cp => cp.UserId == result.Id);
+
+        profile.Kind.Should().Be(ClientProfileKind.CoachSelf);
+        profile.CoachId.Should().BeNull();
+        profile.GymId.Should().Be(gymId);
+        profile.Status.Should().Be(ClientStatus.Active);
+    }
+
+    [Fact]
+    public async Task Gym_Less_Coach_Does_Not_Get_A_Personal_Profile()
+    {
+        var fakeOwner = new FakeCurrentUser(null)
+        {
+            UserId = Guid.NewGuid(),
+            Role = UserRole.OwnerApp,
+            IsAuthenticated = true
+        };
+
+        var context = TestDbContextFactory.Create(fakeOwner);
+        var handler = new CreateCoachHandler(context, new FakePasswordHasher(), fakeOwner);
+
+        var result = await handler.Handle(
+            new CreateCoachCommand("coach.nogym@test.com", "No", "Gym", "Password123"),
+            CancellationToken.None);
+
+        (await context.ClientProfiles.IgnoreQueryFilters()
+            .AnyAsync(cp => cp.UserId == result.Id))
+            .Should().BeFalse();
     }
 
     [Fact]

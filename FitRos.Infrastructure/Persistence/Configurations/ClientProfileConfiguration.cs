@@ -24,6 +24,13 @@ public class ClientProfileConfiguration : IEntityTypeConfiguration<ClientProfile
             .IsRequired()
             .HasConversion<int>();
 
+        // The domain constructor always sets Kind, so no store-side default is
+        // needed for writes; existing rows are backfilled to 0 (GymClient) by
+        // the AddColumn default in the migration.
+        builder.Property(x => x.Kind)
+            .IsRequired()
+            .HasConversion<int>();
+
         builder.Property(x => x.CreatedAt)
             .IsRequired();
 

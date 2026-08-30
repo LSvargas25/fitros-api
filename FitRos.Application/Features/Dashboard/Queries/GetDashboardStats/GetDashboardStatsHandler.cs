@@ -39,7 +39,8 @@ public sealed class GetDashboardStatsHandler
         var users = _context.Users.IgnoreQueryFilters()
             .Where(u => u.Status == UserStatus.Active);
         var clients = _context.ClientProfiles.IgnoreQueryFilters()
-            .Where(c => c.Status != ClientStatus.Deleted);
+            .Where(c => c.Status != ClientStatus.Deleted
+                     && c.Kind == ClientProfileKind.GymClient); // exclude coach self-profiles
         var routines = _context.WorkoutRoutines.IgnoreQueryFilters();
         var gyms = _context.Gyms.Where(g => !g.IsDeleted);
 

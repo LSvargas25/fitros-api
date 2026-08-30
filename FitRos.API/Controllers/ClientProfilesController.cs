@@ -78,10 +78,12 @@ public sealed class ClientProfilesController : ControllerBase
     // ===============================
 
     [HttpGet("me")]
+    [Authorize(Roles = "Client,Coach")]
     [ProducesResponseType(typeof(ClientDetailDto), StatusCodes.Status200OK)]
     [SwaggerOperation(
         Summary = "Get my client profile",
-        Description = "Returns the authenticated client's profile.",
+        Description = "Returns the authenticated user's own ClientProfile. Client or Coach " +
+                      "(a coach has a personal profile of their own); Admin/Owner get 403.",
         Tags = new[] { TagClientProfiles })]
     public async Task<ActionResult<ClientDetailDto>> GetMyClient(
         CancellationToken cancellationToken)
