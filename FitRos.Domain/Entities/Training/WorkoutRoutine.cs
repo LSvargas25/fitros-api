@@ -54,7 +54,7 @@ public class WorkoutRoutine : ITenantEntity
     // Factory
     // ============================
 
-    public static WorkoutRoutine Create(Guid gymId, string name, string description)
+    public static WorkoutRoutine Create(Guid gymId, string name, string? description)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Routine name cannot be empty.");
@@ -63,7 +63,7 @@ public class WorkoutRoutine : ITenantEntity
             gymId,
             Guid.NewGuid(),
             name.Trim(),
-            description.Trim());
+            description?.Trim() ?? string.Empty);
     }
 
     // ============================
@@ -272,7 +272,7 @@ public class WorkoutRoutine : ITenantEntity
     // Updates
     // ============================
 
-    public void UpdateDetails(string name, string description)
+    public void UpdateDetails(string name, string? description)
     {
         EnsureDraftState();
 
@@ -281,7 +281,7 @@ public class WorkoutRoutine : ITenantEntity
 
         Name = name.Trim();
         NormalizedName = Name.ToLowerInvariant();
-        Description = description.Trim();
+        Description = description?.Trim() ?? string.Empty;
 
         // IMPORTANT:
         // Updating details does NOT change logical version.

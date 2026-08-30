@@ -116,6 +116,32 @@ public class WorkoutRoutinesApiTests : IClassFixture<TestApiFactory>
     }
 
     [Fact]
+    public async Task Create_Without_Description_Should_Succeed()
+    {
+        // The frontend often omits description entirely. It is optional per the
+        // validator (MaximumLength only). Before the fix, [ApiController] treated
+        // the non-nullable Description as [Required] and returned
+        // 400 "The Description field is required."
+        var response = await _client.PostAsJsonAsync(
+            "/api/workoutroutines",
+            new { name = $"No Desc Routine {Guid.NewGuid()}" });
+
+        var body = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.Created, body);
+    }
+
+    [Fact]
+    public async Task Create_With_Explicit_Null_Description_Should_Succeed()
+    {
+        var response = await _client.PostAsJsonAsync(
+            "/api/workoutroutines",
+            new { name = $"Null Desc Routine {Guid.NewGuid()}", description = (string?)null });
+
+        var body = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.Created, body);
+    }
+
+    [Fact]
     public async Task Update_Should_Return_204()
     {
         var routineId = await CreateRoutineAsync($"Routine {Guid.NewGuid()}");
@@ -126,6 +152,34 @@ public class WorkoutRoutinesApiTests : IClassFixture<TestApiFactory>
 
         var response = await _client.PutAsJsonAsync(
             $"/api/workoutroutines/{routineId}", command);
+
+        var body = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent, body);
+    }
+
+    [Fact]
+    public async Task Update_Without_Description_Should_Succeed()
+    {
+        // Same MVC implicit-[Required] trap as create: omitting description on a
+        // PUT used to 400 "The Description field is required." It is optional.
+        var routineId = await CreateRoutineAsync($"Routine {Guid.NewGuid()}");
+
+        var response = await _client.PutAsJsonAsync(
+            $"/api/workoutroutines/{routineId}",
+            new { name = "Updated Routine" });
+
+        var body = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent, body);
+    }
+
+    [Fact]
+    public async Task Update_With_Explicit_Null_Description_Should_Succeed()
+    {
+        var routineId = await CreateRoutineAsync($"Routine {Guid.NewGuid()}");
+
+        var response = await _client.PutAsJsonAsync(
+            $"/api/workoutroutines/{routineId}",
+            new { name = "Updated Routine", description = (string?)null });
 
         var body = await response.Content.ReadAsStringAsync();
         response.StatusCode.Should().Be(HttpStatusCode.NoContent, body);
