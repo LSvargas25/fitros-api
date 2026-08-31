@@ -38,8 +38,7 @@ public sealed class GetClientMealPlansHandler
         if (clientProfile.GymId != _currentUser.GymId && !_currentUser.IsOwner())
             throw new ForbiddenException("Client does not belong to your gym.");
 
-        if (_currentUser.IsCoach() && clientProfile.CoachId != _currentUser.UserId)
-            throw new ForbiddenException("You are not the assigned coach for this client.");
+        _currentUser.EnsureCoachCanAccess(clientProfile);
 
         return await _context.MealPlans
             .AsNoTracking()

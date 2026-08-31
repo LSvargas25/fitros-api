@@ -73,8 +73,7 @@ internal static class WeeklyTrainingPlanAccess
         if (currentUser.IsCoach())
         {
             // Their assigned client, or their own CoachSelf "My Area" profile.
-            if (clientProfile.CoachId != currentUser.UserId
-                && clientProfile.UserId != currentUser.UserId)
+            if (!currentUser.CoachIsResponsibleFor(clientProfile))
                 throw new ForbiddenException("You are not the assigned coach for this client.");
             return;
         }
