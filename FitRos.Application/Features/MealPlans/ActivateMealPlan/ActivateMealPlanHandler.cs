@@ -2,6 +2,7 @@ using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Features.MealPlans.Common;
 using FitRos.Domain.Common;
+using FitRos.Domain.Entities.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,7 +36,22 @@ public sealed class ActivateMealPlanHandler
 
         MealPlanAccess.EnsureCanManage(_currentUser, plan);
 
+        // Validate the transition first so a bad request touches nothing.
         plan.Activate();
+
+        // One-active-plan-per-client rule: activating a plan supersedes any other
+        // Active meal plan the same client holds. The previous one moves to
+        // Archived (kept for history, no longer editable). Enforced here at the
+        // application layer because it spans multiple aggregates. Loop handles
+        // the (data-only) case of more than one pre-existing Active row.
+        var superseded = await _context.MealPlans
+            .Where(p => p.ClientProfileId == plan.ClientProfileId
+                        && p.Id != plan.Id
+                        && p.Status == MealPlanStatus.Active)
+            .ToListAsync(cancellationToken);
+
+        foreach (var previous in superseded)
+            previous.Archive();
 
         await _context.SaveChangesAsync(cancellationToken);
     }

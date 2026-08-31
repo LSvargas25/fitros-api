@@ -2,6 +2,7 @@ using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Features.WeeklyTrainingPlans.Common;
 using FitRos.Domain.Common;
+using FitRos.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,11 +34,20 @@ public sealed class AssignRoutineToDayHandler : IRequestHandler<AssignRoutineToD
 
         await WeeklyTrainingPlanAccess.EnsureCanManageAsync(_currentUser, plan, _context, cancellationToken);
 
-        var routineExists = await _context.WorkoutRoutines
-            .AnyAsync(r => r.Id == command.WorkoutRoutineId, cancellationToken);
+        var routine = await _context.WorkoutRoutines
+            .AsNoTracking()
+            .Where(r => r.Id == command.WorkoutRoutineId)
+            .Select(r => new { r.Status })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (!routineExists)
+        if (routine is null)
             throw new NotFoundException("Workout routine not found.");
+
+        // A weekly plan may only reference routines that have been Published.
+        // Draft routines are still being authored; Archived ones are retired.
+        if (routine.Status != RoutineStatus.Published)
+            throw new DomainException(
+                "Only published workout routines can be assigned to a training day.");
 
         plan.AssignRoutineToDay(command.Day, command.WorkoutRoutineId, command.Notes);
 

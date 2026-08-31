@@ -1,5 +1,7 @@
 using FitRos.Application.Features.MealPlans.GetClientMealPlans;
 using FitRos.Application.Features.MealPlans.GetMealPlanById;
+using FitRos.Application.Features.MyPlans.GetMyActiveMealPlan;
+using FitRos.Application.Features.MyPlans.GetMyActiveTrainingPlan;
 using FitRos.Application.Features.MyPlans.GetMyMealPlanById;
 using FitRos.Application.Features.MyPlans.GetMyMealPlans;
 using FitRos.Application.Features.MyPlans.GetMyTrainingPlanById;
@@ -46,6 +48,22 @@ public sealed class MyPlansController : ControllerBase
         CancellationToken cancellationToken)
         => Ok(await _sender.Send(new GetMyMealPlansQuery(), cancellationToken));
 
+    // GET /api/my/meal-plans/active
+    [HttpGet("meal-plans/active")]
+    [ProducesResponseType(typeof(MealPlanDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Get my active meal plan",
+        Description = "The authenticated client's currently active meal plan (entries + macro " +
+                      "totals). 404 when they have no active plan. At most one plan is ever active.",
+        Tags = new[] { Tag })]
+    public async Task<ActionResult<MealPlanDto>> GetMyActiveMealPlan(
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetMyActiveMealPlanQuery(), cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
     // GET /api/my/meal-plans/{planId}
     [HttpGet("meal-plans/{planId:guid}")]
     [ProducesResponseType(typeof(MealPlanDto), StatusCodes.Status200OK)]
@@ -70,6 +88,22 @@ public sealed class MyPlansController : ControllerBase
     public async Task<ActionResult<List<TrainingPlanListItemDto>>> GetMyTrainingPlans(
         CancellationToken cancellationToken)
         => Ok(await _sender.Send(new GetMyTrainingPlansQuery(), cancellationToken));
+
+    // GET /api/my/training-plans/active
+    [HttpGet("training-plans/active")]
+    [ProducesResponseType(typeof(WeeklyTrainingPlanDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Get my active training plan",
+        Description = "The authenticated client's currently active weekly training plan (days + " +
+                      "routine names). 404 when they have no active plan. At most one plan is ever active.",
+        Tags = new[] { Tag })]
+    public async Task<ActionResult<WeeklyTrainingPlanDto>> GetMyActiveTrainingPlan(
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetMyActiveTrainingPlanQuery(), cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
 
     // GET /api/my/training-plans/{planId}
     [HttpGet("training-plans/{planId:guid}")]

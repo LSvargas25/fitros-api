@@ -92,6 +92,9 @@ public class IndependentClientTestApiFactory : WebApplicationFactory<Program>
             // through the ambient tenant filter, which only matches on an
             // exact GymId (including null == null for an independent user).
             var routine = WorkoutRoutine.Create(OtherRoutineGymId, "Full Body", "General routine");
+            // Only Published routines can be assigned to a plan day.
+            routine.AddExercise(Guid.NewGuid(), 1, 3, 10, 60);
+            routine.Publish();
             typeof(WorkoutRoutine).GetProperty(nameof(WorkoutRoutine.Id))!
                 .SetValue(routine, RoutineId);
             typeof(WorkoutRoutine).GetProperty(nameof(WorkoutRoutine.GymId))!

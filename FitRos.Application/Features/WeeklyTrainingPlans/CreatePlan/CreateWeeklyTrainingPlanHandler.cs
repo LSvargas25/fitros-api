@@ -1,5 +1,6 @@
 using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
+using FitRos.Application.Common.Security;
 using FitRos.Application.Features.WeeklyTrainingPlans.Common;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.WeeklyTraining;
@@ -36,9 +37,19 @@ public sealed class CreateWeeklyTrainingPlanHandler
 
         WeeklyTrainingPlanAccess.EnsureCanAccessClient(_currentUser, clientProfile);
 
+        // A coach may also create a plan for their own personal profile
+        // (Kind == CoachSelf, whose UserId is the coach's own user id).
+        var isOwnProfile = clientProfile.UserId == _currentUser.UserId;
+
+        // A CoachSelf profile carries no CoachId; the coach is the coach of their
+        // own plan, so stamp their user id.
+        // An independent client's plan keeps a null CoachId.
+        var planCoachId = clientProfile.CoachId
+            ?? (isOwnProfile && _currentUser.IsCoach() ? _currentUser.UserId : (Guid?)null);
+
         var plan = WeeklyTrainingPlan.Create(
             clientProfile.Id,
-            clientProfile.CoachId,
+            planCoachId,
             clientProfile.GymId,
             command.Name);
 
