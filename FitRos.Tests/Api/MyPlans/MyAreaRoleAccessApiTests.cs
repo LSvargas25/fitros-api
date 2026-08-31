@@ -112,4 +112,42 @@ public class MyAreaRoleAccessApiTests : IClassFixture<TestApiFactory>
 
         res.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
+
+    // The …/active routes 404 (not 200) when there's no active plan, so they can't
+    // ride the shared MemberData theories that assert OK for Coach.
+    public static IEnumerable<object[]> ActivePlanEndpoints => new[]
+    {
+        new object[] { "/api/my/meal-plans/active" },
+        new object[] { "/api/my/training-plans/active" },
+    };
+
+    [Theory]
+    [MemberData(nameof(ActivePlanEndpoints))]
+    public async Task Active_plan_endpoint_is_open_to_Coach(string path)
+    {
+        await EnsureCallerHasAProfileAsync();
+
+        var res = await ClientAs("Coach").GetAsync(path);
+
+        res.StatusCode.Should().NotBe(HttpStatusCode.Forbidden);
+        res.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
+    }
+
+    [Theory]
+    [MemberData(nameof(ActivePlanEndpoints))]
+    public async Task Active_plan_endpoint_is_forbidden_for_Admin(string path)
+    {
+        var res = await ClientAs("Admin").GetAsync(path);
+
+        res.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Theory]
+    [MemberData(nameof(ActivePlanEndpoints))]
+    public async Task Active_plan_endpoint_is_forbidden_for_OwnerApp(string path)
+    {
+        var res = await ClientAs("OwnerApp").GetAsync(path);
+
+        res.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
 }

@@ -27,11 +27,21 @@ public sealed class ActivateClientInGymHandler : IRequestHandler<ActivateClientI
         if (profile is null)
             throw new NotFoundException($"ClientProfile {request.ClientProfileId} not found.");
 
-        // An Admin can only activate a client into their OWN gym; OwnerApp can
-        // target any gym. (Which inactive clients an Admin may claim is a
-        // separate product question — see BACKEND_AUDIT §16.)
-        if (_currentUser.IsAdmin() && request.GymId != _currentUser.GymId)
-            throw new ForbiddenException("Admins can only activate clients into their own gym.");
+        // Moving a client between gyms carries their whole history (measures, KPIs,
+        // progress reports, plans) across a tenant boundary, so it is OwnerApp-only.
+        // An Admin may only (re)activate a client that ALREADY belongs to their gym
+        // — which makes this endpoint equivalent to toggle-status for them. There is
+        // no "unassigned client" state in the domain (every ClientProfile has a
+        // GymId), so this strands nobody. See BACKEND_AUDIT §16.
+        if (_currentUser.IsAdmin())
+        {
+            if (profile.GymId != _currentUser.GymId)
+                throw new ForbiddenException(
+                    "Admins can only activate a client that already belongs to their gym.");
+
+            if (request.GymId != _currentUser.GymId)
+                throw new ForbiddenException("Admins can only activate clients into their own gym.");
+        }
 
         var gym = await _context.Gyms
             .FirstOrDefaultAsync(g => g.Id == request.GymId, cancellationToken);
