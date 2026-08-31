@@ -1,7 +1,6 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Common.Security;
-using FitRos.Application.Features.ClientProfiles.Common;
 using FitRos.Domain.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -40,7 +39,7 @@ public sealed class GetClientByIdQueryHandler
         if (client is null)
             throw new NotFoundException("Client not found.");
 
-        ClientProfileAccess.EnsureCanView(_currentUser, client);
+        _currentUser.EnsureCanAccess(client);
 
         return new ClientDetailDto
         {

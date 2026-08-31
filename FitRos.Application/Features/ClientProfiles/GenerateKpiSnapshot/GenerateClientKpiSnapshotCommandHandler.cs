@@ -40,11 +40,7 @@ public sealed class GenerateClientKpiSnapshotCommandHandler
         if (profile is null)
             throw new NotFoundException("Client profile not found.");
 
-        // tenant validation
-        if (profile.GymId != _currentUser.GymId)
-            throw new ForbiddenException("Client does not belong to your gym.");
-
-        ValidatePermissions(profile);
+        _currentUser.EnsureCanAccess(profile);
 
         var orderedMeasures = profile.Measures
             .OrderByDescending(m => m.RecordedAt)
@@ -73,29 +69,5 @@ public sealed class GenerateClientKpiSnapshotCommandHandler
             snapshot.WeightDelta,
             snapshot.BodyFatDelta,
             snapshot.WaistDelta);
-    }
-
-    private void ValidatePermissions(ClientProfile profile)
-    {
-        if (_currentUser.IsOwner() || _currentUser.IsAdmin())
-            return;
-
-        if (_currentUser.IsCoach())
-        {
-            if (profile.CoachId != _currentUser.UserId)
-                throw new ForbiddenException("You do not own this client.");
-
-            return;
-        }
-
-        if (Domain.Enums.UserRole.Client == _currentUser.Role)
-        {
-            if (profile.UserId != _currentUser.UserId)
-                throw new ForbiddenException("You are not authorized.");
-
-            return;
-        }
-
-        throw new ForbiddenException("You are not authorized.");
     }
 }

@@ -32,7 +32,8 @@ namespace FitRos.Domain.Entities.Enums
             decimal muscleMass,
             decimal waist,
             decimal chest,
-            decimal arms)
+            decimal arms,
+            DateTime recordedAt)
         {
             Id = id;
             ClientProfileId = clientProfileId;
@@ -45,9 +46,14 @@ namespace FitRos.Domain.Entities.Enums
             Chest = chest;
             Arms = arms;
 
-            RecordedAt = DateTime.UtcNow;
+            RecordedAt = recordedAt;
         }
 
+        /// <summary>
+        /// <paramref name="recordedAt"/> lets a caller back-date a forgotten
+        /// entry; omit it for "now". It may not be in the future (finer window
+        /// limits live in the command validator).
+        /// </summary>
         public static PhysicalMeasure Create(
             Guid clientProfileId,
             decimal weight,
@@ -55,10 +61,16 @@ namespace FitRos.Domain.Entities.Enums
             decimal muscleMass,
             decimal waist,
             decimal chest,
-            decimal arms)
+            decimal arms,
+            DateTime? recordedAt = null)
         {
             if (weight <= 0)
                 throw new DomainException("Weight must be greater than zero.");
+
+            var when = recordedAt ?? DateTime.UtcNow;
+
+            if (when > DateTime.UtcNow.AddMinutes(1))
+                throw new DomainException("A measurement cannot be recorded in the future.");
 
             return new PhysicalMeasure(
                 Guid.NewGuid(),
@@ -68,7 +80,8 @@ namespace FitRos.Domain.Entities.Enums
                 muscleMass,
                 waist,
                 chest,
-                arms);
+                arms,
+                when);
         }
     }
 }

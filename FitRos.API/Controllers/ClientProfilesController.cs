@@ -133,7 +133,8 @@ public sealed class ClientProfilesController : ControllerBase
                 request.MuscleMass,
                 request.Waist,
                 request.Chest,
-                request.Arms),
+                request.Arms,
+                request.RecordedAt),
             cancellationToken);
 
         return NoContent();

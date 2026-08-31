@@ -28,5 +28,16 @@ public sealed class AddPhysicalMeasureCommandValidator
 
         RuleFor(x => x.Arms)
             .GreaterThanOrEqualTo(0);
+
+        // Optional back-dating window: not in the future, and no more than
+        // 60 days back (forgot-to-log recovery, not history rewriting).
+        When(x => x.RecordedAt.HasValue, () =>
+        {
+            RuleFor(x => x.RecordedAt!.Value)
+                .LessThanOrEqualTo(_ => DateTime.UtcNow.AddMinutes(1))
+                .WithMessage("RecordedAt cannot be in the future.")
+                .GreaterThanOrEqualTo(_ => DateTime.UtcNow.AddDays(-60))
+                .WithMessage("RecordedAt cannot be more than 60 days in the past.");
+        });
     }
 }

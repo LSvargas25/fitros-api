@@ -39,11 +39,7 @@ public sealed class GetClientKpiSnapshotsHandler
         if (profile is null)
             throw new NotFoundException("Client profile not found.");
 
-        // tenant validation (Owner has no gym and may read any client)
-        if (!_currentUser.IsOwner() && profile.GymId != _currentUser.GymId)
-            throw new ForbiddenException("Client does not belong to your gym.");
-
-        ValidatePermissions(profile);
+        _currentUser.EnsureCanAccess(profile);
 
         // IgnoreQueryFilters: access is already checked above. The global tenant
         // filter is `GymId == currentUser.GymId` with no Owner exception, so
@@ -61,29 +57,5 @@ public sealed class GetClientKpiSnapshotsHandler
                 s.WaistDelta,
                 s.CreatedAtUtc))
             .ToListAsync(cancellationToken);
-    }
-
-    private void ValidatePermissions(ClientProfile profile)
-    {
-        if (_currentUser.IsOwner() || _currentUser.IsAdmin())
-            return;
-
-        if (_currentUser.IsCoach())
-        {
-            if (profile.CoachId != _currentUser.UserId)
-                throw new ForbiddenException("You do not own this client.");
-
-            return;
-        }
-
-        if (Domain.Enums.UserRole.Client == _currentUser.Role)
-        {
-            if (profile.UserId != _currentUser.UserId)
-                throw new ForbiddenException("You are not authorized.");
-
-            return;
-        }
-
-        throw new ForbiddenException("You are not authorized.");
     }
 }

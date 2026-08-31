@@ -131,12 +131,14 @@ namespace FitRos.Domain.Entities.Client
             decimal muscleMass,
             decimal waist,
             decimal chest,
-            decimal arms)
+            decimal arms,
+            DateTime? recordedAt = null)
         {
             if (Status != ClientStatus.Active)
                 throw new DomainException("Cannot add measures to inactive or deleted client.");
 
-            var measure = PhysicalMeasure.Create(Id, weight, bodyFatPercentage, muscleMass, waist, chest, arms);
+            var measure = PhysicalMeasure.Create(
+                Id, weight, bodyFatPercentage, muscleMass, waist, chest, arms, recordedAt);
             _measures.Add(measure);
             AddDomainEvent(new PhysicalMeasureAddedDomainEvent(Id, measure.Id));
         }

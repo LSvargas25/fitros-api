@@ -9,5 +9,6 @@ public sealed record AddPhysicalMeasureCommand(
     decimal MuscleMass,
     decimal Waist,
     decimal Chest,
-    decimal Arms
+    decimal Arms,
+    DateTime? RecordedAt = null
 ) : IRequest;

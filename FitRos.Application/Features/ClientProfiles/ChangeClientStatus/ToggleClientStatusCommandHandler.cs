@@ -1,7 +1,6 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Common.Security;
-using FitRos.Application.Features.ClientProfiles.Common;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Enums;
 using MediatR;
@@ -43,7 +42,7 @@ public sealed class ToggleClientStatusCommandHandler
         if (client.Status == ClientStatus.Deleted)
             throw new DomainException("Deleted clients cannot be modified.");
 
-        ClientProfileAccess.EnsureCanManage(_currentUser, client);
+        _currentUser.EnsureCanManage(client);
 
         if (request.Activate)
             client.Activate();

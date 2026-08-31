@@ -39,11 +39,7 @@ public sealed class AddPhysicalMeasureCommandHandler
         if (profile is null)
             throw new NotFoundException("Client profile not found.");
 
-        // tenant validation
-        if (profile.GymId != _currentUser.GymId)
-            throw new ForbiddenException("Client does not belong to your gym.");
-
-        ValidatePermissions(profile);
+        _currentUser.EnsureCanAccess(profile);
 
         profile.AddMeasure(
             request.Weight,
@@ -51,7 +47,8 @@ public sealed class AddPhysicalMeasureCommandHandler
             request.MuscleMass,
             request.Waist,
             request.Chest,
-            request.Arms);
+            request.Arms,
+            request.RecordedAt);
 
         try
         {
@@ -62,29 +59,5 @@ public sealed class AddPhysicalMeasureCommandHandler
             throw new DomainException(
                 "The client profile was modified by another process. Please reload and try again.");
         }
-    }
-
-    private void ValidatePermissions(Domain.Entities.Client.ClientProfile profile)
-    {
-        if (_currentUser.IsOwner() || _currentUser.IsAdmin())
-            return;
-
-        if (_currentUser.IsCoach())
-        {
-            if (profile.CoachId != _currentUser.UserId)
-                throw new ForbiddenException("You do not own this client.");
-
-            return;
-        }
-
-        if (Domain.Enums.UserRole.Client == _currentUser.Role)
-        {
-            if (profile.UserId != _currentUser.UserId)
-                throw new ForbiddenException("You are not authorized.");
-
-            return;
-        }
-
-        throw new ForbiddenException("You are not authorized.");
     }
 }
