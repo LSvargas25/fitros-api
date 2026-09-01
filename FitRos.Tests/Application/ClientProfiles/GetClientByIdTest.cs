@@ -15,13 +15,13 @@ namespace FitRos.Tests.Application.ClientProfiles.GetById
 {
     public sealed class GetClientByIdTest
     {
-        private static ICurrentUser MockUser(Guid? id, UserRole role)
+        private static ICurrentUser MockUser(Guid? id, UserRole role, Guid? gymId = null)
         {
             var mock = new Mock<ICurrentUser>();
             mock.Setup(x => x.UserId).Returns(id);
             mock.Setup(x => x.Role).Returns(role);
             mock.Setup(x => x.IsAuthenticated).Returns(true);
-            mock.Setup(x => x.GymId).Returns(Guid.NewGuid());
+            mock.Setup(x => x.GymId).Returns(gymId ?? Guid.NewGuid());
             return mock.Object;
         }
 
@@ -32,7 +32,7 @@ namespace FitRos.Tests.Application.ClientProfiles.GetById
             var coachId = Guid.NewGuid();
             var userId = Guid.NewGuid();
 
-            var user = MockUser(coachId, UserRole.Coach);
+            var user = MockUser(coachId, UserRole.Coach, gymId);
             var context = TestDbContextFactory.Create(user);
 
             var client = ClientProfile.Create(
@@ -87,7 +87,7 @@ namespace FitRos.Tests.Application.ClientProfiles.GetById
             var userId = Guid.NewGuid();
             var coachId = Guid.NewGuid();
 
-            var user = MockUser(adminId, UserRole.Admin);
+            var user = MockUser(adminId, UserRole.Admin, gymId);
             var context = TestDbContextFactory.Create(user);
 
             var client = ClientProfile.Create(
@@ -105,6 +105,34 @@ namespace FitRos.Tests.Application.ClientProfiles.GetById
                 CancellationToken.None);
 
             result.Id.Should().Be(client.Id);
+        }
+
+        [Fact]
+        public async Task Admin_should_not_access_client_from_other_gym()
+        {
+            var gymId = Guid.NewGuid();
+            var otherGymId = Guid.NewGuid();
+            var adminId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var coachId = Guid.NewGuid();
+
+            var user = MockUser(adminId, UserRole.Admin, otherGymId);
+            var context = TestDbContextFactory.Create(user);
+
+            var client = ClientProfile.Create(
+                gymId,
+                userId,
+                coachId);
+
+            context.ClientProfiles.Add(client);
+            await context.SaveChangesAsync();
+
+            var handler = new GetClientByIdQueryHandler(context, user);
+
+            await Assert.ThrowsAsync<ForbiddenException>(() =>
+                handler.Handle(
+                    new GetClientByIdQuery(client.Id),
+                    CancellationToken.None));
         }
 
         [Fact]

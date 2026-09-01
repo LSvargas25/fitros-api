@@ -36,12 +36,13 @@ namespace FitRos.Tests.Application.ClientProfiles
             return context;
         }
 
-        private static ICurrentUser MockUser(Guid? userId, UserRole role)
+        private static ICurrentUser MockUser(Guid? userId, UserRole role, Guid? gymId = null)
         {
             var mock = new Mock<ICurrentUser>();
             mock.Setup(x => x.UserId).Returns(userId);
             mock.Setup(x => x.Role).Returns(role);
             mock.Setup(x => x.IsAuthenticated).Returns(true);
+            mock.Setup(x => x.GymId).Returns(gymId);
             return mock.Object;
         }
 
@@ -56,7 +57,7 @@ namespace FitRos.Tests.Application.ClientProfiles
             client.Deactivate();
 
             using var context = CreateContext(client);
-            var user = MockUser(coachId, UserRole.Coach);
+            var user = MockUser(coachId, UserRole.Coach, gymId);
 
             var handler = new ToggleClientStatusCommandHandler(context, user);
 
@@ -77,7 +78,7 @@ namespace FitRos.Tests.Application.ClientProfiles
             var client = ClientProfile.Create(gymId, userId, coachId);
 
             using var context = CreateContext(client);
-            var user = MockUser(coachId, UserRole.Coach);
+            var user = MockUser(coachId, UserRole.Coach, gymId);
 
             var handler = new ToggleClientStatusCommandHandler(context, user);
 
@@ -89,7 +90,7 @@ namespace FitRos.Tests.Application.ClientProfiles
         }
 
         [Fact]
-        public async Task Admin_should_modify_any_client()
+        public async Task Admin_should_modify_client_in_own_gym()
         {
             var gymId = Guid.NewGuid();
             var userId = Guid.NewGuid();
@@ -98,7 +99,7 @@ namespace FitRos.Tests.Application.ClientProfiles
             var client = ClientProfile.Create(gymId, userId, coachId);
 
             using var context = CreateContext(client);
-            var user = MockUser(Guid.NewGuid(), UserRole.Admin);
+            var user = MockUser(Guid.NewGuid(), UserRole.Admin, gymId);
 
             var handler = new ToggleClientStatusCommandHandler(context, user);
 
@@ -107,6 +108,27 @@ namespace FitRos.Tests.Application.ClientProfiles
                 CancellationToken.None);
 
             client.Status.Should().Be(ClientStatus.Inactive);
+        }
+
+        [Fact]
+        public async Task Admin_should_not_modify_client_from_other_gym()
+        {
+            var gymId = Guid.NewGuid();
+            var otherGymId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var coachId = Guid.NewGuid();
+
+            var client = ClientProfile.Create(gymId, userId, coachId);
+
+            using var context = CreateContext(client);
+            var user = MockUser(Guid.NewGuid(), UserRole.Admin, otherGymId);
+
+            var handler = new ToggleClientStatusCommandHandler(context, user);
+
+            await Assert.ThrowsAsync<ForbiddenException>(() =>
+                handler.Handle(
+                    new ToggleClientStatusCommand(client.Id, false),
+                    CancellationToken.None));
         }
 
         [Fact]
@@ -120,7 +142,7 @@ namespace FitRos.Tests.Application.ClientProfiles
             client.Deactivate();
 
             using var context = CreateContext(client);
-            var user = MockUser(Guid.NewGuid(), UserRole.Coach);
+            var user = MockUser(Guid.NewGuid(), UserRole.Coach, gymId);
 
             var handler = new ToggleClientStatusCommandHandler(context, user);
 

@@ -1,11 +1,12 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Common.Security;
+using FitRos.Application.Features.ClientProfiles.Common;
 using FitRos.Domain.Common;
 using FitRos.Domain.Entities.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
- 
+
 
 namespace FitRos.Application.Features.ClientProfiles.ChangeClientStatus;
 
@@ -42,7 +43,7 @@ public sealed class ToggleClientStatusCommandHandler
         if (client.Status == ClientStatus.Deleted)
             throw new DomainException("Deleted clients cannot be modified.");
 
-        ValidatePermissions(client);
+        ClientProfileAccess.EnsureCanManage(_currentUser, client);
 
         if (request.Activate)
             client.Activate();
@@ -50,21 +51,5 @@ public sealed class ToggleClientStatusCommandHandler
             client.Deactivate();
 
         await _context.SaveChangesAsync(cancellationToken);
-    }
-
-    private void ValidatePermissions(Domain.Entities.Client.ClientProfile client)
-    {
-        if (_currentUser.IsOwner() || _currentUser.IsAdmin())
-            return;
-
-        if (_currentUser.IsCoach())
-        {
-            if (client.CoachId != _currentUser.UserId)
-                throw new ForbiddenException("You do not own this client.");
-
-            return;
-        }
-
-        throw new ForbiddenException("You are not authorized.");
     }
 }

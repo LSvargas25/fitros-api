@@ -1,10 +1,11 @@
 ﻿using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Common.Security;
+using FitRos.Application.Features.ClientProfiles.Common;
 using FitRos.Domain.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
- 
+
 
 namespace FitRos.Application.Features.ClientProfiles.GetById;
 
@@ -39,7 +40,7 @@ public sealed class GetClientByIdQueryHandler
         if (client is null)
             throw new NotFoundException("Client not found.");
 
-        ValidatePermissions(client);
+        ClientProfileAccess.EnsureCanView(_currentUser, client);
 
         return new ClientDetailDto
         {
@@ -61,29 +62,5 @@ public sealed class GetClientByIdQueryHandler
                 })
                 .ToList()
         };
-    }
-
-    private void ValidatePermissions(Domain.Entities.Client.ClientProfile client)
-    {
-        if (_currentUser.IsOwner() || _currentUser.IsAdmin())
-            return;
-
-        if (_currentUser.IsCoach())
-        {
-            if (client.CoachId != _currentUser.UserId)
-                throw new ForbiddenException("You do not own this client.");
-
-            return;
-        }
-
-        if (_currentUser.Role == Domain.Enums.UserRole.Client)
-        {
-            if (client.UserId != _currentUser.UserId)
-                throw new ForbiddenException("You are not authorized.");
-
-            return;
-        }
-
-        throw new ForbiddenException("You are not authorized.");
     }
 }
