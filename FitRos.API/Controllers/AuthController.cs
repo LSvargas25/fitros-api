@@ -4,11 +4,14 @@ using FitRos.Application.Features.Auth.Login;
 using FitRos.Application.Features.Auth.Logout;
 using FitRos.Application.Features.Auth.Refresh;
 using FitRos.Application.Features.Auth.Register;
+using FitRos.Application.Features.Auth.ResendVerification;
 using FitRos.Application.Features.Auth.ResetPassword;
+using FitRos.Application.Features.Auth.VerifyEmail;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Swashbuckle.AspNetCore.Annotations;
 using ForgotPasswordRequest = FitRos.API.Contracts.Auth.ForgotPasswordRequest;
 
@@ -16,6 +19,7 @@ namespace FitRos.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("auth")]
 public sealed class AuthController : ControllerBase
 {
     private const string TagAuth = "Auth";
@@ -44,6 +48,44 @@ public sealed class AuthController : ControllerBase
     {
         var result = await _sender.Send(command, ct);
         return Ok(result);
+    }
+
+    // =============================
+    // VERIFY EMAIL
+    // =============================
+
+    [HttpPost("verify-email")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [SwaggerOperation(
+        Summary = "Verify email",
+        Description = "Confirms the code emailed at registration and unlocks login.",
+        Tags = new[] { TagAuth })]
+    public async Task<IActionResult> VerifyEmail(
+        [FromBody] VerifyEmailCommand command,
+        CancellationToken ct)
+    {
+        await _sender.Send(command, ct);
+        return Ok();
+    }
+
+    // =============================
+    // RESEND VERIFICATION
+    // =============================
+
+    [HttpPost("resend-verification")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [SwaggerOperation(
+        Summary = "Resend verification code",
+        Description = "Emails a new verification code. Always returns 200 OK to prevent email enumeration.",
+        Tags = new[] { TagAuth })]
+    public async Task<IActionResult> ResendVerification(
+        [FromBody] ResendVerificationCommand command,
+        CancellationToken ct)
+    {
+        await _sender.Send(command, ct);
+        return Ok();
     }
 
     // =============================

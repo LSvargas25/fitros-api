@@ -17,6 +17,7 @@ using FluentValidation.AspNetCore;
 using MediatR;
 using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -235,6 +236,24 @@ foreach (var handlerType in handlerTypes)
 
 builder.Services.AddHostedService<OutboxProcessor>();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // The "Testing" environment (WebApplicationFactory-based auth tests)
+    // fires far more than 5 requests at these endpoints per run from the
+    // same loopback connection, so it gets an effectively unlimited window
+    // instead of disabling the policy outright.
+    var authPermitLimit = builder.Environment.IsEnvironment("Testing") ? int.MaxValue : 5;
+
+    options.AddFixedWindowLimiter("auth", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = authPermitLimit;
+        limiterOptions.Window = TimeSpan.FromMinutes(5);
+        limiterOptions.QueueLimit = 0;
+    });
+});
+
 var app = builder.Build();
 
 // Lets a deploy set its own owner password without committing a hash to
@@ -275,6 +294,8 @@ app.UseCors("AllowAngularDev");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseRateLimiter();
 
 app.MapControllers();
 

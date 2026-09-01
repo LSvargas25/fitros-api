@@ -39,9 +39,12 @@ public sealed class LoginHandler
 
         if (user.Status != UserStatus.Active)
             throw new DomainException("User is inactive.");
- 
+
         if (!_hasher.Verify(request.Password, user.PasswordHash))
             throw new DomainException("Invalid credentials.");
+
+        if (!user.EmailVerified)
+            throw new DomainException("Email not verified.");
 
         var access = _tokens.CreateAccessToken(user);
 

@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace FitRos.Tests.Api.Auth;
@@ -27,8 +28,16 @@ public class AuthTestApiFactory : WebApplicationFactory<Program>
 {
     private static readonly string DbName = "FitRosAuthTestDb";
 
+    // Singleton (not per-request scoped) so tests can inspect what got
+    // "sent" - e.g. pull the verification code out of a register response.
+    public FakeEmailSender EmailSender { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Also relaxes the "auth" rate limiter (see Program.cs) - this suite
+        // fires well past 5 requests at these endpoints per run.
+        builder.UseEnvironment("Testing");
+
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<DbContextOptions<FitRosDbContext>>();
@@ -40,7 +49,7 @@ public class AuthTestApiFactory : WebApplicationFactory<Program>
 
             // Avoid depending on a live SMTP server for ForgotPassword's email.
             services.RemoveAll<IEmailSender>();
-            services.AddScoped<IEmailSender, FakeEmailSender>();
+            services.AddSingleton<IEmailSender>(EmailSender);
         });
     }
 
@@ -61,9 +70,11 @@ public class AuthTestApiFactory : WebApplicationFactory<Program>
 public class AuthApiTests : IClassFixture<AuthTestApiFactory>
 {
     private readonly HttpClient _client;
+    private readonly AuthTestApiFactory _factory;
 
     public AuthApiTests(AuthTestApiFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
 
@@ -194,5 +205,53 @@ public class AuthApiTests : IClassFixture<AuthTestApiFactory>
             request);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    // =============================
+    // REGISTER + VERIFY
+    // =============================
+
+    [Fact]
+    public async Task Register_Then_Verify_Then_Login_Round_Trip_Succeeds()
+    {
+        var email = $"newclient.{Guid.NewGuid():N}@test.com";
+
+        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email,
+            firstName = "New",
+            lastName = "Client",
+            password = "Password123!"
+        });
+
+        registerResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var loginBeforeVerify = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email,
+            password = "Password123!"
+        });
+
+        loginBeforeVerify.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var sentEmail = _factory.EmailSender.SentEmails.Last(e => e.To == email);
+        var code = Regex.Match(sentEmail.HtmlBody, @"\b(\d{6})\b").Groups[1].Value;
+        code.Should().NotBeNullOrEmpty();
+
+        var verifyResponse = await _client.PostAsJsonAsync("/api/auth/verify-email", new
+        {
+            email,
+            code
+        });
+
+        verifyResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var loginAfterVerify = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email,
+            password = "Password123!"
+        });
+
+        loginAfterVerify.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }
