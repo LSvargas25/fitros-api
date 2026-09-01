@@ -60,6 +60,48 @@ public class AddExerciseToWorkoutRoutineTests
     }
 
     [Fact]
+    public async Task Handle_Should_Throw_When_Routine_Belongs_To_Another_Gym()
+    {
+        var container = TestDbContextFactory.CreateContainer();
+        var context = container.Context;
+
+        var otherGymId = Guid.NewGuid();
+
+        var routine = WorkoutRoutine.Create(
+            otherGymId,
+            "Other Gym Routine",
+            "Description");
+
+        var exercise = Exercise.Create(
+            "Bench Press",
+            "Chest exercise",
+            MuscleGroup.Chest,
+            otherGymId);
+
+        context.WorkoutRoutines.Add(routine);
+        context.Exercises.Add(exercise);
+
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        var handler = new AddExerciseToWorkoutRoutineHandler(context);
+
+        var command = new AddExerciseToWorkoutRoutineCommand(
+            routine.Id,
+            exercise.Id,
+            1,
+            4,
+            10,
+            90);
+
+        Func<Task> act = async () =>
+            await handler.Handle(command, CancellationToken.None);
+
+        await act.Should()
+            .ThrowAsync<DomainException>()
+            .WithMessage("Workout routine not found.");
+    }
+
+    [Fact]
     public async Task Handle_Should_Throw_When_Adding_Duplicate_Exercise()
     {
         var container = TestDbContextFactory.CreateContainer();
