@@ -2,6 +2,7 @@ using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
 using FitRos.Application.Common.Security;
 using FitRos.Domain.Common;
+using FitRos.Domain.Entities.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,6 +37,16 @@ public sealed class ActivatePlanHandler : IRequestHandler<ActivatePlanCommand>
 
         if (_currentUser.IsCoach() && plan.CoachId != _currentUser.UserId)
             throw new ForbiddenException("You are not the assigned coach for this training plan.");
+
+        var otherActivePlans = await _context.WeeklyTrainingPlans
+            .Where(x =>
+                x.ClientProfileId == plan.ClientProfileId &&
+                x.Id != plan.Id &&
+                x.Status == TrainingPlanStatus.Active)
+            .ToListAsync(cancellationToken);
+
+        foreach (var otherPlan in otherActivePlans)
+            otherPlan.Archive();
 
         plan.Activate();
 

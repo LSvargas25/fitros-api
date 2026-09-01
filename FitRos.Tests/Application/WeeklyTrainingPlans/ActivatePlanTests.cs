@@ -49,4 +49,38 @@ public class ActivatePlanTests
                 CancellationToken.None));
     }
 
+    [Fact]
+    public async Task Activating_A_Plan_Archives_The_Client_Other_Active_Plans()
+    {
+        var gymId = Guid.NewGuid();
+        var clientProfileId = Guid.NewGuid();
+        var coachId = Guid.NewGuid();
+
+        var fakeUser = new FakeCurrentUser(gymId)
+        {
+            UserId = coachId,
+            Role = UserRole.Coach,
+            IsAuthenticated = true
+        };
+
+        var context = TestDbContextFactory.Create(fakeUser);
+
+        var currentlyActive = WeeklyTrainingPlan.Create(clientProfileId, coachId, gymId, "Plan A");
+        currentlyActive.Activate();
+
+        var toActivate = WeeklyTrainingPlan.Create(clientProfileId, coachId, gymId, "Plan B");
+
+        context.WeeklyTrainingPlans.AddRange(currentlyActive, toActivate);
+        await context.SaveChangesAsync();
+
+        var handler = new ActivatePlanHandler(context, fakeUser);
+
+        await handler.Handle(new ActivatePlanCommand(toActivate.Id), CancellationToken.None);
+
+        var reloadedActive = await context.WeeklyTrainingPlans.FirstAsync(x => x.Id == currentlyActive.Id);
+        var reloadedTarget = await context.WeeklyTrainingPlans.FirstAsync(x => x.Id == toActivate.Id);
+
+        reloadedActive.Status.Should().Be(TrainingPlanStatus.Archived);
+        reloadedTarget.Status.Should().Be(TrainingPlanStatus.Active);
+    }
 }

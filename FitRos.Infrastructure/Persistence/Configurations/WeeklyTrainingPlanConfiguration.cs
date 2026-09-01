@@ -38,6 +38,15 @@ public class WeeklyTrainingPlanConfiguration : IEntityTypeConfiguration<WeeklyTr
         builder.HasIndex(x => x.ClientProfileId);
         builder.HasIndex(x => new { x.ClientProfileId, x.Status });
 
+        // Backs the "one active plan per client" rule at the DB level too -
+        // ActivatePlanHandler archives every other active plan for the
+        // client before activating this one, but two concurrent activation
+        // requests can still both pass that check before either commits.
+        builder.HasIndex(x => x.ClientProfileId)
+            .IsUnique()
+            .HasFilter("\"Status\" = 2")
+            .HasDatabaseName("IX_WeeklyTrainingPlans_ClientProfileId_ActiveOnly");
+
         builder
             .HasMany(p => p.Days)
             .WithOne()
