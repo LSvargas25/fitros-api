@@ -1,0 +1,13 @@
+# Keep the build context small and deterministic.
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+**/appsettings.*.local.json
+**/.env
+.git/
+.gitignore
+DEPLOY_NOTES.md
+BACKEND_AUDIT.md
+README.md

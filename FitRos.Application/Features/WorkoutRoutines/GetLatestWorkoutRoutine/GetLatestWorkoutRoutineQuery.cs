@@ -1,0 +1,3 @@
+﻿namespace FitRos.Application.Features.WorkoutRoutines.GetLatestWorkoutRoutine;
+
+public sealed record GetLatestWorkoutRoutineQuery(Guid WorkoutRoutineId);

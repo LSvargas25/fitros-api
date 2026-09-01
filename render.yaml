@@ -1,0 +1,49 @@
+# Render Blueprint for FitRos.API.
+# Repo root IS this Backend/ folder (that's where the .git lives), so all
+# paths below are relative to Backend/.
+#
+# Neon is the database (same as Widget Finanzas): Render does NOT provision it.
+# You create the Neon project yourself and paste its connection string into the
+# ConnectionStrings__DefaultConnection env var (see DEPLOY_NOTES.md).
+#
+# Apply with: Render Dashboard -> New -> Blueprint -> pick this repo.
+
+services:
+  - type: web
+    name: fitros-api
+    runtime: docker
+    plan: free              # free spins down when idle and has no shell tab
+    region: oregon           # closest free region to CR; change if you prefer
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeploy: true         # deploy on every push to the branch below
+    branch: master
+    # No healthCheckPath: the API has no unauthenticated 200 route yet.
+    # Adding `app.MapGet("/health", () => Results.Ok());` to Program.cs and then
+    # setting `healthCheckPath: /health` here is recommended (see DEPLOY_NOTES).
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+        value: "true"
+      # ---- secrets: set these in the Render dashboard, not in git ----
+      - key: ConnectionStrings__DefaultConnection
+        sync: false          # paste the Neon connection string (Npgsql keyword form)
+      - key: Jwt__SigningKey
+        generateValue: true   # Render generates a long random value once
+      - key: Jwt__Issuer
+        value: FitRos.API
+      - key: Jwt__Audience
+        value: FitRos.Client
+      - key: Smtp__Host
+        value: smtp.gmail.com
+      - key: Smtp__Port
+        value: "587"
+      - key: Smtp__Username
+        sync: false
+      - key: Smtp__Password
+        sync: false          # Gmail App Password, not the account password
+      - key: Smtp__From
+        sync: false
+      - key: Frontend__BaseUrl
+        sync: false          # public URL of the deployed Angular app

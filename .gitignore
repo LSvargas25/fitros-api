@@ -1,0 +1,17 @@
+## .NET build artifacts
+bin/
+obj/
+
+## User-specific files
+*.user
+
+## Rider / VS
+.vs/
+.idea/
+
+## Editor / AI assistant tool configs (local only)
+.claude/
+
+## Environment / secrets
+*.local.json
+.env

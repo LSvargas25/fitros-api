@@ -1,0 +1,58 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36717.8
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FitRos.Domain", "FitRos.Domain\FitRos.Domain.csproj", "{091BAD7F-649C-4A39-8D65-8F1DEE558EED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FitRos.Application", "FitRos.Application\FitRos.Application.csproj", "{3A4FDBCE-7726-47B4-8AD4-D98F487DBA95}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FitRos.Infrastructure", "FitRos.Infrastructure\FitRos.Infrastructure.csproj", "{9E1F6CC2-5950-465F-AFD9-BBAC60745DF8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{091BAD7F-649C-4A39-8D65-8F1DEE558EED} = {091BAD7F-649C-4A39-8D65-8F1DEE558EED}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FitRos.API", "FitRos.API\FitRos.API.csproj", "{10861120-0B08-49E6-88C7-9882CA2BEFF6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{091BAD7F-649C-4A39-8D65-8F1DEE558EED} = {091BAD7F-649C-4A39-8D65-8F1DEE558EED}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FitRos.Tests", "FitRos.Tests\FitRos.Tests.csproj", "{C86F7E76-B05B-442D-A86F-96F5FDA2CAFE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9E1F6CC2-5950-465F-AFD9-BBAC60745DF8} = {9E1F6CC2-5950-465F-AFD9-BBAC60745DF8}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{091BAD7F-649C-4A39-8D65-8F1DEE558EED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{091BAD7F-649C-4A39-8D65-8F1DEE558EED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{091BAD7F-649C-4A39-8D65-8F1DEE558EED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{091BAD7F-649C-4A39-8D65-8F1DEE558EED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A4FDBCE-7726-47B4-8AD4-D98F487DBA95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A4FDBCE-7726-47B4-8AD4-D98F487DBA95}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A4FDBCE-7726-47B4-8AD4-D98F487DBA95}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A4FDBCE-7726-47B4-8AD4-D98F487DBA95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E1F6CC2-5950-465F-AFD9-BBAC60745DF8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E1F6CC2-5950-465F-AFD9-BBAC60745DF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E1F6CC2-5950-465F-AFD9-BBAC60745DF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E1F6CC2-5950-465F-AFD9-BBAC60745DF8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10861120-0B08-49E6-88C7-9882CA2BEFF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10861120-0B08-49E6-88C7-9882CA2BEFF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10861120-0B08-49E6-88C7-9882CA2BEFF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10861120-0B08-49E6-88C7-9882CA2BEFF6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C86F7E76-B05B-442D-A86F-96F5FDA2CAFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C86F7E76-B05B-442D-A86F-96F5FDA2CAFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C86F7E76-B05B-442D-A86F-96F5FDA2CAFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C86F7E76-B05B-442D-A86F-96F5FDA2CAFE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B767537D-9311-4712-91C4-8F5BA0DD12EB}
+	EndGlobalSection
+EndGlobal
