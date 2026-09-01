@@ -30,8 +30,14 @@ public sealed class GetClientsByCoachQueryHandler
 
         ValidatePermissions(request.CoachId);
 
-        var clients = await _context.ClientProfiles
-            .Where(x => x.CoachId == request.CoachId)
+        var query = _context.ClientProfiles
+            .IgnoreQueryFilters()
+            .Where(x => x.CoachId == request.CoachId);
+
+        if (!_currentUser.IsOwner())
+            query = query.Where(x => x.GymId == _currentUser.GymId);
+
+        var clients = await query
             .Select(x => new ClientListItemDto
             {
                 Id = x.Id,
