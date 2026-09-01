@@ -1,6 +1,6 @@
 using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
-using FitRos.Application.Common.Security;
+using FitRos.Application.Features.WeeklyTrainingPlans.Common;
 using FitRos.Domain.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -22,8 +22,7 @@ public sealed class AssignRoutineToDayHandler : IRequestHandler<AssignRoutineToD
 
     public async Task Handle(AssignRoutineToDayCommand command, CancellationToken cancellationToken)
     {
-        if (!_currentUser.IsAuthenticated)
-            throw new UnauthorizedException("User not authenticated.");
+        WeeklyTrainingPlanAccess.EnsureAuthenticated(_currentUser);
 
         var plan = await _context.WeeklyTrainingPlans
             .Include(p => p.Days)
@@ -32,11 +31,7 @@ public sealed class AssignRoutineToDayHandler : IRequestHandler<AssignRoutineToD
         if (plan is null)
             throw new NotFoundException("Training plan not found.");
 
-        if (plan.GymId != _currentUser.GymId && !_currentUser.IsOwner())
-            throw new ForbiddenException("Training plan does not belong to your gym.");
-
-        if (_currentUser.IsCoach() && plan.CoachId != _currentUser.UserId)
-            throw new ForbiddenException("You are not the assigned coach for this training plan.");
+        await WeeklyTrainingPlanAccess.EnsureCanManageAsync(_currentUser, plan, _context, cancellationToken);
 
         var routineExists = await _context.WorkoutRoutines
             .AnyAsync(r => r.Id == command.WorkoutRoutineId, cancellationToken);

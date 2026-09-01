@@ -1,6 +1,6 @@
 using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
-using FitRos.Application.Common.Security;
+using FitRos.Application.Features.WeeklyTrainingPlans.Common;
 using FitRos.Domain.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -25,8 +25,7 @@ public sealed class GetWeeklyTrainingPlanByIdHandler
         GetWeeklyTrainingPlanByIdQuery query,
         CancellationToken cancellationToken)
     {
-        if (!_currentUser.IsAuthenticated)
-            throw new UnauthorizedException("User not authenticated.");
+        WeeklyTrainingPlanAccess.EnsureAuthenticated(_currentUser);
 
         var plan = await _context.WeeklyTrainingPlans
             .AsNoTracking()
@@ -36,11 +35,7 @@ public sealed class GetWeeklyTrainingPlanByIdHandler
         if (plan is null)
             throw new NotFoundException("Training plan not found.");
 
-        if (plan.GymId != _currentUser.GymId && !_currentUser.IsOwner())
-            throw new ForbiddenException("Training plan does not belong to your gym.");
-
-        if (_currentUser.IsCoach() && plan.CoachId != _currentUser.UserId)
-            throw new ForbiddenException("You are not the assigned coach for this training plan.");
+        await WeeklyTrainingPlanAccess.EnsureCanManageAsync(_currentUser, plan, _context, cancellationToken);
 
         var routineIds = plan.Days.Select(d => d.WorkoutRoutineId).ToList();
 

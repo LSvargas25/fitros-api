@@ -11,7 +11,7 @@ public sealed class WeeklyTrainingPlan : AggregateRoot, ITenantEntity
 
     public Guid ClientProfileId { get; private set; }
 
-    public Guid CoachId { get; private set; }
+    public Guid? CoachId { get; private set; }
 
     public string Name { get; private set; } = null!;
 
@@ -31,7 +31,7 @@ public sealed class WeeklyTrainingPlan : AggregateRoot, ITenantEntity
 
     public static WeeklyTrainingPlan Create(
         Guid clientProfileId,
-        Guid coachId,
+        Guid? coachId,
         Guid? gymId,
         string name)
     {

@@ -1,6 +1,6 @@
 using FitRos.Application.Abstractions.Persistence;
 using FitRos.Application.Abstractions.Security;
-using FitRos.Application.Common.Security;
+using FitRos.Application.Features.WeeklyTrainingPlans.Common;
 using FitRos.Domain.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -25,8 +25,7 @@ public sealed class GetClientPlansHandler
         GetClientPlansQuery query,
         CancellationToken cancellationToken)
     {
-        if (!_currentUser.IsAuthenticated)
-            throw new UnauthorizedException("User not authenticated.");
+        WeeklyTrainingPlanAccess.EnsureAuthenticated(_currentUser);
 
         var clientProfile = await _context.ClientProfiles
             .AsNoTracking()
@@ -35,11 +34,7 @@ public sealed class GetClientPlansHandler
         if (clientProfile is null)
             throw new NotFoundException("Client profile not found.");
 
-        if (clientProfile.GymId != _currentUser.GymId && !_currentUser.IsOwner())
-            throw new ForbiddenException("Client does not belong to your gym.");
-
-        if (_currentUser.IsCoach() && clientProfile.CoachId != _currentUser.UserId)
-            throw new ForbiddenException("You are not the assigned coach for this client.");
+        WeeklyTrainingPlanAccess.EnsureCanAccessClient(_currentUser, clientProfile);
 
         return await _context.WeeklyTrainingPlans
             .AsNoTracking()
