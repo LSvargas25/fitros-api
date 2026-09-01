@@ -60,6 +60,17 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.PasswordResetTokenExpiresAtUtc)
             .IsRequired(false);
 
+        builder.Property(x => x.EmailVerified)
+            .IsRequired()
+            .HasDefaultValue(true);
+
+        builder.Property(x => x.EmailVerificationCodeHash)
+            .HasMaxLength(500)
+            .IsRequired(false);
+
+        builder.Property(x => x.EmailVerificationCodeExpiresAtUtc)
+            .IsRequired(false);
+
         builder.Property(x => x.GymId)
             .IsRequired(false);
 

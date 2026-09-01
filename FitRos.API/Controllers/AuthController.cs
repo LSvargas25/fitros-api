@@ -3,6 +3,7 @@ using FitRos.Application.Features.Auth.ForgotPassword;
 using FitRos.Application.Features.Auth.Login;
 using FitRos.Application.Features.Auth.Logout;
 using FitRos.Application.Features.Auth.Refresh;
+using FitRos.Application.Features.Auth.Register;
 using FitRos.Application.Features.Auth.ResetPassword;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -24,6 +25,25 @@ public sealed class AuthController : ControllerBase
     public AuthController(ISender sender)
     {
         _sender = sender;
+    }
+
+    // =============================
+    // REGISTER
+    // =============================
+
+    [HttpPost("register")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status200OK)]
+    [SwaggerOperation(
+        Summary = "Register",
+        Description = "Creates an independent Client account (no gym, no coach) and emails a verification code.",
+        Tags = new[] { TagAuth })]
+    public async Task<ActionResult<RegisterResponse>> Register(
+        [FromBody] RegisterCommand command,
+        CancellationToken ct)
+    {
+        var result = await _sender.Send(command, ct);
+        return Ok(result);
     }
 
     // =============================

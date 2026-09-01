@@ -19,6 +19,10 @@ public sealed class User : AggregateRoot, ITenantEntity
     public string? PasswordResetTokenHash { get; private set; }
     public DateTime? PasswordResetTokenExpiresAtUtc { get; private set; }
 
+    public bool EmailVerified { get; private set; }
+    public string? EmailVerificationCodeHash { get; private set; }
+    public DateTime? EmailVerificationCodeExpiresAtUtc { get; private set; }
+
     public UserRole Role { get; private set; }
     public UserStatus Status { get; private set; }
 
@@ -47,6 +51,13 @@ public sealed class User : AggregateRoot, ITenantEntity
         SetEmail(email);
         SetProfile(firstName, lastName);
         SetPasswordHash(passwordHash);
+
+        // Every existing creation path is staff- or system-driven (an admin/
+        // coach adding someone, the owner seed) - there's no one to send a
+        // code to confirm, so those accounts start verified. Self-service
+        // sign-up is the one path that needs to prove the email first; it
+        // goes through CreateUnverified instead.
+        EmailVerified = true;
 
         Role = role;
         Status = UserStatus.Active;
@@ -95,6 +106,22 @@ public sealed class User : AggregateRoot, ITenantEntity
 
         user.AddDomainEvent(new UserRegisteredDomainEvent(user.Id, email)); 
 
+        return user;
+    }
+
+    /// <summary>
+    /// Self-service sign-up: same shape as Create, but the account starts
+    /// unverified until the emailed code is confirmed.
+    /// </summary>
+    public static User CreateUnverified(
+        string email,
+        string firstName,
+        string lastName,
+        string passwordHash,
+        UserRole role)
+    {
+        var user = Create(email, firstName, lastName, passwordHash, role);
+        user.EmailVerified = false;
         return user;
     }
 
@@ -299,5 +326,39 @@ public sealed class User : AggregateRoot, ITenantEntity
             return false;
 
         return PasswordResetTokenHash == tokenHash;
+    }
+
+    public void SetEmailVerificationCode(string codeHash, DateTime expiresAtUtc)
+    {
+        if (string.IsNullOrWhiteSpace(codeHash))
+            throw new DomainException("Verification code hash cannot be empty.");
+
+        EmailVerificationCodeHash = codeHash.Trim();
+        EmailVerificationCodeExpiresAtUtc = expiresAtUtc;
+
+        Touch();
+    }
+
+    public bool HasValidEmailVerificationCode(string codeHash, DateTime nowUtc)
+    {
+        if (EmailVerificationCodeHash is null)
+            return false;
+
+        if (EmailVerificationCodeExpiresAtUtc is null)
+            return false;
+
+        if (EmailVerificationCodeExpiresAtUtc < nowUtc)
+            return false;
+
+        return EmailVerificationCodeHash == codeHash;
+    }
+
+    public void MarkEmailVerified()
+    {
+        EmailVerified = true;
+        EmailVerificationCodeHash = null;
+        EmailVerificationCodeExpiresAtUtc = null;
+
+        Touch();
     }
 }

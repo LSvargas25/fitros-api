@@ -27,7 +27,7 @@ namespace FitRos.Domain.Entities.Client
 
         private ClientProfile() { }
 
-        private ClientProfile(Guid gymId, Guid id, Guid userId, Guid? coachId)
+        private ClientProfile(Guid? gymId, Guid id, Guid userId, Guid? coachId)
         {
             GymId = gymId;
             Id = id;
@@ -51,6 +51,20 @@ namespace FitRos.Domain.Entities.Client
 
         public static ClientProfile Create()
             => Create(Guid.NewGuid(), Guid.NewGuid(), null);
+
+        /// <summary>
+        /// A client who signed up on their own, outside of any gym - no
+        /// coach, no gym, they manage their own training.
+        /// </summary>
+        public static ClientProfile CreateIndependent(Guid userId)
+        {
+            if (userId == Guid.Empty)
+                throw new DomainException("UserId cannot be empty.");
+
+            var client = new ClientProfile(null, Guid.NewGuid(), userId, null);
+            client.AddDomainEvent(new ClientProfileCreatedDomainEvent(client.Id, Guid.Empty));
+            return client;
+        }
 
         public void Deactivate()
         {
