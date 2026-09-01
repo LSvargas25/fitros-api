@@ -109,6 +109,13 @@ all tables and the seeded owner user.
 | `Frontend__BaseUrl` | public URL of the deployed Angular app, e.g. `https://fitros.vercel.app` — used in reset-password email links |
 | `ASPNETCORE_ENVIRONMENT` | `Production` (set in `render.yaml`) |
 | `ASPNETCORE_FORWARDEDHEADERS_ENABLED` | `true` (set in `render.yaml`) |
+| `Auth__OwnerSeedPasswordHash` *(optional)* | a `PasswordHasher<T>.HashPassword` value to overwrite the seeded owner's password with at boot, instead of leaving the placeholder from the migrations in place |
+
+The migrations seed `owner@fitros.com` with a placeholder password
+(`ChangeMe123!`) — fine for local dev, not something to leave live. After the
+first deploy, either log in once and hit `POST /api/auth/forgot-password` to
+get a real password set through the normal reset-token flow, or set
+`Auth__OwnerSeedPasswordHash` above before that first boot.
 
 The app boots without the `Smtp__*` vars, but any flow that sends email
 (password reset) throws until they're set.

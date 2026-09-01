@@ -138,12 +138,15 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
     {
         var ownerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
+        // Seed password is a placeholder, not a real credential - rotate it
+        // on first deploy via POST /api/auth/forgot-password, or set
+        // Auth__OwnerSeedPasswordHash so Program.cs overwrites it at boot.
         var owner = User.CreateOwnerApp(
             ownerId,
             "owner@fitros.com",
             "FitRos",
             "Owner",
-            "AQAAAAIAAYagAAAAELe0J5jOZGpfuPmwQO01ca1V7Q7UBF6m/sJkq/Z8GrxFQYv6RxjKnlqfGpwRwMjWAQ==",
+            "AQAAAAIAAYagAAAAEOM9xdF0Xu7pZdSZml7lw4jSxJ47NsvebNyCcAuVDqb2+sayCBucq7wlT3Zp7L9D5w==",
             new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         );
 

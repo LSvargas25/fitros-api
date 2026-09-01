@@ -9,6 +9,7 @@ using FitRos.Application.Common.Behaviors;
 using FitRos.Infrastructure.Common.BackgroundJobs;
 using FitRos.Infrastructure.Common.Interceptors;
 using FitRos.Infrastructure.Messaging;
+using FitRos.Domain.Enums;
 using FitRos.Infrastructure.Persistence;
 using FitRos.Infrastructure.Security;
 using FluentValidation;
@@ -234,6 +235,26 @@ foreach (var handlerType in handlerTypes)
 builder.Services.AddHostedService<OutboxProcessor>();
 
 var app = builder.Build();
+
+// Lets a deploy set its own owner password without committing a hash to
+// source: if Auth__OwnerSeedPasswordHash is set, apply it to the seeded
+// OwnerApp account once at boot instead of relying on the placeholder
+// baked into the migrations.
+var ownerSeedPasswordHash = app.Configuration["Auth:OwnerSeedPasswordHash"];
+if (!string.IsNullOrWhiteSpace(ownerSeedPasswordHash))
+{
+    using var seedScope = app.Services.CreateScope();
+    var db = seedScope.ServiceProvider.GetRequiredService<FitRosDbContext>();
+    var owner = await db.Users
+        .IgnoreQueryFilters()
+        .FirstOrDefaultAsync(u => u.Role == UserRole.OwnerApp);
+
+    if (owner is not null && owner.PasswordHash != ownerSeedPasswordHash)
+    {
+        owner.ChangePasswordHash(ownerSeedPasswordHash);
+        await db.SaveChangesAsync();
+    }
+}
 
 // =============================
 // Middleware Pipeline

@@ -77,7 +77,7 @@ public class AuthApiTests : IClassFixture<AuthTestApiFactory>
         var request = new
         {
             email = "owner@fitros.com",
-            password = "Owner123!"
+            password = "ChangeMe123!"
         };
 
         var response = await _client.PostAsJsonAsync(
