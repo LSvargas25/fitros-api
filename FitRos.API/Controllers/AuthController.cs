@@ -1,5 +1,6 @@
 ﻿using FitRos.API.Contracts.Auth;
 using FitRos.Application.Features.Auth.ForgotPassword;
+using FitRos.Application.Features.Auth.GoogleLogin;
 using FitRos.Application.Features.Auth.Login;
 using FitRos.Application.Features.Auth.Logout;
 using FitRos.Application.Features.Auth.Refresh;
@@ -101,6 +102,25 @@ public sealed class AuthController : ControllerBase
         Tags = new[] { TagAuth })]
     public async Task<ActionResult<LoginResponse>> Login(
         [FromBody] LoginCommand command,
+        CancellationToken ct)
+    {
+        var result = await _sender.Send(command, ct);
+        return Ok(result);
+    }
+
+    // =============================
+    // GOOGLE
+    // =============================
+
+    [HttpPost("google")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GoogleLoginResponse), StatusCodes.Status200OK)]
+    [SwaggerOperation(
+        Summary = "Google sign-in",
+        Description = "Validates a Google Identity Services id_token; logs in an existing user by email or creates an independent Client account.",
+        Tags = new[] { TagAuth })]
+    public async Task<ActionResult<GoogleLoginResponse>> Google(
+        [FromBody] GoogleLoginCommand command,
         CancellationToken ct)
     {
         var result = await _sender.Send(command, ct);

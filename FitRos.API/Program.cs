@@ -171,6 +171,10 @@ builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordResetTokenGenerator, PasswordResetTokenGenerator>();
 builder.Services.AddScoped<IEmailVerificationCodeGenerator, EmailVerificationCodeGenerator>();
+builder.Services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
+
+builder.Services.Configure<GoogleAuthSettings>(
+    builder.Configuration.GetSection("Authentication:Google"));
 
 builder.Services.Configure<FrontendSettings>(
     builder.Configuration.GetSection("Frontend"));
