@@ -107,6 +107,7 @@ all tables and the seeded owner user.
 | `Smtp__Password` | Gmail **App Password** (16 chars, not the account password) |
 | `Smtp__From` | the "from" address (usually same as `Smtp__Username`) |
 | `Frontend__BaseUrl` | public URL of the deployed Angular app, e.g. `https://fitros.vercel.app` — used in reset-password email links |
+| `Cors__AllowedOrigins__0` | public origin of the web app allowed to call the API (Cloudflare Pages URL); add `__1`, `__2` for more. Local dev uses `http://localhost:4200` from `appsettings.Development.json` |
 | `ASPNETCORE_ENVIRONMENT` | `Production` (set in `render.yaml`) |
 | `ASPNETCORE_FORWARDEDHEADERS_ENABLED` | `true` (set in `render.yaml`) |
 | `Auth__OwnerSeedPasswordHash` *(optional)* | a `PasswordHasher<T>.HashPassword` value to overwrite the seeded owner's password with at boot, instead of leaving the placeholder from the migrations in place |
@@ -138,13 +139,7 @@ The app boots without the `Smtp__*` vars, but any flow that sends email
 
 ## 5. Follow-ups (small code changes, not done yet)
 
-1. **CORS origin** — `Program.cs` hardcodes `WithOrigins("http://localhost:4200")`.
-   The deployed Angular app has a different origin, so browser calls to the API
-   get blocked until it's added. Make it configurable, e.g. read
-   `Cors:AllowedOrigins` from config and add a `Cors__AllowedOrigins__0` env
-   var on Render.
-
-2. **HTTPS redirect behind the proxy** — `app.UseHttpsRedirection()` runs
+1. **HTTPS redirect behind the proxy** — `app.UseHttpsRedirection()` runs
    unconditionally. The `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` env var (set
    in the Dockerfile and `render.yaml`) makes ASP.NET trust Render's
    `X-Forwarded-Proto: https`, so it should see the request as already-HTTPS

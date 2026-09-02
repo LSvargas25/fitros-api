@@ -36,14 +36,22 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // =============================
-// CORS (Angular Dev)
+// CORS
 // =============================
+// Allowed origins come from Cors:AllowedOrigins (array). Local dev gets
+// http://localhost:4200 from appsettings.Development.json; on Render the value
+// is supplied via Cors__AllowedOrigins__0 (see render.yaml). No origins
+// configured means no cross-origin browser calls are allowed.
+
+var corsOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? Array.Empty<string>();
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularDev", policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
+        policy.WithOrigins(corsOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
