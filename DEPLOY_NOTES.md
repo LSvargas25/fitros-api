@@ -130,27 +130,21 @@ The app boots without the `Smtp__*` vars, but any flow that sends email
 - There's **no Swagger UI** in Production (`Program.cs` only maps Swagger when
   `IsDevelopment()`). Test with a real call instead, e.g.
   `POST https://fitros-api.onrender.com/api/auth/login`.
-- Health checks: `render.yaml` sets no `healthCheckPath` because the API has no
-  unauthenticated 200 route yet. See "Follow-ups" below.
+- Health checks: `render.yaml` sets `healthCheckPath: /health`, backed by the
+  unauthenticated `{ status: "ok" }` route in `Program.cs`. Render restarts the
+  instance automatically if it stops responding.
 
 ---
 
 ## 5. Follow-ups (small code changes, not done yet)
 
-1. **Health endpoint** — in `FitRos.API/Program.cs`, after `app.MapControllers();`:
-   ```csharp
-   app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
-   ```
-   then set `healthCheckPath: /health` in `render.yaml`. Render restarts the
-   instance automatically if this stops responding.
-
-2. **CORS origin** — `Program.cs` hardcodes `WithOrigins("http://localhost:4200")`.
+1. **CORS origin** — `Program.cs` hardcodes `WithOrigins("http://localhost:4200")`.
    The deployed Angular app has a different origin, so browser calls to the API
    get blocked until it's added. Make it configurable, e.g. read
    `Cors:AllowedOrigins` from config and add a `Cors__AllowedOrigins__0` env
    var on Render.
 
-3. **HTTPS redirect behind the proxy** — `app.UseHttpsRedirection()` runs
+2. **HTTPS redirect behind the proxy** — `app.UseHttpsRedirection()` runs
    unconditionally. The `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` env var (set
    in the Dockerfile and `render.yaml`) makes ASP.NET trust Render's
    `X-Forwarded-Proto: https`, so it should see the request as already-HTTPS

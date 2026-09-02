@@ -18,9 +18,7 @@ services:
     dockerContext: .
     autoDeploy: true         # deploy on every push to the branch below
     branch: master
-    # No healthCheckPath: the API has no unauthenticated 200 route yet.
-    # Adding `app.MapGet("/health", () => Results.Ok());` to Program.cs and then
-    # setting `healthCheckPath: /health` here is recommended (see DEPLOY_NOTES).
+    healthCheckPath: /health   # unauthenticated { status: "ok" } route in Program.cs
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production

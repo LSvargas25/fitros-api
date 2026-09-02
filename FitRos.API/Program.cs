@@ -303,6 +303,9 @@ app.UseRateLimiter();
 
 app.MapControllers();
 
+// Unauthenticated liveness probe for the platform health check.
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
 app.Run();
 
 public partial class Program { }
