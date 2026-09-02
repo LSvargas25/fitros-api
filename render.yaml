@@ -47,3 +47,7 @@ services:
         sync: false
       - key: Frontend__BaseUrl
         sync: false          # public URL of the deployed Angular app
+      - key: Authentication__Google__ClientId
+        sync: false          # Google OAuth Web client ID; sign in with Google 401s without it
+      - key: Auth__OwnerSeedPasswordHash
+        sync: false          # optional: PasswordHasher hash applied to the seeded owner at boot
