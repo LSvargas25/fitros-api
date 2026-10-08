@@ -49,5 +49,9 @@ services:
         sync: false          # Cloudflare Pages URL of the web app once it exists; add __1, __2 for more
       - key: Authentication__Google__ClientId
         sync: false          # Google OAuth Web client ID; sign in with Google 401s without it
+      - key: Seed__Demo
+        sync: false          # optional: "true" seeds the demo gym + *@fitros.demo logins at boot (idempotent)
+      - key: Swagger__Enabled
+        sync: false          # optional: "true" serves Swagger UI at /swagger in Production
       - key: Auth__OwnerSeedPasswordHash
         sync: false          # optional: PasswordHasher hash applied to the seeded owner at boot
