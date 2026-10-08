@@ -27,7 +27,23 @@ public sealed class OutboxProcessor : BackgroundService
     {
         while (!ct.IsCancellationRequested)
         {
-            await ProcessOutboxMessagesAsync(ct);
+            // An exception escaping ExecuteAsync stops the whole host (.NET's
+            // default BackgroundServiceExceptionBehavior), so a database that is
+            // briefly unreachable - e.g. Neon waking up - would take the API
+            // down. Log it and try again on the next tick instead.
+            try
+            {
+                await ProcessOutboxMessagesAsync(ct);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Outbox poll failed; retrying in {Interval}.", Interval);
+            }
+
             await Task.Delay(Interval, ct);
         }
     }

@@ -11,6 +11,7 @@ using FitRos.Infrastructure.Common.Interceptors;
 using FitRos.Infrastructure.Messaging;
 using FitRos.Domain.Enums;
 using FitRos.Infrastructure.Persistence;
+using FitRos.Infrastructure.Persistence.Seeding;
 using FitRos.Infrastructure.Security;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -24,6 +25,7 @@ using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 
 
 
@@ -160,6 +162,13 @@ builder.Services.AddDbContext<FitRosDbContext>((sp, options) =>
 
 builder.Services.AddScoped<IFitRosDbContext, FitRosDbContext>();
 
+builder.Services.AddScoped<DemoDataSeeder>();
+
+// Readiness: unlike /health (process is up), /health/ready also proves the
+// database answers.
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<FitRosDbContext>("database", tags: new[] { "ready" });
+
 // =============================
 // JWT Configuration
 // =============================
@@ -253,17 +262,24 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
     // The "Testing" environment (WebApplicationFactory-based auth tests)
-    // fires far more than 5 requests at these endpoints per run from the
+    // fires far more than 20 requests at these endpoints per run from the
     // same loopback connection, so it gets an effectively unlimited window
     // instead of disabling the policy outright.
-    var authPermitLimit = builder.Environment.IsEnvironment("Testing") ? int.MaxValue : 5;
+    var authPermitLimit = builder.Environment.IsEnvironment("Testing") ? int.MaxValue : 20;
 
-    options.AddFixedWindowLimiter("auth", limiterOptions =>
-    {
-        limiterOptions.PermitLimit = authPermitLimit;
-        limiterOptions.Window = TimeSpan.FromMinutes(5);
-        limiterOptions.QueueLimit = 0;
-    });
+    // One window per client IP (Render forwards it via X-Forwarded-For, which
+    // ASPNETCORE_FORWARDEDHEADERS_ENABLED applies). A single global window let
+    // any 5 auth calls - from anyone - lock every visitor out for 5 minutes,
+    // which the one-click demo logins would hit immediately.
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = authPermitLimit,
+                Window = TimeSpan.FromMinutes(5),
+                QueueLimit = 0
+            }));
 });
 
 var app = builder.Build();
@@ -279,12 +295,29 @@ if (!string.IsNullOrWhiteSpace(ownerSeedPasswordHash))
     var db = seedScope.ServiceProvider.GetRequiredService<FitRosDbContext>();
     var owner = await db.Users
         .IgnoreQueryFilters()
-        .FirstOrDefaultAsync(u => u.Role == UserRole.OwnerApp);
+        .FirstOrDefaultAsync(u => u.Id == FitRosDbContext.SeedOwnerId && u.Role == UserRole.OwnerApp);
 
     if (owner is not null && owner.PasswordHash != ownerSeedPasswordHash)
     {
         owner.ChangePasswordHash(ownerSeedPasswordHash);
         await db.SaveChangesAsync();
+    }
+}
+
+// Demo data for the public deploy (Seed__Demo=true). A failure here must not
+// take the API down, so it is logged and boot continues.
+if (app.Configuration.GetValue<bool>("Seed:Demo"))
+{
+    using var demoScope = app.Services.CreateScope();
+    try
+    {
+        await demoScope.ServiceProvider
+            .GetRequiredService<DemoDataSeeder>()
+            .SeedAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Demo data seeding failed.");
     }
 }
 
@@ -294,7 +327,8 @@ if (!string.IsNullOrWhiteSpace(ownerSeedPasswordHash))
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
-if (app.Environment.IsDevelopment())
+// Outside Development, Swagger is opt-in via Swagger__Enabled=true.
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -313,6 +347,13 @@ app.MapControllers();
 
 // Unauthenticated liveness probe for the platform health check.
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
+// Unauthenticated readiness probe: 200 "Healthy" when the database answers,
+// 503 "Unhealthy" otherwise.
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+}).AllowAnonymous();
 
 app.Run();
 

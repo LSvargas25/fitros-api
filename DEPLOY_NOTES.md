@@ -110,6 +110,8 @@ all tables and the seeded owner user.
 | `Cors__AllowedOrigins__0` | public origin of the web app allowed to call the API (Cloudflare Pages URL); add `__1`, `__2` for more. Local dev uses `http://localhost:4200` from `appsettings.Development.json` |
 | `ASPNETCORE_ENVIRONMENT` | `Production` (set in `render.yaml`) |
 | `ASPNETCORE_FORWARDEDHEADERS_ENABLED` | `true` (set in `render.yaml`) |
+| `Seed__Demo` *(optional)* | `true` to create the demo gym and the `*@fitros.demo` accounts (password `FitRos#2026`) at boot; idempotent, safe to leave on. See README → Live demo |
+| `Swagger__Enabled` *(optional)* | `true` to serve Swagger UI at `/swagger` in Production (off by default) |
 | `Auth__OwnerSeedPasswordHash` *(optional)* | a `PasswordHasher<T>.HashPassword` value to overwrite the seeded owner's password with at boot, instead of leaving the placeholder from the migrations in place |
 
 The migrations seed `owner@fitros.com` with a placeholder password
@@ -128,12 +130,15 @@ The app boots without the `Smtp__*` vars, but any flow that sends email
 - Build takes a few minutes (SDK image pull + restore + publish).
 - On success the log shows `Now listening on: http://+:10000` and Render marks
   it **Live** at `https://fitros-api.onrender.com` (or whatever name I pick).
-- There's **no Swagger UI** in Production (`Program.cs` only maps Swagger when
-  `IsDevelopment()`). Test with a real call instead, e.g.
-  `POST https://fitros-api.onrender.com/api/auth/login`.
+- Swagger UI is off in Production unless `Swagger__Enabled=true`; then it's at
+  `https://fitros-api.onrender.com/swagger`. Without it, test with a real call,
+  e.g. `POST https://fitros-api.onrender.com/api/auth/login`.
 - Health checks: `render.yaml` sets `healthCheckPath: /health`, backed by the
   unauthenticated `{ status: "ok" }` route in `Program.cs`. Render restarts the
-  instance automatically if it stops responding.
+  instance automatically if it stops responding. `/health/ready` additionally
+  checks the database (`AddDbContextCheck`) and answers `Healthy` (200) or
+  `Unhealthy` (503); it's for uptime monitors, not the Render health check, so
+  a slow Neon wake-up doesn't fail a deploy.
 
 ---
 

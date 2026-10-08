@@ -43,7 +43,27 @@ public sealed class Gym : AggregateRoot
             IsDeleted = false,
             CreatedAtUtc = DateTime.UtcNow
         };
-        gym.AddDomainEvent(new GymCreatedDomainEvent(gym.Id, name)); 
+        gym.AddDomainEvent(new GymCreatedDomainEvent(gym.Id, name));
+
+        return gym;
+    }
+
+    /// <summary>
+    /// Seed-only factory: pins the gym's Id so a data seeder can find the
+    /// same gym again on every boot and stay idempotent.
+    /// </summary>
+    internal static Gym CreateSeeded(
+        Guid id,
+        string name,
+        string address,
+        string phoneNumber)
+    {
+        if (id == Guid.Empty)
+            throw new DomainException("Gym id cannot be empty.");
+
+        var gym = Create(name, address, phoneNumber);
+        gym.Id = id;
+        gym.ClearDomainEvents();
 
         return gym;
     }
