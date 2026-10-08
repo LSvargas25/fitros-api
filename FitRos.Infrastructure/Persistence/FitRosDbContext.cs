@@ -134,9 +134,12 @@ public class FitRosDbContext : DbContext, IFitRosDbContext
     {
         Set<TEntity>().Remove(entity);
     }
+    /// <summary>Id of the platform owner row seeded by the migrations.</summary>
+    public static readonly Guid SeedOwnerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
     private static void SeedOwner(ModelBuilder modelBuilder)
     {
-        var ownerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var ownerId = SeedOwnerId;
 
         // Seed password is a placeholder, not a real credential - rotate it
         // on first deploy via POST /api/auth/forgot-password, or set

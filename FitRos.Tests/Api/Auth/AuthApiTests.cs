@@ -35,7 +35,7 @@ public class AuthTestApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         // Also relaxes the "auth" rate limiter (see Program.cs) - this suite
-        // fires well past 5 requests at these endpoints per run.
+        // fires well past the per-IP limit at these endpoints per run.
         builder.UseEnvironment("Testing");
 
         builder.ConfigureTestServices(services =>
