@@ -15,3 +15,4 @@ obj/
 ## Environment / secrets
 *.local.json
 .env
+secrets.json

@@ -1,4 +1,5 @@
-﻿using FitRos.API.Middleware;
+﻿using FitRos.API.Configuration;
+using FitRos.API.Middleware;
 using FitRos.API.Swagger;
 using FitRos.Application;
 using FitRos.Application.Abstractions.Messaging;
@@ -173,8 +174,9 @@ builder.Services.AddHealthChecks()
 // JWT Configuration
 // =============================
 
-builder.Services.Configure<JwtSettings>(
-    builder.Configuration.GetSection("Jwt"));
+// Binds Jwt, Smtp, Authentication:Google and the connection string, and fails
+// the boot if any of them is empty or still a REPLACE_VIA_ENV_VAR_* placeholder.
+builder.Services.AddRequiredSettings(builder.Configuration);
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 
@@ -190,14 +192,8 @@ builder.Services.AddScoped<IPasswordResetTokenGenerator, PasswordResetTokenGener
 builder.Services.AddScoped<IEmailVerificationCodeGenerator, EmailVerificationCodeGenerator>();
 builder.Services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
 
-builder.Services.Configure<GoogleAuthSettings>(
-    builder.Configuration.GetSection("Authentication:Google"));
-
 builder.Services.Configure<FrontendSettings>(
     builder.Configuration.GetSection("Frontend"));
-
-builder.Services.Configure<SmtpSettings>(
-    builder.Configuration.GetSection("Smtp"));
 
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 

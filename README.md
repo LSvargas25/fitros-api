@@ -98,6 +98,9 @@ The most architecturally complete backend in this portfolio — layered Clean Ar
 - Expand test coverage beyond the current handler-level tests (integration tests against a real/in-memory Postgres)
 - API versioning
 
-## Security note
+## Configuration & secrets
 
-An earlier version of this repository had a real PostgreSQL password, a real JWT signing key and a **real Gmail app password** hardcoded in `appsettings.json`. These have been replaced with placeholders that must be supplied via environment variables or user-secrets. **Because this repository was briefly public during maintenance, treat all three of those original values as compromised and rotate them** (in particular, revoke/regenerate the Gmail app password).
+All secrets (database connection string, JWT signing key, SMTP credentials) are
+read from environment variables or .NET user-secrets — never from source control.
+`appsettings.json` only contains `REPLACE_VIA_ENV_VAR_*` placeholders.
+Credentials from earlier local development were rotated.
