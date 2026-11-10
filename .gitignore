@@ -15,4 +15,6 @@ obj/
 ## Environment / secrets
 *.local.json
 .env
+appsettings.Production.json
+appsettings.*.Local.json
 secrets.json

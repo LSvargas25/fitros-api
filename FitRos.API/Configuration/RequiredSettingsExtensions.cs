@@ -1,5 +1,6 @@
 using FitRos.Infrastructure.Messaging;
 using FitRos.Infrastructure.Security;
+using System.Text;
 using Microsoft.Extensions.Options;
 
 namespace FitRos.API.Configuration;
@@ -11,6 +12,11 @@ public static class RequiredSettingsExtensions
     /// still contains it was never overridden by an env var or user-secret.
     /// </summary>
     public const string PlaceholderPrefix = "REPLACE_VIA_ENV_VAR_";
+
+    /// <summary>
+    /// HS256 needs a key of at least 256 bits; a shorter one is brute-forceable.
+    /// </summary>
+    public const int MinJwtSigningKeyBytes = 32;
 
     /// <summary>
     /// Binds the settings that carry secrets and validates them when the host
@@ -35,6 +41,10 @@ public static class RequiredSettingsExtensions
             .Validate(o => IsConfigured(o.Issuer), Missing("Jwt:Issuer", "Jwt__Issuer"))
             .Validate(o => IsConfigured(o.Audience), Missing("Jwt:Audience", "Jwt__Audience"))
             .Validate(o => IsConfigured(o.SigningKey), Missing("Jwt:SigningKey", "Jwt__SigningKey"))
+            .Validate(o => !IsConfigured(o.SigningKey)
+                           || Encoding.UTF8.GetByteCount(o.SigningKey) >= MinJwtSigningKeyBytes,
+                $"Jwt:SigningKey is shorter than {MinJwtSigningKeyBytes} bytes. Set a longer key via "
+                + "the Jwt__SigningKey environment variable, or the 'Jwt:SigningKey' user-secret.")
             .ValidateOnStart();
 
         services
