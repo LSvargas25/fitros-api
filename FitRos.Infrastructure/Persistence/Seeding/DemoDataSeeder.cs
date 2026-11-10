@@ -162,6 +162,20 @@ public sealed class DemoDataSeeder
             profiles[spec.Email] = profile;
         }
 
+        // Each demo coach also needs their personal CoachSelf profile ("My
+        // Area"). The schema backfill only covers coaches that existed when it
+        // ran, so a fresh database or a re-created coach gets one here.
+        foreach (var spec in Users.Where(u => u.Role == UserRole.Coach))
+        {
+            var coach = users[spec.Email];
+            var hasSelfProfile = await _db.ClientProfiles
+                .IgnoreQueryFilters()
+                .AnyAsync(p => p.UserId == coach.Id, ct);
+
+            if (!hasSelfProfile)
+                _db.ClientProfiles.Add(ClientProfile.CreateForCoachSelf(DemoGymId, coach.Id));
+        }
+
         if (gymCreated)
             SeedGymContent(users, profiles);
 

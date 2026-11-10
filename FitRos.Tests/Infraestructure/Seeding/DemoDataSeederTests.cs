@@ -185,6 +185,13 @@ public sealed class DemoDataSeederTests : IDisposable
             .ToListAsync();
         coachClients.Should().HaveCountGreaterThanOrEqualTo(3);
 
+        // Coach: their own "My Area" profile, separate from the roster.
+        var coachSelf = await db.ClientProfiles.IgnoreQueryFilters()
+            .Where(p => p.UserId == coach.Id)
+            .ToListAsync();
+        coachSelf.Should().ContainSingle()
+            .Which.Kind.Should().Be(FitRos.Domain.Entities.Enums.ClientProfileKind.CoachSelf);
+
         // Client: an active weekly plan covering every day, an active meal
         // plan, a measurement history and completed sessions.
         var profile = coachClients.Single(p => p.UserId == client.Id);
